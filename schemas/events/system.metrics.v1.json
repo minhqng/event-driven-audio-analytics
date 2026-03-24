@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "system.metrics.v1",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "produced_by",
+    "payload"
+  ],
+  "properties": {
+    "event_id": { "type": "string" },
+    "event_type": { "const": "system.metrics" },
+    "schema_version": { "const": "v1" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "produced_by": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "required": [
+        "ts",
+        "run_id",
+        "service_name",
+        "metric_name",
+        "metric_value",
+        "labels_json"
+      ],
+      "properties": {
+        "ts": { "type": "string", "format": "date-time" },
+        "run_id": { "type": "string" },
+        "service_name": { "type": "string" },
+        "metric_name": { "type": "string" },
+        "metric_value": { "type": "number" },
+        "labels_json": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

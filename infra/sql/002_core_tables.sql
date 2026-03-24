@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS track_metadata (
+    run_id TEXT NOT NULL,
+    track_id BIGINT NOT NULL,
+    artist_id BIGINT NOT NULL,
+    genre TEXT NOT NULL,
+    subset TEXT NOT NULL DEFAULT 'small',
+    source_audio_uri TEXT NOT NULL,
+    validation_status TEXT NOT NULL,
+    manifest_uri TEXT,
+    checksum TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (run_id, track_id)
+);
+
+CREATE TABLE IF NOT EXISTS audio_features (
+    ts TIMESTAMPTZ NOT NULL,
+    run_id TEXT NOT NULL,
+    track_id BIGINT NOT NULL,
+    segment_idx INTEGER NOT NULL,
+    artifact_uri TEXT NOT NULL,
+    checksum TEXT NOT NULL,
+    manifest_uri TEXT NOT NULL,
+    rms DOUBLE PRECISION NOT NULL,
+    silent_flag BOOLEAN NOT NULL,
+    mel_bins INTEGER NOT NULL,
+    mel_frames INTEGER NOT NULL,
+    processing_ms DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Timescale unique constraints must include the partition column.
+    PRIMARY KEY (ts, run_id, track_id, segment_idx)
+);
+
+SELECT create_hypertable('audio_features', 'ts', if_not_exists => TRUE);
+
+CREATE TABLE IF NOT EXISTS system_metrics (
+    ts TIMESTAMPTZ NOT NULL,
+    run_id TEXT NOT NULL,
+    service_name TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    metric_value DOUBLE PRECISION NOT NULL,
+    labels_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+SELECT create_hypertable('system_metrics', 'ts', if_not_exists => TRUE);
+
+CREATE TABLE IF NOT EXISTS run_checkpoints (
+    consumer_group TEXT NOT NULL,
+    topic_name TEXT NOT NULL,
+    partition_id INTEGER NOT NULL,
+    run_id TEXT NOT NULL,
+    last_committed_offset BIGINT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (consumer_group, topic_name, partition_id)
+);

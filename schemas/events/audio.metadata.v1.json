@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audio.metadata.v1",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "produced_by",
+    "payload"
+  ],
+  "properties": {
+    "event_id": { "type": "string" },
+    "event_type": { "const": "audio.metadata" },
+    "schema_version": { "const": "v1" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "produced_by": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "track_id",
+        "artist_id",
+        "genre",
+        "subset",
+        "source_audio_uri",
+        "validation_status"
+      ],
+      "properties": {
+        "run_id": { "type": "string" },
+        "track_id": { "type": "integer" },
+        "artist_id": { "type": "integer" },
+        "genre": { "type": "string" },
+        "subset": { "type": "string", "const": "small" },
+        "source_audio_uri": { "type": "string" },
+        "validation_status": { "type": "string" },
+        "manifest_uri": { "type": "string" },
+        "checksum": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

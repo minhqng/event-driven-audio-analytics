@@ -1,0 +1,40 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "panels": [
+    {
+      "description": "Placeholder panel for throughput, processing latency, and write latency queries.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "content": "TODO: add system-health queries once metrics persistence is implemented.",
+        "mode": "markdown"
+      },
+      "title": "System Health Placeholder",
+      "type": "text"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "poc",
+    "system-health"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "System Health",
+  "version": 1
+}

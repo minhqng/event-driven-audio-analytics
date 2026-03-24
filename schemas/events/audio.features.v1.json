@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audio.features.v1",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "produced_by",
+    "payload"
+  ],
+  "properties": {
+    "event_id": { "type": "string" },
+    "event_type": { "const": "audio.features" },
+    "schema_version": { "const": "v1" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "produced_by": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "required": [
+        "ts",
+        "run_id",
+        "track_id",
+        "segment_idx",
+        "artifact_uri",
+        "checksum",
+        "manifest_uri",
+        "rms",
+        "silent_flag",
+        "mel_bins",
+        "mel_frames",
+        "processing_ms"
+      ],
+      "properties": {
+        "ts": { "type": "string", "format": "date-time" },
+        "run_id": { "type": "string" },
+        "track_id": { "type": "integer" },
+        "segment_idx": { "type": "integer" },
+        "artifact_uri": { "type": "string" },
+        "checksum": { "type": "string" },
+        "manifest_uri": { "type": "string" },
+        "rms": { "type": "number" },
+        "silent_flag": { "type": "boolean" },
+        "mel_bins": { "type": "integer" },
+        "mel_frames": { "type": "integer" },
+        "processing_ms": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

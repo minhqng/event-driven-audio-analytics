@@ -1,0 +1,18 @@
+{
+  "event_id": "evt-metric-001",
+  "event_type": "system.metrics",
+  "schema_version": "v1",
+  "occurred_at": "2026-03-24T00:00:12Z",
+  "produced_by": "processing",
+  "payload": {
+    "ts": "2026-03-24T00:00:12Z",
+    "run_id": "demo-run",
+    "service_name": "processing",
+    "metric_name": "processing_ms",
+    "metric_value": 12.5,
+    "labels_json": {
+      "topic": "audio.features",
+      "status": "ok"
+    }
+  }
+}
