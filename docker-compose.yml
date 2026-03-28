@@ -1,6 +1,7 @@
 services:
   kafka:
-    image: bitnami/kafka:3.9
+    image: bitnamilegacy/kafka:3.9.0
+    hostname: kafka
     ports:
       - "${KAFKA_BROKER_PORT:-9092}:9092"
     environment:
@@ -9,9 +10,10 @@ services:
       KAFKA_KRAFT_CLUSTER_ID: "${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}"
       KAFKA_CFG_PROCESS_ROLES: "controller,broker"
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
-      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:${KAFKA_INTERNAL_PORT:-29092},PLAINTEXT_HOST://:9092,CONTROLLER://:${KAFKA_CONTROLLER_PORT:-9093}"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:${KAFKA_INTERNAL_PORT:-29092},PLAINTEXT_HOST://localhost:${KAFKA_BROKER_PORT:-9092}"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT"
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "${KAFKA_NODE_ID:-1}@kafka:${KAFKA_CONTROLLER_PORT:-9093}"
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
@@ -25,7 +27,7 @@ services:
       retries: 12
 
   timescaledb:
-    image: timescale/timescaledb:2.18.2-pg16
+    image: timescale/timescaledb:2.17.2-pg16
     ports:
       - "${TIMESCALEDB_PORT:-5432}:5432"
     environment:
@@ -41,7 +43,7 @@ services:
       retries: 12
 
   grafana:
-    image: grafana/grafana:11.1.4
+    image: grafana/grafana:12.4.2
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
@@ -65,7 +67,7 @@ services:
       dockerfile: services/ingestion/Dockerfile
     environment:
       SERVICE_NAME: ingestion
-      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
     volumes:
@@ -82,7 +84,7 @@ services:
       dockerfile: services/processing/Dockerfile
     environment:
       SERVICE_NAME: processing
-      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
     volumes:
@@ -97,7 +99,7 @@ services:
       dockerfile: services/writer/Dockerfile
     environment:
       SERVICE_NAME: writer
-      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
       POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"

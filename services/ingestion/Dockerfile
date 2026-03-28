@@ -9,6 +9,7 @@ COPY pyproject.toml README.md /app/
 COPY src /app/src
 COPY services/ingestion /app/services/ingestion
 
-RUN pip install --no-cache-dir .
+RUN sed -i 's/\r$//' /app/services/ingestion/entrypoint.sh \
+    && pip install --no-cache-dir .
 
 ENTRYPOINT ["sh", "/app/services/ingestion/entrypoint.sh"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-bootstrap_server="${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
+bootstrap_server="${KAFKA_BOOTSTRAP_SERVERS:-localhost:29092}"
 kafka_topics="/opt/bitnami/kafka/bin/kafka-topics.sh"
 
 create_topic() {
