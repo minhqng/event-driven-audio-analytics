@@ -30,6 +30,13 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 
 1. Copy `.env.example` to `.env`.
 2. Review `docs/architecture/system-overview.md`.
-3. Run `docker compose up --build -d`.
-4. Run `./infra/kafka/create-topics.sh`.
-5. Run `./run-demo.sh`.
+3. On PowerShell, run `powershell -ExecutionPolicy Bypass -File .\run-demo.ps1`.
+4. On POSIX shells, run `bash ./run-demo.sh`.
+
+## Windows Notes
+
+- PowerShell wrappers are the primary entrypoints for local Windows usage.
+- If local execution policy blocks `.ps1`, invoke wrappers through `powershell -ExecutionPolicy Bypass -File`.
+- Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
+- The scaffold only validates local bootstrapping and contract shape; it does not claim end-to-end analytics execution yet.
+- The `ingestion`, `processing`, and `writer` containers currently log their scaffold steps and exit cleanly; Week 1 success is infra wiring, not long-running service loops.
