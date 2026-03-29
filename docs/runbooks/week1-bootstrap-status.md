@@ -6,11 +6,11 @@ This repository is validated as a local scaffold for infrastructure bring-up onl
 
 - Docker Compose config renders successfully.
 - Kafka, TimescaleDB, and Grafana are the Week 1 foundation services.
-- Kafka topic bootstrap is scripted for both PowerShell and POSIX shells.
+- Kafka topic bootstrap is scripted for the Linux container runtime and host-side POSIX helpers.
 - TimescaleDB init SQL defines the expected core tables and operational views.
 - Grafana datasource and dashboard provisioning are file-backed placeholders.
 - Runtime services mount `artifacts/` as the local claim-check boundary.
-- Runtime service containers now start, emit their scaffold logs, and exit cleanly instead of failing on Windows line endings.
+- Runtime service containers start under Linux, emit their scaffold logs, and exit cleanly.
 
 ## Current Limits
 

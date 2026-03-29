@@ -4,34 +4,34 @@ Use lightweight checks that match the maturity of this scaffold:
 
 ## Tree And Script Presence
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
+```sh
+bash ./scripts/smoke/check-tree.sh
 ```
 
 ## Compose Config Sanity
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
+```sh
+bash ./scripts/smoke/check-compose.sh
 ```
 
 ## Import And Syntax Sanity
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
+```sh
+bash ./scripts/smoke/check-imports.sh
 ```
 
 ## Minimal Test Hooks
 
-```powershell
+```sh
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-## POSIX Alternatives
+## Legacy PowerShell Wrappers
 
-```sh
-bash ./scripts/smoke/check-tree.sh
-bash ./scripts/smoke/check-compose.sh
-bash ./scripts/smoke/check-imports.sh
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
 ```
 
 Do not claim full correctness from these checks alone.

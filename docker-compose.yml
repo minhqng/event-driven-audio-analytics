@@ -35,7 +35,7 @@ services:
       POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"
     volumes:
-      - ./infra/sql:/docker-entrypoint-initdb.d:ro
+      - ./infra/sql:/docker-entrypoint-initdb.d:ro,Z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-audio_analytics} -d ${POSTGRES_DB:-audio_analytics}"]
       interval: 10s
@@ -43,15 +43,15 @@ services:
       retries: 12
 
   grafana:
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:11.1.4
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
     volumes:
-      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro,Z
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
     volumes:
-      - ./artifacts:/app/artifacts
+      - ./artifacts:/app/artifacts:Z
     depends_on:
       kafka:
         condition: service_healthy
@@ -88,7 +88,7 @@ services:
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
     volumes:
-      - ./artifacts:/app/artifacts
+      - ./artifacts:/app/artifacts:Z
     depends_on:
       kafka:
         condition: service_healthy
