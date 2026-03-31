@@ -1,5 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Set-Location -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot "../.."))
 
 $requiredPaths = @(
     "README.md",

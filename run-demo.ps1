@@ -1,5 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Set-Location -LiteralPath $PSScriptRoot
 
 function Assert-LastExitCode {
     param(
