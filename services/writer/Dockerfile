@@ -9,6 +9,7 @@ COPY pyproject.toml README.md /app/
 COPY src /app/src
 COPY services/writer /app/services/writer
 
-RUN pip install --no-cache-dir .
+RUN sed -i 's/\r$//' /app/services/writer/entrypoint.sh \
+    && pip install --no-cache-dir .
 
 ENTRYPOINT ["sh", "/app/services/writer/entrypoint.sh"]
