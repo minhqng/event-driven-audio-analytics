@@ -65,7 +65,7 @@ class WriterPipelineTests(unittest.TestCase):
         poll_record.side_effect = [self.build_record(), KeyboardInterrupt()]
         pipeline = WriterPipeline(settings=self.build_settings())
 
-        with patch.object(pipeline, "_persist_record", side_effect=ValueError("boom")):
+        with patch.object(WriterPipeline, "_persist_record", side_effect=ValueError("boom")):
             with self.assertRaises(KeyboardInterrupt):
                 pipeline.run()
 
@@ -85,7 +85,7 @@ class WriterPipelineTests(unittest.TestCase):
         poll_record.side_effect = [record, KeyboardInterrupt()]
         pipeline = WriterPipeline(settings=self.build_settings())
 
-        with patch.object(pipeline, "_persist_record", return_value=(1, True)):
+        with patch.object(WriterPipeline, "_persist_record", return_value=(1, True)):
             with self.assertRaises(KeyboardInterrupt):
                 pipeline.run()
 

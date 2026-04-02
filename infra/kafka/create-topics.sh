@@ -38,7 +38,4 @@ create_topic "audio.dlq"
 echo "Current Kafka topics:"
 docker compose exec -T kafka "$kafka_topics" --bootstrap-server "$bootstrap_server" --list
 
-echo "Current Kafka topics:"
-docker compose exec -T kafka "$kafka_topics" --bootstrap-server "$bootstrap_server" --list
-
 echo "Kafka topics ensured."

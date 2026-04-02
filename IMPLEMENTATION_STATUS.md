@@ -22,21 +22,22 @@ Status reconciled from the attached documents and the current repo scaffold.
 ## What The Repo Already Implements
 
 - `Fact`: `docker-compose.yml` defines Kafka, TimescaleDB, Grafana, ingestion, processing, and writer services.
-- `Fact`: SQL init files create `track_metadata`, `audio_features`, `system_metrics`, `run_checkpoints`, and operational views.
+- `Fact`: SQL init files create `track_metadata`, `audio_features`, `system_metrics`, `run_checkpoints`, `welford_snapshots`, and operational views.
 - `Fact`: Grafana datasource and dashboard provisioning are file-backed.
-- `Fact`: Topic bootstrap scripts exist for `audio.metadata`, `audio.segment.ready`, `audio.features`, and `system.metrics`.
-- `Fact`: JSON schemas, shared models, and fixtures exist for those 4 topics.
+- `Fact`: Topic bootstrap scripts and shared topic constants now reserve `audio.metadata`, `audio.segment.ready`, `audio.features`, `system.metrics`, and `audio.dlq`.
+- `Fact`: JSON schemas, shared models, and fixtures exist for the 4 actively exercised topics: `audio.metadata`, `audio.segment.ready`, `audio.features`, and `system.metrics`.
 - `Fact`: `REUSE_MAP.md` now records the Week 1 Member B reuse audit against the old FMA-small pipeline.
 - `Fact`: `tests/fixtures/audio/` now contains deterministic synthetic audio fixtures plus a manifest-only FMA-small reference pack strategy.
-- `Fact`: Lightweight smoke scripts and placeholder tests exist.
-- `Fact`: Repo docs explicitly describe the current state as a Week 1 bootstrap scaffold.
+- `Fact`: `writer` now consumes `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
+- `Fact`: The fake-event smoke path publishes `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
+- `Fact`: Lightweight smoke scripts and targeted writer regression tests exist for the current Week 2 baseline.
 
 ## Repo-Present But Still Placeholder
 
 - `Inference`: `ingestion` service structure exists, but metadata loading, validation, segmentation, and artifact writing are not implemented.
 - `Inference`: `processing` service structure exists, but artifact loading, RMS, log-mel, and event loops are mostly placeholders.
-- `Inference`: `writer` contains UPSERT SQL strings and checkpoint record helpers, but not real Kafka polling or DB persistence logic.
-- `Inference`: Welford exists only as a minimal scalar helper, not as the full reused mel-bin statistics path.
+- `Inference`: `writer` runtime is real for the current scaffold contract, but it is not yet exercised by real ingestion/processing traffic and does not publish to `audio.dlq`.
+- `Inference`: `welford_snapshots` storage exists, but the full reused mel-bin Welford processing path is still not implemented.
 - `Inference`: Dashboards are provisioned but remain placeholder dashboards, not evidence of real analytics.
 - `Inference`: Current tests validate shape/contracts/scaffold assumptions more than runnable end-to-end behavior.
 
@@ -44,7 +45,8 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 - `Fact`: Week 1 infrastructure bring-up is documented as validated.
 - `Fact`: The stack can render Compose config, bring up Kafka/TimescaleDB/Grafana, mount `artifacts/`, and start scaffold containers that exit cleanly.
-- `Fact`: The current repo does not claim end-to-end audio analytics execution yet.
+- `Fact`: The current repo documents and exercises a fake-event writer path from Kafka to TimescaleDB, including checkpoint updates and idempotent feature replay.
+- `Fact`: The current repo still does not claim end-to-end audio analytics execution over real FMA-small samples.
 
 ## What Is Planned But Not Yet Implemented
 
@@ -55,7 +57,6 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Claim-check artifact load and checksum verification in processing.
 - `Fact`: RMS, silence gate, log-mel, and Welford parity against the old pipeline.
 - `Fact`: Kafka consumption/publication loops for all services.
-- `Fact`: Idempotent writer persistence with real checkpoints and replay-safe resume.
 - `Fact`: Real dashboard panels backed by real DB data.
 - `Fact`: Restart/replay reliability scenarios, 100-track dry run, benchmark notes, and demo artifacts.
 
@@ -74,10 +75,10 @@ Status reconciled from the attached documents and the current repo scaffold.
 | Phase | Planned Meaning | Current Status |
 | --- | --- | --- |
 | Week 1 / Phase 1 | Scope lock, infra bootstrap, reuse audit | `Fact`: infra scaffold is documented as complete. `Fact`: `REUSE_MAP.md` and `tests/fixtures/audio/` now document the Week 1 Member B reuse audit and fixture strategy. |
-| Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Inference`: schemas/SQL/helpers exist. `Conflict`: required fake-event-to-DB success is not documented. |
+| Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: the fake-event writer smoke path is documented for metadata/features persistence, checkpoint rows, and replay-safe feature writes. `Conflict`: envelope and DLQ contract drift is still unresolved. |
 | Week 3 / Phase 3 | Ingestion on real sample data | `Inference`: not implemented. |
 | Week 4 / Phase 4 | Processing / feature emission | `Inference`: not implemented. |
-| Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: SQL scaffolding exists, runtime implementation missing. |
+| Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: runtime implementation now exists for the current scaffold contract, but broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Inference`: provisioning exists, real data path missing. |
 | Week 7 / Phase 7 | Hardening / restart / benchmark prep | `Inference`: not implemented. |
 | Week 8 / Phase 8 | Freeze / polish / demo readiness | `Inference`: not implemented. |
@@ -86,13 +87,12 @@ Status reconciled from the attached documents and the current repo scaffold.
 ## Current Conflicts And Drift
 
 - `Conflict`: Attached plans define a richer event envelope than the repo currently implements.
-- `Conflict`: Attached plans include `audio.dlq`; repo topic scripts and constants do not.
-- `Conflict`: Detailed plan expects `welford_snapshots`; current SQL does not create it.
+- `Conflict`: `audio.dlq` is now reserved in topic bootstrap/constants, but the repo still lacks matching schema/model/fixture coverage and a real DLQ publish/consume flow.
 - `Conflict`: Detailed plan uses logical natural key `(run_id, track_id, segment_idx)`; current SQL physical PK includes `ts`.
 - `Conflict`: Documents disagree on overall schedule length: 8 weeks versus 10 weeks.
 - `Conflict`: One plan names openSUSE Tumbleweed as host baseline; current repo/runbooks are effectively host-agnostic via Linux containers plus bash/PowerShell helpers.
 - `Conflict`: The old audio pipeline depends on `av`, `polars`, `torch`, and `torchaudio`, but the current repo `pyproject.toml` does not yet declare those reuse-critical dependencies.
-- `Conflict`: The current repo only has scalar placeholder Welford logic, while the old pipeline's recoverable behavior is vector-oriented over mel bins.
+- `Conflict`: The current repo has reserved `welford_snapshots` storage, but the old pipeline's recoverable Welford behavior is still vector-oriented over mel bins and not yet wired into runtime processing.
 
 ## Unresolved Blockers And Dependencies
 
@@ -100,7 +100,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
 - `Fact`: Direct reuse of the old audio semantics still depends on adding the missing audio/data dependencies to this repo in a future Member B thread.
-- `Fact`: Writer correctness depends on locking natural-key/idempotency/checkpoint semantics first.
+- `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented.
 - `Fact`: Dashboard work depends on real persistence first; placeholders are not enough.
 
 ## Items Requiring Member A/B Synchronization

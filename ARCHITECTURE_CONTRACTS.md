@@ -27,7 +27,7 @@
 - `Fact`: `audio.segment.ready` is the claim-check handoff from ingestion to processing.
 - `Fact`: `audio.features` is the feature-summary handoff from processing to writer.
 - `Fact`: `system.metrics` is emitted by runtime services for dashboards and operational views.
-- `Conflict`: The detailed plan includes `audio.dlq`, but the current repo only scaffolds four topics.
+- `Conflict`: The detailed plan includes `audio.dlq`, and the current repo now reserves that topic in bootstrap/constants, but the DLQ contract is not yet fully modeled or exercised.
 
 ## Claim-Check Design
 
@@ -73,7 +73,7 @@
 | `audio.segment.ready` | `track_id` | `ingestion` | `processing` | Claim-check reference to a ready segment artifact | Present |
 | `audio.features` | `track_id` | `processing` | `writer` | Feature summaries and processing quality data | Present |
 | `system.metrics` | `service_name` in plan | all core services | `writer` and Grafana queries/views | Operational metrics and health/throughput signals | Present |
-| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Planned only |
+| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Reserved in bootstrap/constants; no schema/model/fixture or runtime DLQ flow yet |
 
 ## Payload Contracts
 
@@ -151,6 +151,6 @@
 ## Unresolved Contract Items
 
 - `Unknown`: Final canonical envelope naming after repo-target reconciliation.
-- `Unknown`: Whether `audio.dlq` is part of the first runnable contract or remains deferred.
+- `Unknown`: Whether `audio.dlq` graduates from a reserved bootstrap topic into the first fully modeled runnable contract.
 - `Unknown`: Final system-metrics label/unit convention.
-- `Unknown`: Whether `welford_snapshots` is required in the first DB implementation or later.
+- `Unknown`: Final producer/update semantics for `welford_snapshots`.
