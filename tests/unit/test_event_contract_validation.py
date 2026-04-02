@@ -36,6 +36,7 @@ class EventContractValidationTests(unittest.TestCase):
             ("audio.segment.ready.v1.json", "audio.segment.ready.valid.json"),
             ("audio.features.v1.json", "audio.features.valid.json"),
             ("system.metrics.v1.json", "system.metrics.valid.json"),
+            ("system.metrics.v1.json", "system.metrics.run_total.valid.json"),
         )
 
         for schema_name, fixture_name in cases:

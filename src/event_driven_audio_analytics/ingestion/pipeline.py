@@ -110,6 +110,7 @@ class IngestionPipeline:
         metadata_event = publish_metadata_event(
             producer,
             self._build_metadata_payload(record, validation),
+            delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
         )
 
         if validation.validation_status != VALIDATION_STATUS_VALIDATED or validation.decoded_audio is None:
@@ -155,6 +156,7 @@ class IngestionPipeline:
                     is_last_segment=descriptor.is_last_segment,
                     manifest_uri=descriptor.manifest_uri,
                 ),
+                delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
             )
             for descriptor in segment_descriptors
         ]
@@ -204,9 +206,17 @@ class IngestionPipeline:
                 run_id=self.settings.base.run_id,
                 service_name=self.settings.base.service_name,
             ):
-                publish_system_metric_event(active_producer, payload)
+                publish_system_metric_event(
+                    active_producer,
+                    payload,
+                    delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
+                )
 
-            active_producer.flush()
+            remaining_messages = active_producer.flush()
+            if remaining_messages not in (0, None):
+                raise RuntimeError(
+                    "Ingestion finished with undelivered Kafka messages still queued."
+                )
             logger.info(
                 "Ingestion run complete tracks_total=%s segments_total=%s validation_failures=%s artifact_write_ms=%.3f",
                 metrics.tracks_total,

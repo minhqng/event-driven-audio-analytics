@@ -3,16 +3,32 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 import json
+from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from event_driven_audio_analytics.shared.models.envelope import EventEnvelope
 
 if TYPE_CHECKING:
-    from confluent_kafka import Consumer, Producer
+    from confluent_kafka import Consumer, Message, Producer
 else:
     Consumer = Any
+    Message = Any
     Producer = Any
+
+
+@dataclass(slots=True)
+class KafkaDeliveryError(RuntimeError):
+    """Raised when a Kafka publish is not durably acknowledged."""
+
+    topic: str
+    key: str | None
+    reason: str
+
+    def __str__(self) -> str:
+        key_suffix = f" key={self.key}" if self.key is not None else ""
+        return f"Kafka delivery failed for topic={self.topic}{key_suffix}: {self.reason}"
 
 
 def producer_config(
@@ -101,6 +117,63 @@ def build_consumer(
     )
     consumer.subscribe(list(topics))
     return consumer
+
+
+def produce_and_wait(
+    producer: Producer,
+    *,
+    topic: str,
+    value: bytes,
+    key: bytes | None = None,
+    timeout_s: float = 30.0,
+) -> None:
+    """Produce one Kafka record and wait for a delivery report."""
+
+    delivery_state: dict[str, object] = {
+        "delivered": False,
+        "error": None,
+    }
+
+    def on_delivery(error: object, _: Message | None) -> None:
+        delivery_state["delivered"] = True
+        delivery_state["error"] = error
+
+    producer.produce(
+        topic=topic,
+        value=value,
+        key=key,
+        on_delivery=on_delivery,
+    )
+
+    flush = getattr(producer, "flush", None)
+    if not callable(flush):
+        raise TypeError("Kafka producer must expose flush(timeout) for delivery confirmation.")
+
+    deadline = monotonic() + timeout_s
+    remaining_messages: int | None = None
+    while not bool(delivery_state["delivered"]):
+        remaining_s = deadline - monotonic()
+        if remaining_s <= 0:
+            break
+        remaining_messages = flush(min(remaining_s, 0.5))
+        if remaining_messages in (0, None) and bool(delivery_state["delivered"]):
+            break
+
+    decoded_key = key.decode("utf-8") if key is not None else None
+    if not bool(delivery_state["delivered"]):
+        raise KafkaDeliveryError(
+            topic=topic,
+            key=decoded_key,
+            reason="timed out waiting for delivery report",
+        )
+
+    delivery_error = delivery_state["error"]
+    if delivery_error is not None:
+        raise KafkaDeliveryError(
+            topic=topic,
+            key=decoded_key,
+            reason=str(delivery_error),
+        )
 
 
 def serialize_envelope(envelope: EventEnvelope[object] | dict[str, object]) -> bytes:

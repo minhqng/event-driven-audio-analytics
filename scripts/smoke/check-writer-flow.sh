@@ -24,6 +24,13 @@ wait_for_query() {
   return 1
 }
 
+run_sql() {
+  sql="$1"
+
+  docker compose exec -T timescaledb \
+    psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-audio_analytics}" -d "${POSTGRES_DB:-audio_analytics}" -tAc "$sql" >/dev/null
+}
+
 require_topic() {
   topic_name="$1"
 
@@ -75,6 +82,32 @@ wait_for_query \
   "1"
 wait_for_query \
   "SELECT COUNT(*) FROM audio_features WHERE run_id = 'demo-run' AND track_id = 2 AND segment_idx = 0;" \
+  "1"
+
+echo "Seeding duplicate run_total system.metrics rows across multiple Timescale chunks..."
+run_sql "DELETE FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{\"scope\":\"run_total\"}'::jsonb;"
+run_sql "DELETE FROM run_checkpoints WHERE consumer_group = 'event-driven-audio-analytics-writer' AND topic_name = 'system.metrics';"
+run_sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2024-01-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 1.0, '{\"scope\":\"run_total\"}'::jsonb, 'count');"
+run_sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2025-02-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 2.0, '{\"scope\":\"run_total\"}'::jsonb, 'count');"
+
+wait_for_query \
+  "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{\"scope\":\"run_total\"}'::jsonb;" \
+  "2"
+wait_for_query \
+  "SELECT CASE WHEN COUNT(DISTINCT tableoid) >= 2 THEN 'ok' ELSE 'not-ok' END FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{\"scope\":\"run_total\"}'::jsonb;" \
+  "ok"
+
+echo "Publishing run_total system.metrics fixture to trigger duplicate repair..."
+docker compose run --rm --entrypoint python writer -m event_driven_audio_analytics.smoke.publish_fake_events --only-run-total-metric
+
+wait_for_query \
+  "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{\"scope\":\"run_total\"}'::jsonb;" \
+  "1"
+wait_for_query \
+  "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{\"scope\":\"run_total\"}'::jsonb AND metric_value = 5.0 AND unit = 'count' AND to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') = '2026-04-03T00:00:00Z';" \
+  "1"
+wait_for_query \
+  "SELECT COUNT(*) FROM run_checkpoints WHERE consumer_group = 'event-driven-audio-analytics-writer' AND topic_name = 'system.metrics';" \
   "1"
 
 echo "Writer smoke flow passed."

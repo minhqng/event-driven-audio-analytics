@@ -42,7 +42,8 @@ This smoke flow verifies all of the following:
 - Kafka topics are created, including `audio.dlq`.
 - Fake `audio.metadata` and `audio.features` events are published from the container runtime.
 - The `writer` persists rows into `track_metadata` and `audio_features`.
-- `run_checkpoints` is updated for the exercised writer topics.
+- A fake `system.metrics` `scope=run_total` event repairs seeded duplicate rows on the live `system_metrics` Timescale hypertable.
+- `run_checkpoints` is updated for the exercised writer topics, including `system.metrics`.
 - Replaying the same fake feature event keeps the natural-key row count at `1`.
 
 The smoke flow does **not** prove Kafka offset ordering under failure.

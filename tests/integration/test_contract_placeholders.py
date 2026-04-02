@@ -42,6 +42,12 @@ class ContractPlaceholderTests(unittest.TestCase):
     def test_system_metrics_fixture_matches_schema_shape(self) -> None:
         self.assert_fixture_matches_required_fields("system.metrics.v1.json", "system.metrics.valid.json")
 
+    def test_system_metrics_run_total_fixture_matches_schema_shape(self) -> None:
+        self.assert_fixture_matches_required_fields(
+            "system.metrics.v1.json",
+            "system.metrics.run_total.valid.json",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
