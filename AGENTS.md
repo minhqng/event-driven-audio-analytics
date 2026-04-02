@@ -114,3 +114,23 @@ Read this file first in every future thread.
 - `Fact`: If work changes progress, blockers, or priorities, update `IMPLEMENTATION_STATUS.md` and `TASK_BOARD.md`.
 - `Fact`: If work changes contracts or integration boundaries, update `ARCHITECTURE_CONTRACTS.md` and the matching code/tests in the same change.
 - `Fact`: In the final handoff, state what you verified, what you did not verify, and what still needs A/B synchronization.
+
+## Legacy Reference Repository
+
+- `Fact`: The directory `references/legacy-fma-pipeline/` is a read-only reference copy of the original FMA-small audio pipeline.
+- `Fact`: It exists only to provide implementation context, legacy behavior reference, and parity guidance for the new microservices PoC.
+- `Fact`: It is **not** part of the runtime code path of this repository.
+- `Fact`: Do **not** import modules directly from `references/legacy-fma-pipeline/` into the new services.
+- `Fact`: Do **not** edit files inside `references/legacy-fma-pipeline/` as part of normal project implementation work.
+- `Fact`: Any logic reused from the legacy pipeline must be copied/refactored intentionally into the current repo’s own modules, tests, and docs.
+- `Fact`: Any reuse/refactor from the legacy pipeline must preserve the agreed audio semantics unless explicitly reviewed:
+  - `subset=small`
+  - mono / 32 kHz
+  - 3.0 s segments
+  - 1.5 s overlap
+  - log-mel `(1,128,300)`
+  - silence handling
+  - Welford-style statistics
+- `Fact`: When porting logic from the legacy pipeline, record the source file/function in docs or commit notes and verify parity with fixtures/tests.
+- `Fact`: The `references/legacy-fma-pipeline/` directory should remain git-ignored unless a human explicitly decides otherwise.
+- `Rule`: Treat the legacy repository as a semantic reference and refactor source, not as a shortcut production dependency.
