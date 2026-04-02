@@ -31,13 +31,15 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Writer SQL/persistence now stores `audio.metadata.duration_s` and optional `system.metrics.unit`, keeping the locked v1 payload lossless on the current writer path.
 - `Fact`: `REUSE_MAP.md` now records the Week 1 Member B reuse audit against the old FMA-small pipeline.
 - `Fact`: `tests/fixtures/audio/` now contains deterministic synthetic audio fixtures plus a manifest-only FMA-small reference pack strategy.
+- `Fact`: `ingestion` now ports the first real Week 3 Member B path: flattened-header metadata ETL, structured audio validation, PyAV decode/resample to mono 32 kHz, 3.0 s / 1.5 s segmentation, WAV claim-check artifact writing with SHA-256 checksums, Parquet manifest updates, and canonical `audio.metadata` plus `audio.segment.ready` envelope emission.
 - `Fact`: `writer` now consumes the locked v1 envelope for `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
 - `Fact`: The fake-event smoke path now publishes canonical v1 fixtures for `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
 - `Fact`: Lightweight smoke scripts and targeted writer regression tests exist for the current Week 2 baseline.
+- `Fact`: Week 3 smoke validation now covers committed synthetic fixtures plus a local real-FMA sample run for tracks `2` and `666`, with observed segment counts `19` and `20` matching the documented legacy-reference counts.
 
 ## Repo-Present But Still Placeholder
 
-- `Inference`: `ingestion` service structure exists, but metadata loading, validation, segmentation, and artifact writing are not implemented.
+- `Inference`: `ingestion` now implements the first real track-to-artifact path, but live Kafka broker exercise inside the current repo thread still depends on infra/runtime bring-up outside this Member B change set.
 - `Inference`: `processing` service structure exists, but artifact loading, RMS, log-mel, and event loops are mostly placeholders.
 - `Inference`: `writer` runtime is real for the current scaffold contract, but it is not yet exercised by real ingestion/processing traffic and does not publish to `audio.dlq`.
 - `Inference`: `welford_snapshots` storage exists, but the full reused mel-bin Welford processing path is still not implemented.
@@ -49,17 +51,13 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Week 1 infrastructure bring-up is documented as validated.
 - `Fact`: The stack can render Compose config, bring up Kafka/TimescaleDB/Grafana, mount `artifacts/`, and start scaffold containers that exit cleanly.
 - `Fact`: The current repo documents and exercises a fake-event writer path from Kafka to TimescaleDB, including checkpoint updates and idempotent feature replay.
-- `Fact`: The current repo still does not claim end-to-end audio analytics execution over real FMA-small samples.
+- `Fact`: The current repo can now execute the ingestion-owned Week 3 path over real FMA-small sample input through artifact writing and canonical event emission, but it still does not claim full end-to-end audio analytics execution through processing, persistence, and dashboards.
 
 ## What Is Planned But Not Yet Implemented
 
-- `Fact`: Flattened-header metadata ETL for `tracks.csv`.
-- `Fact`: Real audio validation against FMA-small sample files.
-- `Fact`: PyAV decode/resample integration inside the microservice pipeline.
-- `Fact`: Real 3.0 s / 1.5 s segmentation with checksum and manifest generation.
 - `Fact`: Claim-check artifact load and checksum verification in processing.
 - `Fact`: RMS, silence gate, log-mel, and Welford parity against the old pipeline.
-- `Fact`: Kafka consumption/publication loops for all services.
+- `Fact`: Live Kafka broker-backed publication/consumption evidence for the real ingestion path across the runtime stack.
 - `Fact`: Real dashboard panels backed by real DB data.
 - `Fact`: Restart/replay reliability scenarios, 100-track dry run, benchmark notes, and demo artifacts.
 
@@ -79,7 +77,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 | --- | --- | --- |
 | Week 1 / Phase 1 | Scope lock, infra bootstrap, reuse audit | `Fact`: infra scaffold is documented as complete. `Fact`: `REUSE_MAP.md` and `tests/fixtures/audio/` now document the Week 1 Member B reuse audit and fixture strategy. |
 | Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: Event Contract v1 is now locked in root docs, shared schemas/models, contract fixtures/tests, the writer runtime, and the fake-event smoke path. `Conflict`: the DLQ contract remains unresolved. |
-| Week 3 / Phase 3 | Ingestion on real sample data | `Inference`: not implemented. |
+| Week 3 / Phase 3 | Ingestion on real sample data | `Fact`: initial real ingestion path is implemented for Member B scope. `Fact`: metadata ETL, validation, PyAV decode/resample, segmentation, artifact writing, checksum + manifest creation, and canonical `audio.metadata` / `audio.segment.ready` emission now work on committed fixtures and local real FMA samples. `Inference`: live-broker proof under the full Compose stack remains to be exercised. |
 | Week 4 / Phase 4 | Processing / feature emission | `Inference`: not implemented. |
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: runtime implementation now exists for the current scaffold contract, but broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Inference`: provisioning exists, real data path missing. |
@@ -93,7 +91,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Conflict`: Detailed plan uses logical natural key `(run_id, track_id, segment_idx)`; current SQL physical PK includes `ts`.
 - `Conflict`: Documents disagree on overall schedule length: 8 weeks versus 10 weeks.
 - `Conflict`: One plan names openSUSE Tumbleweed as host baseline; current repo/runbooks are effectively host-agnostic via Linux containers plus bash/PowerShell helpers.
-- `Conflict`: The old audio pipeline depends on `av`, `polars`, `torch`, and `torchaudio`, but the current repo `pyproject.toml` does not yet declare those reuse-critical dependencies.
+- `Conflict`: The old audio pipeline depends on `av`, `polars`, `torch`, and `torchaudio`; the current repo now declares the Week 3-critical `av` and `polars` dependencies, but the Week 4 processing path still lacks the heavier `torch` / `torchaudio` reuse-critical dependencies.
 - `Conflict`: The current repo has reserved `welford_snapshots` storage, but the old pipeline's recoverable Welford behavior is still vector-oriented over mel bins and not yet wired into runtime processing.
 
 ## Unresolved Blockers And Dependencies
@@ -101,7 +99,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: The canonical v1 contract is now adopted in the shared layer, writer runtime, and fake-event smoke path, but real ingestion/processing traffic is still required before real end-to-end implementation.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
-- `Fact`: Direct reuse of the old audio semantics still depends on adding the missing audio/data dependencies to this repo in a future Member B thread.
+- `Fact`: Week 3 reuse-critical audio/data dependencies for metadata ETL and PyAV decode/resample are now declared in `pyproject.toml`; Week 4 mel-processing parity still depends on adding the remaining `torch` / `torchaudio` stack.
 - `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented.
 - `Fact`: Dashboard work depends on real persistence first; placeholders are not enough.
 

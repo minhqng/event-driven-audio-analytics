@@ -4,9 +4,9 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ## Immediate Next Tasks
 
-1. Implement real ingestion on a small FMA-small sample.
-2. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
-3. Extend evidence from the canonical v1 fake-event writer flow to the first real segment-ready path.
+1. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
+2. Extend evidence from the canonical v1 fake-event writer flow to the first real segment-ready path under a live broker/persistence run.
+3. Hard-verify replay and checkpoint behavior once real producer traffic reaches writer.
 4. Replace placeholder dashboard panels with queries backed by persisted data.
 5. Add real producer-traffic replay evidence on top of the current fixture-driven writer checks.
 
@@ -14,12 +14,11 @@ Operational backlog based on the current scaffold and the attached project plans
 
 1. Keep the locked v1 contract stable under future runtime work.
    Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
-2. Real ingestion artifact path.
-3. Real processing path.
-4. Real writer replay hardening under real producer traffic.
-5. Real Grafana dashboards.
-6. Restart/replay hardening.
-7. Benchmark/demo/freeze.
+2. Real processing path.
+3. Real writer replay hardening under real producer traffic.
+4. Real Grafana dashboards.
+5. Restart/replay hardening.
+6. Benchmark/demo/freeze.
 
 ## Member B Can Do Independently
 
@@ -44,6 +43,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 1: `docker compose config` and infra bootstrap remain clean after any contract or SQL change.
 - Gate 2: The canonical v1 fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
+  Current status: Member B-owned code path is now green with a recording producer plus real local FMA tracks `2` and `666`; full broker-backed cross-service evidence is still pending.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
