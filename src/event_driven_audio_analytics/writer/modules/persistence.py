@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-
-from psycopg import Cursor
-from psycopg.types.json import Jsonb
+from typing import TYPE_CHECKING, Any
 
 from event_driven_audio_analytics.shared.contracts.topics import (
     AUDIO_FEATURES,
@@ -16,6 +14,11 @@ from event_driven_audio_analytics.shared.db import acquire_transaction_advisory_
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
+
+if TYPE_CHECKING:
+    from psycopg import Cursor
+else:
+    Cursor = Any
 
 
 AUDIO_FEATURES_LOGICAL_KEY = ("run_id", "track_id", "segment_idx")
@@ -38,6 +41,7 @@ INSERT INTO track_metadata (
     subset,
     source_audio_uri,
     validation_status,
+    duration_s,
     manifest_uri,
     checksum
 )
@@ -49,6 +53,7 @@ VALUES (
     %(subset)s,
     %(source_audio_uri)s,
     %(validation_status)s,
+    %(duration_s)s,
     %(manifest_uri)s,
     %(checksum)s
 )
@@ -58,6 +63,7 @@ ON CONFLICT (run_id, track_id) DO UPDATE SET
     subset = EXCLUDED.subset,
     source_audio_uri = EXCLUDED.source_audio_uri,
     validation_status = EXCLUDED.validation_status,
+    duration_s = EXCLUDED.duration_s,
     manifest_uri = EXCLUDED.manifest_uri,
     checksum = EXCLUDED.checksum;
 """.strip()
@@ -120,7 +126,8 @@ INSERT INTO system_metrics (
     service_name,
     metric_name,
     metric_value,
-    labels_json
+    labels_json,
+    unit
 )
 VALUES (
     %(ts)s,
@@ -128,7 +135,8 @@ VALUES (
     %(service_name)s,
     %(metric_name)s,
     %(metric_value)s,
-    %(labels_json)s
+    %(labels_json)s,
+    %(unit)s
 );
 """.strip()
 
@@ -166,6 +174,11 @@ def persist_audio_features(cursor: Cursor, payload: AudioFeaturesPayload) -> int
 
 def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int:
     """Append one operational metrics record."""
+
+    try:
+        from psycopg.types.json import Jsonb
+    except ModuleNotFoundError:
+        Jsonb = lambda value: value
 
     params = asdict(payload)
     params["labels_json"] = Jsonb(payload.labels_json)

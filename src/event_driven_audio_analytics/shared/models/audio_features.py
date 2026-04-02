@@ -15,9 +15,9 @@ class AudioFeaturesPayload:
     segment_idx: int
     artifact_uri: str
     checksum: str
-    manifest_uri: str
     rms: float
     silent_flag: bool
     mel_bins: int
     mel_frames: int
     processing_ms: float
+    manifest_uri: str | None = None

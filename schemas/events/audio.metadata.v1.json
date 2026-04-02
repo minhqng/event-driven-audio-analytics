@@ -5,17 +5,23 @@
   "required": [
     "event_id",
     "event_type",
-    "schema_version",
-    "occurred_at",
-    "produced_by",
+    "event_version",
+    "trace_id",
+    "run_id",
+    "produced_at",
+    "source_service",
+    "idempotency_key",
     "payload"
   ],
   "properties": {
-    "event_id": { "type": "string" },
+    "event_id": { "type": "string", "minLength": 1 },
     "event_type": { "const": "audio.metadata" },
-    "schema_version": { "const": "v1" },
-    "occurred_at": { "type": "string", "format": "date-time" },
-    "produced_by": { "type": "string" },
+    "event_version": { "const": "v1" },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "produced_at": { "type": "string", "format": "date-time" },
+    "source_service": { "const": "ingestion" },
+    "idempotency_key": { "type": "string", "minLength": 1 },
     "payload": {
       "type": "object",
       "required": [
@@ -23,20 +29,21 @@
         "track_id",
         "artist_id",
         "genre",
-        "subset",
         "source_audio_uri",
-        "validation_status"
+        "validation_status",
+        "duration_s"
       ],
       "properties": {
-        "run_id": { "type": "string" },
+        "run_id": { "type": "string", "minLength": 1 },
         "track_id": { "type": "integer" },
         "artist_id": { "type": "integer" },
-        "genre": { "type": "string" },
+        "genre": { "type": "string", "minLength": 1 },
+        "source_audio_uri": { "type": "string", "minLength": 1 },
+        "validation_status": { "type": "string", "minLength": 1 },
+        "duration_s": { "type": "number", "exclusiveMinimum": 0 },
         "subset": { "type": "string", "const": "small" },
-        "source_audio_uri": { "type": "string" },
-        "validation_status": { "type": "string" },
-        "manifest_uri": { "type": "string" },
-        "checksum": { "type": "string" }
+        "manifest_uri": { "type": "string", "minLength": 1 },
+        "checksum": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

@@ -4,15 +4,16 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ## Immediate Next Tasks
 
-1. Freeze the current Week 2 baseline across docs, schemas, SQL, and smoke checks without expanding scope casually.
-2. Implement real ingestion on a small FMA-small sample.
-3. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
-4. Extend evidence from fake-event writer flow to the first real segment-ready path.
-5. Replace placeholder dashboard panels with queries backed by persisted data.
+1. Implement real ingestion on a small FMA-small sample.
+2. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
+3. Extend evidence from the canonical v1 fake-event writer flow to the first real segment-ready path.
+4. Replace placeholder dashboard panels with queries backed by persisted data.
+5. Add real producer-traffic replay evidence on top of the current fixture-driven writer checks.
 
 ## Dependency Ordering
 
-1. Keep the Week 2 shared baseline stable and documented.
+1. Keep the locked v1 contract stable under future runtime work.
+   Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
 2. Real ingestion artifact path.
 3. Real processing path.
 4. Real writer replay hardening under real producer traffic.
@@ -31,7 +32,6 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ## Tasks Requiring A/B Synchronization
 
-- Final envelope fields and payload names.
 - Final topic list, including `audio.dlq`.
 - Natural key and idempotency policy for `audio_features`.
 - Checkpoint semantics and offset-commit rules.
@@ -42,7 +42,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ## Gates / Acceptance Checkpoints
 
 - Gate 1: `docker compose config` and infra bootstrap remain clean after any contract or SQL change.
-- Gate 2: The current fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
+- Gate 2: The canonical v1 fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
@@ -55,7 +55,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ### Session 1
 
 - Keep `ARCHITECTURE_CONTRACTS.md` and repo schemas aligned while starting real ingestion on a small sample.
-- Leave the richer envelope and full DLQ flow as explicit follow-up unless A/B jointly re-scope them.
+- Leave the full DLQ flow as explicit follow-up unless A/B jointly re-scope it.
 
 ### Session 2
 

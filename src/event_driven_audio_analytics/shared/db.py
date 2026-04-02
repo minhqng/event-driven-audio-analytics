@@ -5,11 +5,15 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 import hashlib
-
-import psycopg
-from psycopg import Connection, Cursor
+from typing import TYPE_CHECKING, Any
 
 from event_driven_audio_analytics.shared.settings import DatabaseSettings
+
+if TYPE_CHECKING:
+    from psycopg import Connection, Cursor
+else:
+    Connection = Any
+    Cursor = Any
 
 
 def build_postgres_dsn(settings: DatabaseSettings) -> str:
@@ -23,6 +27,8 @@ def build_postgres_dsn(settings: DatabaseSettings) -> str:
 
 def open_database_connection(settings: DatabaseSettings) -> Connection:
     """Open a TimescaleDB connection using the shared settings."""
+
+    import psycopg
 
     return psycopg.connect(build_postgres_dsn(settings), autocommit=False)
 

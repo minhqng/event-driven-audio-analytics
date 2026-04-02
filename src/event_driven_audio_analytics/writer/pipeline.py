@@ -8,6 +8,7 @@ import logging
 from event_driven_audio_analytics.shared.contracts.topics import AUDIO_DLQ
 from event_driven_audio_analytics.shared.db import transaction_cursor
 from event_driven_audio_analytics.shared.kafka import deserialize_envelope
+from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
 
 from .config import WriterSettings
 from .modules.checkpoint_store import build_checkpoint_record, persist_checkpoint
@@ -77,14 +78,7 @@ class WriterPipeline:
 
     def _persist_record(self, record: ConsumedRecord) -> tuple[int, bool]:
         envelope = deserialize_envelope(record.value)
-        if envelope.get("schema_version") != "v1":
-            raise ValueError(f"Unsupported schema version for topic {record.topic}.")
-        if envelope.get("event_type") != record.topic:
-            raise ValueError("Envelope event_type does not match Kafka topic.")
-
-        payload = envelope.get("payload")
-        if not isinstance(payload, dict):
-            raise ValueError("Envelope payload must be a JSON object.")
+        payload = validate_envelope_dict(envelope, expected_event_type=record.topic)
 
         with transaction_cursor(self.settings.database) as (_, cursor):
             rows_written = persist_envelope_payload(
@@ -96,7 +90,7 @@ class WriterPipeline:
                 consumer_group=self.settings.consumer_group,
                 topic_name=record.topic,
                 partition_id=record.partition,
-                run_id=str(payload["run_id"]),
+                run_id=str(envelope["run_id"]),
                 last_committed_offset=record.offset,
             )
             checkpoint_rows = persist_checkpoint(cursor, checkpoint_record)

@@ -6,11 +6,14 @@ CREATE TABLE IF NOT EXISTS track_metadata (
     subset TEXT NOT NULL DEFAULT 'small',
     source_audio_uri TEXT NOT NULL,
     validation_status TEXT NOT NULL,
+    duration_s DOUBLE PRECISION NOT NULL,
     manifest_uri TEXT,
     checksum TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (run_id, track_id)
 );
+
+ALTER TABLE IF EXISTS track_metadata ADD COLUMN IF NOT EXISTS duration_s DOUBLE PRECISION;
 
 CREATE TABLE IF NOT EXISTS audio_features (
     ts TIMESTAMPTZ NOT NULL,
@@ -19,7 +22,7 @@ CREATE TABLE IF NOT EXISTS audio_features (
     segment_idx INTEGER NOT NULL,
     artifact_uri TEXT NOT NULL,
     checksum TEXT NOT NULL,
-    manifest_uri TEXT NOT NULL,
+    manifest_uri TEXT,
     rms DOUBLE PRECISION NOT NULL,
     silent_flag BOOLEAN NOT NULL,
     mel_bins INTEGER NOT NULL,
@@ -29,6 +32,8 @@ CREATE TABLE IF NOT EXISTS audio_features (
     -- Timescale unique constraints must include the partition column.
     PRIMARY KEY (ts, run_id, track_id, segment_idx)
 );
+
+ALTER TABLE IF EXISTS audio_features ALTER COLUMN manifest_uri DROP NOT NULL;
 
 SELECT create_hypertable('audio_features', 'ts', if_not_exists => TRUE);
 
@@ -42,8 +47,11 @@ CREATE TABLE IF NOT EXISTS system_metrics (
     metric_name TEXT NOT NULL,
     metric_value DOUBLE PRECISION NOT NULL,
     labels_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    unit TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE IF EXISTS system_metrics ADD COLUMN IF NOT EXISTS unit TEXT;
 
 SELECT create_hypertable('system_metrics', 'ts', if_not_exists => TRUE);
 

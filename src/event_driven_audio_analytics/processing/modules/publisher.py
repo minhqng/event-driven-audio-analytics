@@ -12,7 +12,7 @@ def build_audio_features_event(
 ) -> EventEnvelope[AudioFeaturesPayload]:
     """Wrap feature payloads in the shared event envelope."""
 
-    return build_envelope(event_type="audio.features", produced_by="processing", payload=payload)
+    return build_envelope(event_type="audio.features", source_service="processing", payload=payload)
 
 
 def build_system_metrics_event(
@@ -20,4 +20,8 @@ def build_system_metrics_event(
 ) -> EventEnvelope[SystemMetricsPayload]:
     """Wrap metric payloads in the shared event envelope."""
 
-    return build_envelope(event_type="system.metrics", produced_by="processing", payload=payload)
+    return build_envelope(
+        event_type="system.metrics",
+        source_service="processing",
+        payload=payload,
+    )

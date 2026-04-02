@@ -5,17 +5,23 @@
   "required": [
     "event_id",
     "event_type",
-    "schema_version",
-    "occurred_at",
-    "produced_by",
+    "event_version",
+    "trace_id",
+    "run_id",
+    "produced_at",
+    "source_service",
+    "idempotency_key",
     "payload"
   ],
   "properties": {
-    "event_id": { "type": "string" },
+    "event_id": { "type": "string", "minLength": 1 },
     "event_type": { "const": "audio.features" },
-    "schema_version": { "const": "v1" },
-    "occurred_at": { "type": "string", "format": "date-time" },
-    "produced_by": { "type": "string" },
+    "event_version": { "const": "v1" },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "produced_at": { "type": "string", "format": "date-time" },
+    "source_service": { "const": "processing" },
+    "idempotency_key": { "type": "string", "minLength": 1 },
     "payload": {
       "type": "object",
       "required": [
@@ -25,7 +31,6 @@
         "segment_idx",
         "artifact_uri",
         "checksum",
-        "manifest_uri",
         "rms",
         "silent_flag",
         "mel_bins",
@@ -34,17 +39,17 @@
       ],
       "properties": {
         "ts": { "type": "string", "format": "date-time" },
-        "run_id": { "type": "string" },
+        "run_id": { "type": "string", "minLength": 1 },
         "track_id": { "type": "integer" },
         "segment_idx": { "type": "integer" },
-        "artifact_uri": { "type": "string" },
-        "checksum": { "type": "string" },
-        "manifest_uri": { "type": "string" },
+        "artifact_uri": { "type": "string", "minLength": 1 },
+        "checksum": { "type": "string", "minLength": 1 },
         "rms": { "type": "number" },
         "silent_flag": { "type": "boolean" },
-        "mel_bins": { "type": "integer" },
-        "mel_frames": { "type": "integer" },
-        "processing_ms": { "type": "number" }
+        "mel_bins": { "type": "integer", "minimum": 1 },
+        "mel_frames": { "type": "integer", "minimum": 1 },
+        "processing_ms": { "type": "number", "minimum": 0 },
+        "manifest_uri": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

@@ -14,7 +14,7 @@ class AudioSegmentReadyPayload:
     segment_idx: int
     artifact_uri: str
     checksum: str
-    manifest_uri: str
     sample_rate: int
     duration_s: float
     is_last_segment: bool
+    manifest_uri: str | None = None

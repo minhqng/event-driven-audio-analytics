@@ -25,11 +25,14 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: SQL init files create `track_metadata`, `audio_features`, `system_metrics`, `run_checkpoints`, `welford_snapshots`, and operational views.
 - `Fact`: Grafana datasource and dashboard provisioning are file-backed.
 - `Fact`: Topic bootstrap scripts and shared topic constants now reserve `audio.metadata`, `audio.segment.ready`, `audio.features`, `system.metrics`, and `audio.dlq`.
-- `Fact`: JSON schemas, shared models, and fixtures exist for the 4 actively exercised topics: `audio.metadata`, `audio.segment.ready`, `audio.features`, and `system.metrics`.
+- `Fact`: `event-contracts.md` now locks Event Contract v1 for the 4 primary topics.
+- `Fact`: JSON schemas, shared models, and contract fixtures/tests now reflect the locked v1 envelope and payload definitions for `audio.metadata`, `audio.segment.ready`, `audio.features`, and `system.metrics`.
+- `Fact`: Shared semantic validation now enforces canonical v1 invariants that JSON Schema alone does not express, including top-level/payload `run_id` consistency.
+- `Fact`: Writer SQL/persistence now stores `audio.metadata.duration_s` and optional `system.metrics.unit`, keeping the locked v1 payload lossless on the current writer path.
 - `Fact`: `REUSE_MAP.md` now records the Week 1 Member B reuse audit against the old FMA-small pipeline.
 - `Fact`: `tests/fixtures/audio/` now contains deterministic synthetic audio fixtures plus a manifest-only FMA-small reference pack strategy.
-- `Fact`: `writer` now consumes `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
-- `Fact`: The fake-event smoke path publishes `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
+- `Fact`: `writer` now consumes the locked v1 envelope for `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
+- `Fact`: The fake-event smoke path now publishes canonical v1 fixtures for `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
 - `Fact`: Lightweight smoke scripts and targeted writer regression tests exist for the current Week 2 baseline.
 
 ## Repo-Present But Still Placeholder
@@ -75,7 +78,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 | Phase | Planned Meaning | Current Status |
 | --- | --- | --- |
 | Week 1 / Phase 1 | Scope lock, infra bootstrap, reuse audit | `Fact`: infra scaffold is documented as complete. `Fact`: `REUSE_MAP.md` and `tests/fixtures/audio/` now document the Week 1 Member B reuse audit and fixture strategy. |
-| Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: the fake-event writer smoke path is documented for metadata/features persistence, checkpoint rows, and replay-safe feature writes. `Conflict`: envelope and DLQ contract drift is still unresolved. |
+| Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: Event Contract v1 is now locked in root docs, shared schemas/models, contract fixtures/tests, the writer runtime, and the fake-event smoke path. `Conflict`: the DLQ contract remains unresolved. |
 | Week 3 / Phase 3 | Ingestion on real sample data | `Inference`: not implemented. |
 | Week 4 / Phase 4 | Processing / feature emission | `Inference`: not implemented. |
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: runtime implementation now exists for the current scaffold contract, but broader replay hardening under real producer traffic is still pending. |
@@ -86,7 +89,6 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 ## Current Conflicts And Drift
 
-- `Conflict`: Attached plans define a richer event envelope than the repo currently implements.
 - `Conflict`: `audio.dlq` is now reserved in topic bootstrap/constants, but the repo still lacks matching schema/model/fixture coverage and a real DLQ publish/consume flow.
 - `Conflict`: Detailed plan uses logical natural key `(run_id, track_id, segment_idx)`; current SQL physical PK includes `ts`.
 - `Conflict`: Documents disagree on overall schedule length: 8 weeks versus 10 weeks.
@@ -96,7 +98,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 ## Unresolved Blockers And Dependencies
 
-- `Fact`: Contract drift must be reconciled before real end-to-end implementation.
+- `Fact`: The canonical v1 contract is now adopted in the shared layer, writer runtime, and fake-event smoke path, but real ingestion/processing traffic is still required before real end-to-end implementation.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
 - `Fact`: Direct reuse of the old audio semantics still depends on adding the missing audio/data dependencies to this repo in a future Member B thread.
@@ -105,7 +107,6 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 ## Items Requiring Member A/B Synchronization
 
-- `Fact`: Final event envelope and payload field names.
 - `Fact`: Topic set, especially whether `audio.dlq` is active now or later.
 - `Fact`: Natural key versus physical Timescale constraint strategy.
 - `Fact`: Checkpoint semantics and replay behavior.

@@ -13,8 +13,9 @@ class AudioMetadataPayload:
     track_id: int
     artist_id: int
     genre: str
-    subset: str
     source_audio_uri: str
     validation_status: str
+    duration_s: float
+    subset: str = "small"
     manifest_uri: str | None = None
     checksum: str | None = None

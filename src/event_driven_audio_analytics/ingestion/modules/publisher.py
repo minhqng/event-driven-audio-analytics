@@ -10,7 +10,7 @@ from event_driven_audio_analytics.shared.models.envelope import EventEnvelope, b
 def build_metadata_event(payload: AudioMetadataPayload) -> EventEnvelope[AudioMetadataPayload]:
     """Wrap metadata payloads in the shared event envelope."""
 
-    return build_envelope(event_type="audio.metadata", produced_by="ingestion", payload=payload)
+    return build_envelope(event_type="audio.metadata", source_service="ingestion", payload=payload)
 
 
 def build_segment_ready_event(
@@ -18,4 +18,8 @@ def build_segment_ready_event(
 ) -> EventEnvelope[AudioSegmentReadyPayload]:
     """Wrap segment-ready payloads in the shared event envelope."""
 
-    return build_envelope(event_type="audio.segment.ready", produced_by="ingestion", payload=payload)
+    return build_envelope(
+        event_type="audio.segment.ready",
+        source_service="ingestion",
+        payload=payload,
+    )
