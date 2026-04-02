@@ -19,34 +19,12 @@ $bootstrapServer = if ($env:KAFKA_BOOTSTRAP_SERVERS) {
 }
 
 $kafkaTopics = "/opt/bitnami/kafka/bin/kafka-topics.sh"
-
-function Wait-ForKafkaBroker {
-    $attempt = 0
-
-    while ($true) {
-        docker compose exec -T kafka $kafkaTopics --bootstrap-server $bootstrapServer --list | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            return
-        }
-
-        $attempt += 1
-        if ($attempt -ge 30) {
-            throw "Kafka broker did not become ready in time."
-        }
-
-        Start-Sleep -Seconds 2
-    }
-}
-
 $topics = @(
     "audio.metadata",
     "audio.segment.ready",
     "audio.features",
-    "system.metrics",
-    "audio.dlq"
+    "system.metrics"
 )
-
-Wait-ForKafkaBroker
 
 foreach ($topic in $topics) {
     Write-Host "Ensuring topic $topic..."

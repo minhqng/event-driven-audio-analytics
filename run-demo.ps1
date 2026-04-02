@@ -13,15 +13,11 @@ function Assert-LastExitCode {
 }
 
 Write-Host "Starting event-driven-audio-analytics demo stack..."
-docker compose up --build -d kafka timescaledb grafana
-Assert-LastExitCode "docker compose up --build -d kafka timescaledb grafana"
+docker compose up --build -d
+Assert-LastExitCode "docker compose up --build -d"
 
 Write-Host "Creating Kafka topics..."
 & ".\infra\kafka\create-topics.ps1"
-
-Write-Host "Starting runtime services..."
-docker compose up --build -d ingestion processing writer
-Assert-LastExitCode "docker compose up --build -d ingestion processing writer"
 
 $grafanaPort = if ($env:GRAFANA_PORT) { $env:GRAFANA_PORT } else { "3000" }
 $timescalePort = if ($env:TIMESCALEDB_PORT) { $env:TIMESCALEDB_PORT } else { "5432" }
@@ -34,5 +30,4 @@ Write-Host "TimescaleDB: localhost:$timescalePort"
 Write-Host "Kafka bootstrap (host): localhost:$kafkaHostPort"
 Write-Host "Kafka bootstrap (containers): $kafkaInternal"
 Write-Host "Application code executes inside Linux containers; the host only orchestrates Docker Compose."
-Write-Host "Writer now stays up as a minimal Kafka-to-TimescaleDB consumer."
-Write-Host "Ingestion and processing remain scaffold-only until their runtime loops are implemented."
+Write-Host "Scaffold services currently emit startup logs and exit 0 until continuous runtime loops are implemented."

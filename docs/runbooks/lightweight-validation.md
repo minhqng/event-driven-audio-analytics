@@ -49,5 +49,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
 ```
 
+## Legacy PowerShell Wrappers
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
+```
+
 Do not claim full correctness from these checks alone.
 They validate the bootstrap, shared layer, and first writer persistence path only.
