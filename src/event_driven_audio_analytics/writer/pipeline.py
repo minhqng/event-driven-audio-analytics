@@ -66,13 +66,12 @@ class WriterPipeline:
                 except Exception:
                     logger.exception(
                         "Writer failed for topic=%s partition=%s offset=%s. "
-                        "The %s topic is reserved but not implemented yet; dropping the record.",
+                        "Leaving the record uncommitted because %s is reserved but not implemented yet.",
                         record.topic,
                         record.partition,
                         record.offset,
                         AUDIO_DLQ,
                     )
-                    consumer.commit(message=record.message, asynchronous=False)
         finally:
             consumer.close()
 

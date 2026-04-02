@@ -38,8 +38,11 @@ This smoke flow verifies all of the following:
 - Kafka topics are created, including `audio.dlq`.
 - Fake `audio.metadata` and `audio.features` events are published from the container runtime.
 - The `writer` persists rows into `track_metadata` and `audio_features`.
-- `run_checkpoints` is updated before the Kafka offset is committed.
+- `run_checkpoints` is updated for the exercised writer topics.
 - Replaying the same fake feature event keeps the natural-key row count at `1`.
+
+The smoke flow does **not** prove Kafka offset ordering under failure.
+Keep that guarantee covered by unit tests around the writer pipeline and commit logic.
 
 ## Legacy PowerShell Wrappers
 
