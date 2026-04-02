@@ -25,6 +25,13 @@ The external FMA pack is described in `fixture_manifest.json` but intentionally 
 | `short_tone_mono_32k.wav` | `32000 Hz`, mono | `0.75 s` | Deterministic too-short input | Fails old validation because duration `< 1.0 s` |
 | `corrupt_audio.mp3` | n/a | n/a | Deterministic corrupt file | Must fail decode/open |
 
+## Compose Smoke Mirrors
+
+- `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Week 3 Compose smoke path.
+- `fma_small/000/000002.mp3` mirrors the valid synthetic fixture under canonical FMA naming.
+- `fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
+- These are still synthetic or intentionally corrupt repo fixtures, not redistributed FMA audio.
+
 ## External FMA-small Reference Pack
 
 Use the one-track-per-genre pack listed in `fixture_manifest.json` for local parity checks.

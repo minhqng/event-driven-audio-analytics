@@ -58,7 +58,7 @@
 
 - `Fact`: The shared contract layer, writer runtime, and fake-event smoke path now use the canonical v1 envelope names.
 - `Fact`: Shared semantic validation now enforces `run_id` consistency between the top-level envelope and payload.
-- `Inference`: Contract-definition drift is resolved for the current fixture-driven runtime path, but real producer traffic has not exercised it yet.
+- `Fact`: Contract-definition drift is resolved for the current fixture-driven runtime path, and a broker-backed ingestion smoke run now exercises the canonical v1 envelope on `audio.metadata`, `audio.segment.ready`, and `system.metrics`.
 
 ## Topic Naming And Ownership
 

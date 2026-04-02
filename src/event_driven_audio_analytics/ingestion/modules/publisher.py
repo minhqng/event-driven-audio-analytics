@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from event_driven_audio_analytics.shared.contracts.topics import AUDIO_METADATA, AUDIO_SEGMENT_READY
+from event_driven_audio_analytics.shared.contracts.topics import (
+    AUDIO_METADATA,
+    AUDIO_SEGMENT_READY,
+    SYSTEM_METRICS,
+)
 from event_driven_audio_analytics.shared.kafka import serialize_envelope
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import EventEnvelope, build_envelope
+from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
 class ProducerLike(Protocol):
@@ -39,6 +44,18 @@ def build_segment_ready_event(
     )
 
 
+def build_system_metric_event(
+    payload: SystemMetricsPayload,
+) -> EventEnvelope[SystemMetricsPayload]:
+    """Wrap system.metrics payloads in the shared event envelope."""
+
+    return build_envelope(
+        event_type="system.metrics",
+        source_service="ingestion",
+        payload=payload,
+    )
+
+
 def publish_metadata_event(
     producer: ProducerLike,
     payload: AudioMetadataPayload,
@@ -49,6 +66,21 @@ def publish_metadata_event(
     producer.produce(
         topic=AUDIO_METADATA,
         key=str(payload.track_id).encode("utf-8"),
+        value=serialize_envelope(envelope),
+    )
+    return envelope
+
+
+def publish_system_metric_event(
+    producer: ProducerLike,
+    payload: SystemMetricsPayload,
+) -> EventEnvelope[SystemMetricsPayload]:
+    """Publish one system.metrics envelope keyed by service_name."""
+
+    envelope = build_system_metric_event(payload)
+    producer.produce(
+        topic=SYSTEM_METRICS,
+        key=payload.service_name.encode("utf-8"),
         value=serialize_envelope(envelope),
     )
     return envelope

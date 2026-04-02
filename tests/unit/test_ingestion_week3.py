@@ -9,6 +9,7 @@ import polars as pl
 import pytest
 
 from event_driven_audio_analytics.ingestion.config import IngestionSettings
+from event_driven_audio_analytics.ingestion.modules.metrics import IngestionRunMetrics
 from event_driven_audio_analytics.ingestion.modules.artifact_writer import write_segment_artifacts
 from event_driven_audio_analytics.ingestion.modules.audio_validator import (
     VALIDATION_STATUS_MISSING_FILE,
@@ -24,7 +25,7 @@ from event_driven_audio_analytics.ingestion.modules.metadata_loader import (
 )
 from event_driven_audio_analytics.ingestion.modules.segmenter import AudioSegment, segment_audio
 from event_driven_audio_analytics.ingestion.pipeline import IngestionPipeline
-from event_driven_audio_analytics.shared.kafka import deserialize_envelope
+from event_driven_audio_analytics.shared.kafka import deserialize_envelope, producer_config
 from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
 
@@ -245,6 +246,10 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             silence_threshold_db=-60.0,
             track_id_allowlist=(),
             max_tracks=1,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=120000,
         )
         pipeline = IngestionPipeline(settings=settings)
         producer = RecordingProducer()
@@ -262,6 +267,12 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             "audio.segment.ready",
             "audio.segment.ready",
         ]
+        assert [message["key"] for message in producer.messages] == [
+            "2",
+            "2",
+            "2",
+            "2",
+        ]
 
         metadata_envelope = producer.messages[0]["value"]
         assert isinstance(metadata_envelope, dict)
@@ -272,3 +283,92 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             assert isinstance(envelope, dict)
             validate_envelope_dict(envelope, expected_event_type="audio.segment.ready")
             assert Path(str(envelope["payload"]["artifact_uri"])).exists()
+
+
+def test_pipeline_run_publishes_run_level_system_metrics() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = IngestionSettings(
+            base=BaseServiceSettings(
+                service_name="ingestion",
+                run_id="demo-run",
+                kafka_bootstrap_servers="unused:9092",
+                artifacts_root=Path(tmp_dir),
+            ),
+            metadata_csv_path="unused.csv",
+            audio_root_path="unused",
+            subset="small",
+            target_sample_rate_hz=32000,
+            segment_duration_s=3.0,
+            segment_overlap_s=1.5,
+            min_duration_s=1.0,
+            silence_threshold_db=-60.0,
+            track_id_allowlist=(),
+            max_tracks=2,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=120000,
+        )
+        
+        class StubbedPipeline(IngestionPipeline):
+            def load_metadata_records(self) -> list[MetadataRecord]:
+                return [
+                    _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
+                    _metadata_record_for_fixture("corrupt_audio.mp3"),
+                ]
+
+        pipeline = StubbedPipeline(settings=settings)
+        producer = RecordingProducer()
+
+        pipeline.run(producer=producer)
+
+        metric_messages = [message for message in producer.messages if message["topic"] == "system.metrics"]
+        assert [message["key"] for message in metric_messages] == [
+            "ingestion",
+            "ingestion",
+            "ingestion",
+            "ingestion",
+        ]
+        assert [message["value"]["payload"]["metric_name"] for message in metric_messages] == [
+            "tracks_total",
+            "segments_total",
+            "validation_failures",
+            "artifact_write_ms",
+        ]
+        assert [message["value"]["payload"]["metric_value"] for message in metric_messages[:3]] == [
+            2.0,
+            3.0,
+            1.0,
+        ]
+        assert metric_messages[3]["value"]["payload"]["unit"] == "ms"
+
+
+def test_ingestion_run_metrics_render_expected_payloads() -> None:
+    metrics = IngestionRunMetrics()
+    metrics.record_track(segment_count=3, validation_failed=False, artifact_write_ms=12.5)
+    metrics.record_track(segment_count=0, validation_failed=True, artifact_write_ms=0.0)
+
+    payloads = metrics.as_payloads(run_id="demo-run", service_name="ingestion")
+
+    assert [payload.metric_name for payload in payloads] == [
+        "tracks_total",
+        "segments_total",
+        "validation_failures",
+        "artifact_write_ms",
+    ]
+    assert [payload.metric_value for payload in payloads] == [2.0, 3.0, 1.0, 12.5]
+    assert payloads[-1].unit == "ms"
+
+
+def test_producer_config_sets_idempotence_and_retry_backoff_defaults() -> None:
+    config = producer_config(
+        bootstrap_servers="kafka:29092",
+        client_id="ingestion-producer",
+    )
+
+    assert config["enable.idempotence"] is True
+    assert config["acks"] == "all"
+    assert config["retries"] == 10
+    assert config["retry.backoff.ms"] == 250
+    assert config["retry.backoff.max.ms"] == 5000
+    assert config["delivery.timeout.ms"] == 120000

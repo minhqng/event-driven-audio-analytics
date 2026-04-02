@@ -15,7 +15,15 @@ else:
     Producer = Any
 
 
-def producer_config(bootstrap_servers: str, client_id: str) -> dict[str, object]:
+def producer_config(
+    bootstrap_servers: str,
+    client_id: str,
+    *,
+    retries: int = 10,
+    retry_backoff_ms: int = 250,
+    retry_backoff_max_ms: int = 5_000,
+    delivery_timeout_ms: int = 120_000,
+) -> dict[str, object]:
     """Return shared producer configuration."""
 
     return {
@@ -23,16 +31,35 @@ def producer_config(bootstrap_servers: str, client_id: str) -> dict[str, object]
         "client.id": client_id,
         "enable.idempotence": True,
         "acks": "all",
+        "retries": retries,
+        "retry.backoff.ms": retry_backoff_ms,
+        "retry.backoff.max.ms": retry_backoff_max_ms,
+        "delivery.timeout.ms": delivery_timeout_ms,
     }
 
 
-def build_producer(bootstrap_servers: str, client_id: str) -> Producer:
+def build_producer(
+    bootstrap_servers: str,
+    client_id: str,
+    *,
+    retries: int = 10,
+    retry_backoff_ms: int = 250,
+    retry_backoff_max_ms: int = 5_000,
+    delivery_timeout_ms: int = 120_000,
+) -> Producer:
     """Build a Kafka producer with the shared runtime defaults."""
 
     from confluent_kafka import Producer as KafkaProducer
 
     return KafkaProducer(
-        producer_config(bootstrap_servers=bootstrap_servers, client_id=client_id)
+        producer_config(
+            bootstrap_servers=bootstrap_servers,
+            client_id=client_id,
+            retries=retries,
+            retry_backoff_ms=retry_backoff_ms,
+            retry_backoff_max_ms=retry_backoff_max_ms,
+            delivery_timeout_ms=delivery_timeout_ms,
+        )
     )
 
 

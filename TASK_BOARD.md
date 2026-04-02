@@ -5,7 +5,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ## Immediate Next Tasks
 
 1. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
-2. Extend evidence from the canonical v1 fake-event writer flow to the first real segment-ready path under a live broker/persistence run.
+2. Extend the new broker-backed ingestion smoke evidence from Kafka-only publication to writer persistence under real `audio.metadata` traffic.
 3. Hard-verify replay and checkpoint behavior once real producer traffic reaches writer.
 4. Replace placeholder dashboard panels with queries backed by persisted data.
 5. Add real producer-traffic replay evidence on top of the current fixture-driven writer checks.
@@ -43,7 +43,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 1: `docker compose config` and infra bootstrap remain clean after any contract or SQL change.
 - Gate 2: The canonical v1 fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
-  Current status: Member B-owned code path is now green with a recording producer plus real local FMA tracks `2` and `666`; full broker-backed cross-service evidence is still pending.
+  Current status: Member B-owned code path is green with a recording producer plus real local FMA tracks `2` and `666`. Member A-owned Compose smoke now proves broker-backed publication and direct topic observation on a bounded committed fixture set. Real broker-backed writer persistence on ingestion traffic is still pending.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
@@ -67,7 +67,7 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ### Session 4
 
-- Extend writer verification from fake events to real producer traffic and replay scenarios.
+- Extend writer verification from fake events to real producer traffic and replay scenarios, starting with the broker-backed ingestion smoke path.
 
 ### Session 5
 

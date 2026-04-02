@@ -38,6 +38,10 @@ class IngestionSettings:
     silence_threshold_db: float
     track_id_allowlist: tuple[int, ...]
     max_tracks: int | None
+    producer_retries: int
+    producer_retry_backoff_ms: int
+    producer_retry_backoff_max_ms: int
+    producer_delivery_timeout_ms: int
 
     @classmethod
     def from_env(cls) -> "IngestionSettings":
@@ -54,4 +58,12 @@ class IngestionSettings:
             silence_threshold_db=float(os.getenv("SILENCE_THRESHOLD_DB", "-60.0")),
             track_id_allowlist=_parse_track_id_allowlist(os.getenv("TRACK_ID_ALLOWLIST", "")),
             max_tracks=int(max_tracks_raw) if max_tracks_raw else None,
+            producer_retries=int(os.getenv("KAFKA_PRODUCER_RETRIES", "10")),
+            producer_retry_backoff_ms=int(os.getenv("KAFKA_PRODUCER_RETRY_BACKOFF_MS", "250")),
+            producer_retry_backoff_max_ms=int(
+                os.getenv("KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS", "5000")
+            ),
+            producer_delivery_timeout_ms=int(
+                os.getenv("KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS", "120000")
+            ),
         )

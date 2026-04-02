@@ -33,10 +33,13 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 2. Review `docs/architecture/system-overview.md`.
 3. Start the scaffold with `bash ./run-demo.sh`.
 4. If you only need Kafka topic bootstrap, run `sh ./infra/kafka/create-topics.sh`.
+5. If you want a broker-backed Week 3 ingestion smoke run, use `bash ./scripts/smoke/check-ingestion-flow.sh`.
 
 ## Runtime Notes
 
 - All application code executes inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
 - The scaffold only validates local bootstrapping and contract shape; it does not claim end-to-end analytics execution yet.
-- The `ingestion`, `processing`, and `writer` containers currently log their scaffold steps and exit cleanly; Week 1 success is infra wiring, not long-running service loops.
+- `ingestion` now runs a bounded Week 3 replay path in Compose: it reads configured sample metadata, writes claim-check artifacts under `artifacts/`, publishes `audio.metadata`, `audio.segment.ready`, and run-level `system.metrics`, then exits cleanly.
+- The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`; override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
+- `processing` remains placeholder, and full end-to-end analytics through `writer` and dashboards still needs later phases.

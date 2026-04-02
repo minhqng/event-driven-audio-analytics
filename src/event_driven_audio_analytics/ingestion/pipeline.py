@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+from time import perf_counter
 from typing import Any
 
 from event_driven_audio_analytics.ingestion.modules.artifact_writer import SegmentDescriptor, write_segment_artifacts
@@ -12,10 +14,12 @@ from event_driven_audio_analytics.ingestion.modules.audio_validator import (
     validate_audio_record,
 )
 from event_driven_audio_analytics.ingestion.modules.metadata_loader import MetadataRecord, load_small_subset_metadata
+from event_driven_audio_analytics.ingestion.modules.metrics import IngestionRunMetrics
 from event_driven_audio_analytics.ingestion.modules.publisher import (
     ProducerLike,
     publish_metadata_event,
     publish_segment_ready_event,
+    publish_system_metric_event,
 )
 from event_driven_audio_analytics.ingestion.modules.segmenter import segment_audio
 from .config import IngestionSettings
@@ -35,6 +39,7 @@ class TrackIngestionResult:
     metadata_event: EventEnvelope[AudioMetadataPayload]
     segment_descriptors: list[SegmentDescriptor]
     segment_events: list[EventEnvelope[AudioSegmentReadyPayload]]
+    artifact_write_ms: float
 
 
 @dataclass(slots=True)
@@ -95,6 +100,7 @@ class IngestionPipeline:
     ) -> TrackIngestionResult:
         """Validate, segment, persist, and publish one track."""
 
+        logger = logging.getLogger(self.settings.base.service_name)
         validation = validate_audio_record(
             record,
             target_sample_rate_hz=self.settings.target_sample_rate_hz,
@@ -107,12 +113,18 @@ class IngestionPipeline:
         )
 
         if validation.validation_status != VALIDATION_STATUS_VALIDATED or validation.decoded_audio is None:
+            logger.info(
+                "Published metadata only track_id=%s metadata_topic=audio.metadata validation_status=%s",
+                record.track_id,
+                validation.validation_status,
+            )
             return TrackIngestionResult(
                 record=record,
                 validation=validation,
                 metadata_event=metadata_event,
                 segment_descriptors=[],
                 segment_events=[],
+                artifact_write_ms=0.0,
             )
 
         segments = segment_audio(
@@ -123,10 +135,12 @@ class IngestionPipeline:
             segment_duration_s=self.settings.segment_duration_s,
             segment_overlap_s=self.settings.segment_overlap_s,
         )
+        artifact_write_started = perf_counter()
         segment_descriptors = write_segment_artifacts(
             self.settings.base.artifacts_root,
             segments,
         )
+        artifact_write_ms = (perf_counter() - artifact_write_started) * 1000.0
         segment_events = [
             publish_segment_ready_event(
                 producer,
@@ -144,6 +158,12 @@ class IngestionPipeline:
             )
             for descriptor in segment_descriptors
         ]
+        logger.info(
+            "Published track events track_id=%s metadata_topic=audio.metadata segment_topic=audio.segment.ready segments=%s artifact_write_ms=%.3f",
+            record.track_id,
+            len(segment_events),
+            artifact_write_ms,
+        )
 
         return TrackIngestionResult(
             record=record,
@@ -151,23 +171,49 @@ class IngestionPipeline:
             metadata_event=metadata_event,
             segment_descriptors=segment_descriptors,
             segment_events=segment_events,
+            artifact_write_ms=artifact_write_ms,
         )
 
     def run(self, producer: ProducerLike | None = None) -> list[TrackIngestionResult]:
         """Execute the Week 3 ingestion path for the configured sample set."""
 
         own_producer = producer is None
+        logger = logging.getLogger(self.settings.base.service_name)
         active_producer = producer or build_producer(
             bootstrap_servers=self.settings.base.kafka_bootstrap_servers,
             client_id=f"{self.settings.base.service_name}-producer",
+            retries=self.settings.producer_retries,
+            retry_backoff_ms=self.settings.producer_retry_backoff_ms,
+            retry_backoff_max_ms=self.settings.producer_retry_backoff_max_ms,
+            delivery_timeout_ms=self.settings.producer_delivery_timeout_ms,
         )
 
         try:
-            results = [
-                self.process_record(active_producer, record)
-                for record in self.load_metadata_records()
-            ]
+            metrics = IngestionRunMetrics()
+            results: list[TrackIngestionResult] = []
+            for record in self.load_metadata_records():
+                result = self.process_record(active_producer, record)
+                metrics.record_track(
+                    segment_count=len(result.segment_events),
+                    validation_failed=result.validation.validation_status != VALIDATION_STATUS_VALIDATED,
+                    artifact_write_ms=result.artifact_write_ms,
+                )
+                results.append(result)
+
+            for payload in metrics.as_payloads(
+                run_id=self.settings.base.run_id,
+                service_name=self.settings.base.service_name,
+            ):
+                publish_system_metric_event(active_producer, payload)
+
             active_producer.flush()
+            logger.info(
+                "Ingestion run complete tracks_total=%s segments_total=%s validation_failures=%s artifact_write_ms=%.3f",
+                metrics.tracks_total,
+                metrics.segments_total,
+                metrics.validation_failures,
+                metrics.artifact_write_ms,
+            )
             return results
         finally:
             if own_producer:
