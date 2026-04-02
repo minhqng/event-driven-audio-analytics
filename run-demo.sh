@@ -2,7 +2,7 @@
 set -eu
 
 echo "Starting event-driven-audio-analytics demo stack..."
-docker compose up --build -d
+docker compose up --build -d kafka timescaledb grafana
 
 echo "Creating Kafka topics..."
 sh ./infra/kafka/create-topics.sh

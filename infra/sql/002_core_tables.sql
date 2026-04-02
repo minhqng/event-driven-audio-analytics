@@ -32,6 +32,9 @@ CREATE TABLE IF NOT EXISTS audio_features (
 
 SELECT create_hypertable('audio_features', 'ts', if_not_exists => TRUE);
 
+CREATE INDEX IF NOT EXISTS idx_audio_features_lookup
+ON audio_features (run_id, track_id, segment_idx);
+
 CREATE TABLE IF NOT EXISTS system_metrics (
     ts TIMESTAMPTZ NOT NULL,
     run_id TEXT NOT NULL,
@@ -52,4 +55,15 @@ CREATE TABLE IF NOT EXISTS run_checkpoints (
     last_committed_offset BIGINT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (consumer_group, topic_name, partition_id)
+);
+
+CREATE TABLE IF NOT EXISTS welford_snapshots (
+    run_id TEXT NOT NULL,
+    service_name TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    count BIGINT NOT NULL,
+    mean DOUBLE PRECISION NOT NULL,
+    m2 DOUBLE PRECISION NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (run_id, service_name, metric_name)
 );

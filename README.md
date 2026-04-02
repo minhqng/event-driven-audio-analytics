@@ -25,6 +25,7 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - `audio.segment.ready`
 - `audio.features`
 - `system.metrics`
+- `audio.dlq`
 
 ## Quick Start
 

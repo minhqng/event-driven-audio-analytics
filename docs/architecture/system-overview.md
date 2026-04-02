@@ -16,7 +16,7 @@ It is designed for Docker Compose on a private-cloud-like local environment and 
 
 - `ingestion`: loads metadata, validates audio, plans segmentation, writes artifacts, and publishes metadata and segment-ready events.
 - `processing`: consumes segment-ready events, loads artifacts, computes feature summaries, and publishes analytics and metrics events.
-- `writer`: consumes metadata/features/metrics events and persists them with idempotent, checkpoint-aware behavior.
+- `writer`: consumes metadata/features/metrics events and persists them with idempotent, checkpoint-aware behavior, including natural-key enforcement for `audio.features`.
 
 ## Audio Semantics
 

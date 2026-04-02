@@ -2,7 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+
+from psycopg import Cursor
+from psycopg.types.json import Jsonb
+
+from event_driven_audio_analytics.shared.contracts.topics import (
+    AUDIO_FEATURES,
+    AUDIO_METADATA,
+    SYSTEM_METRICS,
+)
+from event_driven_audio_analytics.shared.db import acquire_transaction_advisory_lock
+from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
+from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
+from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
 AUDIO_FEATURES_LOGICAL_KEY = ("run_id", "track_id", "segment_idx")
@@ -51,6 +64,24 @@ ON CONFLICT (run_id, track_id) DO UPDATE SET
 
 
 AUDIO_FEATURES_UPSERT = """
+UPDATE audio_features
+SET
+    artifact_uri = %(artifact_uri)s,
+    checksum = %(checksum)s,
+    manifest_uri = %(manifest_uri)s,
+    rms = %(rms)s,
+    silent_flag = %(silent_flag)s,
+    mel_bins = %(mel_bins)s,
+    mel_frames = %(mel_frames)s,
+    processing_ms = %(processing_ms)s
+WHERE run_id = %(run_id)s
+  AND track_id = %(track_id)s
+  AND segment_idx = %(segment_idx)s
+RETURNING 1;
+""".strip()
+
+
+AUDIO_FEATURES_INSERT = """
 INSERT INTO audio_features (
     ts,
     run_id,
@@ -78,16 +109,7 @@ VALUES (
     %(mel_bins)s,
     %(mel_frames)s,
     %(processing_ms)s
-)
-ON CONFLICT (ts, run_id, track_id, segment_idx) DO UPDATE SET
-    artifact_uri = EXCLUDED.artifact_uri,
-    checksum = EXCLUDED.checksum,
-    manifest_uri = EXCLUDED.manifest_uri,
-    rms = EXCLUDED.rms,
-    silent_flag = EXCLUDED.silent_flag,
-    mel_bins = EXCLUDED.mel_bins,
-    mel_frames = EXCLUDED.mel_frames,
-    processing_ms = EXCLUDED.processing_ms;
+);
 """.strip()
 
 
@@ -111,8 +133,58 @@ VALUES (
 """.strip()
 
 
-def persist_batch(_: list[dict[str, object]]) -> PersistenceResult:
-    """Return a placeholder persistence result until database writes are implemented."""
+def persist_track_metadata(cursor: Cursor, payload: AudioMetadataPayload) -> int:
+    """Upsert one track metadata record."""
 
-    # TODO: persist metadata/features/metrics to TimescaleDB with idempotent semantics.
-    return PersistenceResult(rows_written=0, checkpoints_ready=True)
+    cursor.execute(TRACK_METADATA_UPSERT, asdict(payload))
+    return cursor.rowcount
+
+
+def persist_audio_features(cursor: Cursor, payload: AudioFeaturesPayload) -> int:
+    """Update or insert one feature record using the natural key under advisory lock."""
+
+    params = asdict(payload)
+    acquire_transaction_advisory_lock(
+        cursor,
+        payload.run_id,
+        payload.track_id,
+        payload.segment_idx,
+    )
+    cursor.execute(AUDIO_FEATURES_UPSERT, params)
+    matches = cursor.fetchall()
+    if len(matches) > 1:
+        raise ValueError(
+            "audio_features natural key lookup matched multiple rows for "
+            f"({payload.run_id}, {payload.track_id}, {payload.segment_idx})."
+        )
+    if len(matches) == 1:
+        return 1
+
+    cursor.execute(AUDIO_FEATURES_INSERT, params)
+    return cursor.rowcount
+
+
+def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int:
+    """Append one operational metrics record."""
+
+    params = asdict(payload)
+    params["labels_json"] = Jsonb(payload.labels_json)
+    cursor.execute(SYSTEM_METRICS_INSERT, params)
+    return cursor.rowcount
+
+
+def persist_envelope_payload(
+    cursor: Cursor,
+    topic: str,
+    payload_data: dict[str, object],
+) -> int:
+    """Persist one decoded envelope payload based on the Kafka topic."""
+
+    if topic == AUDIO_METADATA:
+        return persist_track_metadata(cursor, AudioMetadataPayload(**payload_data))
+    if topic == AUDIO_FEATURES:
+        return persist_audio_features(cursor, AudioFeaturesPayload(**payload_data))
+    if topic == SYSTEM_METRICS:
+        return persist_system_metrics(cursor, SystemMetricsPayload(**payload_data))
+
+    raise ValueError(f"Writer does not persist topic {topic}.")

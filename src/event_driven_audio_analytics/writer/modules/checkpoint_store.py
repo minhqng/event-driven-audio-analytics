@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from psycopg import Cursor
+
 
 RUN_CHECKPOINT_UPSERT = """
 INSERT INTO run_checkpoints (
@@ -41,3 +43,10 @@ def build_checkpoint_record(
         "run_id": run_id,
         "last_committed_offset": last_committed_offset,
     }
+
+
+def persist_checkpoint(cursor: Cursor, checkpoint_record: dict[str, object]) -> int:
+    """Persist the current consumer checkpoint inside the active transaction."""
+
+    cursor.execute(RUN_CHECKPOINT_UPSERT, checkpoint_record)
+    return cursor.rowcount
