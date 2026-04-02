@@ -27,7 +27,7 @@
 - `Fact`: `audio.segment.ready` is the claim-check handoff from ingestion to processing.
 - `Fact`: `audio.features` is the feature-summary handoff from processing to writer.
 - `Fact`: `system.metrics` is emitted by runtime services for dashboards and operational views.
-- `Conflict`: The detailed plan includes `audio.dlq`, but the current repo only scaffolds four topics.
+- `Conflict`: The detailed plan includes `audio.dlq`, and the current repo now reserves that topic in bootstrap/constants, but the DLQ contract is not yet fully modeled or exercised.
 
 ## Claim-Check Design
 
@@ -39,9 +39,10 @@
 - `Fact`: Reference assets may live under `/artifacts/shared/reference/`.
 - `Conflict`: The detailed plan allows `.npy` or `.wav` for stored segments; the current repo helper emits `.wav` paths.
 
-## Canonical Target Envelope
+## Canonical V1 Envelope
 
-- `Fact`: The detailed project plan defines the target event envelope as:
+- `Fact`: Event Contract v1 is now locked in `event-contracts.md`.
+- `Fact`: The canonical envelope fields are:
 - `Fact`: `event_id`
 - `Fact`: `event_type`
 - `Fact`: `event_version`
@@ -51,19 +52,13 @@
 - `Fact`: `source_service`
 - `Fact`: `idempotency_key`
 - `Fact`: `payload`
+- `Rule`: Do not expand or shrink the envelope casually. Any change must update docs, schemas, shared models, fixtures, and tests together.
 
-## Current Scaffold Envelope Drift
+## Remaining Implementation Drift
 
-- `Conflict`: The current repo implements a smaller envelope with:
-- `Conflict`: `event_id`
-- `Conflict`: `event_type`
-- `Conflict`: `schema_version`
-- `Conflict`: `occurred_at`
-- `Conflict`: `produced_by`
-- `Conflict`: `payload`
-- `Conflict`: The current repo omits `trace_id`, top-level `run_id`, and `idempotency_key`.
-- `Conflict`: The current repo uses `schema_version`/`occurred_at`/`produced_by` instead of `event_version`/`produced_at`/`source_service`.
-- `Rule`: Do not expand or shrink the envelope casually. Any reconciliation must update schemas, models, fixtures, docs, and writer logic together.
+- `Fact`: The shared contract layer, writer runtime, and fake-event smoke path now use the canonical v1 envelope names.
+- `Fact`: Shared semantic validation now enforces `run_id` consistency between the top-level envelope and payload.
+- `Inference`: Contract-definition drift is resolved for the current fixture-driven runtime path, but real producer traffic has not exercised it yet.
 
 ## Topic Naming And Ownership
 
@@ -73,36 +68,41 @@
 | `audio.segment.ready` | `track_id` | `ingestion` | `processing` | Claim-check reference to a ready segment artifact | Present |
 | `audio.features` | `track_id` | `processing` | `writer` | Feature summaries and processing quality data | Present |
 | `system.metrics` | `service_name` in plan | all core services | `writer` and Grafana queries/views | Operational metrics and health/throughput signals | Present |
-| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Planned only |
+| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Reserved in bootstrap/constants; no schema/model/fixture or runtime DLQ flow yet |
 
 ## Payload Contracts
 
 ### `audio.metadata`
 
 - `Fact`: Stable intent is track-level dimension data for a specific run.
-- `Fact`: Target fields from the detailed plan: `run_id`, `track_id`, `artist_id`, `genre_label`, `source_path`, `validation_status`, `duration_s`.
-- `Conflict`: Current repo schema/model uses `genre`, `subset`, `source_audio_uri`, optional `manifest_uri`, and optional `checksum`.
+- `Fact`: Canonical v1 payload fields are `run_id`, `track_id`, `artist_id`, `genre`, `source_audio_uri`, `validation_status`, and `duration_s`.
+- `Fact`: `subset` remains optional and, when present, is fixed to `small`.
+- `Fact`: `manifest_uri` and `checksum` remain optional in v1.
+- `Fact`: Current writer schema/persistence now stores `duration_s` in `track_metadata`.
+- `Inference`: V1 deliberately keeps the current repo field names `genre` and `source_audio_uri` to avoid gratuitous v1 churn.
 
 ### `audio.segment.ready`
 
 - `Fact`: Stable intent is the claim-check handoff after segmentation.
-- `Fact`: Stable fields across docs/repo: `run_id`, `track_id`, `segment_idx`, `artifact_uri`, `checksum`, `sample_rate`, `duration_s`, `is_last_segment`.
-- `Fact`: A manifest reference is part of the current repo contract.
-- `Conflict`: The detailed plan names `produced_by` inside payload; the repo does not.
+- `Fact`: Canonical v1 payload fields are `run_id`, `track_id`, `segment_idx`, `artifact_uri`, `checksum`, `sample_rate`, `duration_s`, and `is_last_segment`.
+- `Fact`: `manifest_uri` is optional in v1.
+- `Fact`: No service-identity field lives inside the payload because `source_service` is now canonical at the envelope level.
 
 ### `audio.features`
 
 - `Fact`: Stable intent is a feature summary, not a full feature tensor in the database path.
-- `Fact`: Stable fields across docs/repo: `run_id`, `track_id`, `segment_idx`, `rms`, `silent_flag`, `processing_ms`.
-- `Fact`: Current repo contract also includes `ts`, `artifact_uri`, `checksum`, `manifest_uri`, `mel_bins`, and `mel_frames`.
-- `Conflict`: The detailed plan expresses the mel output more abstractly as `mel_shape`, optional `feature_uri`, and optional `welford_state_ref`.
+- `Fact`: Canonical v1 payload fields are `ts`, `run_id`, `track_id`, `segment_idx`, `artifact_uri`, `checksum`, `rms`, `silent_flag`, `mel_bins`, `mel_frames`, and `processing_ms`.
+- `Fact`: `manifest_uri` remains optional in v1.
+- `Inference`: V1 encodes the fixed `(1,128,300)` log-mel summary shape using `mel_bins=128` and `mel_frames=300`; the leading channel dimension remains implicit because it is fixed by the agreed audio semantics.
 
 ### `system.metrics`
 
 - `Fact`: Stable intent is service-level operational metrics.
-- `Fact`: Stable fields across docs/repo: timestamp, `run_id`, `service_name`, `metric_name`, `metric_value`.
-- `Conflict`: The detailed plan uses `unit` and `labels`; the current repo uses `labels_json` and omits `unit`.
-- `Unknown`: Whether system metrics should be purely append-only or partially deduplicated is not fixed.
+- `Fact`: Canonical v1 payload fields are `ts`, `run_id`, `service_name`, `metric_name`, and `metric_value`.
+- `Fact`: `labels_json` and `unit` are optional in v1.
+- `Fact`: Current writer schema/persistence now stores optional `unit` alongside `labels_json`.
+- `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
+- `Unknown`: Whether system metrics should stay purely append-only or gain a stronger dedup policy is not fixed.
 
 ## Idempotency Rules
 
@@ -111,7 +111,9 @@
 - `Fact`: Replay of the same logical run must not silently duplicate feature rows.
 - `Fact`: Offset commit must happen only after successful persistence and checkpoint update.
 - `Fact`: Producer idempotence and `acks=all` are part of the intended Kafka posture for the PoC.
-- `Conflict`: The current repo enables idempotent producer config, but the current envelope does not yet carry the planned `idempotency_key`.
+- `Fact`: Canonical v1 now defines `idempotency_key` in the shared contract layer.
+- `Fact`: Event-type-specific key composition is documented in `event-contracts.md`.
+- `Fact`: The current writer runtime now accepts the canonical v1 envelope, including `idempotency_key`, on the fixture-driven smoke path.
 
 ## Natural Keys
 
@@ -130,11 +132,12 @@
 
 ## Schema Boundaries That Must Stay Aligned
 
+- `Fact`: Root contract document `event-contracts.md`.
 - `Fact`: JSON schema files in `schemas/`.
 - `Fact`: Shared event/payload models in `src/event_driven_audio_analytics/shared/models/`.
 - `Fact`: Topic constants and Kafka helpers in `src/event_driven_audio_analytics/shared/`.
 - `Fact`: SQL tables/views in `infra/sql/`.
-- `Fact`: Event fixtures under `tests/fixtures/events/`.
+- `Fact`: Canonical event fixtures under `tests/fixtures/events/v1/`.
 - `Fact`: Contract docs under repo root and `docs/architecture/`.
 - `Rule`: No contract change is done until all of these agree.
 
@@ -150,7 +153,6 @@
 
 ## Unresolved Contract Items
 
-- `Unknown`: Final canonical envelope naming after repo-target reconciliation.
-- `Unknown`: Whether `audio.dlq` is part of the first runnable contract or remains deferred.
-- `Unknown`: Final system-metrics label/unit convention.
-- `Unknown`: Whether `welford_snapshots` is required in the first DB implementation or later.
+- `Unknown`: Whether `audio.dlq` graduates from a reserved bootstrap topic into the first fully modeled runnable contract.
+- `Unknown`: Final system-metrics dedup treatment for append-only rows is not fixed.
+- `Unknown`: Final producer/update semantics for `welford_snapshots`.

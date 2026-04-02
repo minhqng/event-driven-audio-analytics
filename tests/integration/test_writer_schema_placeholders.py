@@ -14,12 +14,22 @@ class WriterSchemaPlaceholderTests(unittest.TestCase):
 
     def test_track_metadata_is_regular_table(self) -> None:
         self.assertIn("CREATE TABLE IF NOT EXISTS track_metadata", self.sql)
+        self.assertIn("duration_s DOUBLE PRECISION NOT NULL", self.sql)
+        self.assertIn(
+            "ALTER TABLE IF EXISTS track_metadata ADD COLUMN IF NOT EXISTS duration_s DOUBLE PRECISION;",
+            self.sql,
+        )
         self.assertIn("PRIMARY KEY (run_id, track_id)", self.sql)
 
     def test_audio_features_mentions_logical_key_columns(self) -> None:
         self.assertIn("run_id TEXT NOT NULL", self.sql)
         self.assertIn("track_id BIGINT NOT NULL", self.sql)
         self.assertIn("segment_idx INTEGER NOT NULL", self.sql)
+        self.assertIn("manifest_uri TEXT,", self.sql)
+        self.assertIn(
+            "ALTER TABLE IF EXISTS audio_features ALTER COLUMN manifest_uri DROP NOT NULL;",
+            self.sql,
+        )
         self.assertIn("SELECT create_hypertable('audio_features'", self.sql)
         self.assertIn("CREATE INDEX IF NOT EXISTS idx_audio_features_lookup", self.sql)
 
@@ -28,6 +38,11 @@ class WriterSchemaPlaceholderTests(unittest.TestCase):
         self.assertIn("metric_name TEXT NOT NULL", self.sql)
         self.assertIn("metric_value DOUBLE PRECISION NOT NULL", self.sql)
         self.assertIn("labels_json JSONB NOT NULL", self.sql)
+        self.assertIn("unit TEXT", self.sql)
+        self.assertIn(
+            "ALTER TABLE IF EXISTS system_metrics ADD COLUMN IF NOT EXISTS unit TEXT;",
+            self.sql,
+        )
         self.assertIn("SELECT create_hypertable('system_metrics'", self.sql)
 
     def test_run_checkpoints_is_regular_table(self) -> None:

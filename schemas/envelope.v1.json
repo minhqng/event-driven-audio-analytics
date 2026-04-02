@@ -6,28 +6,46 @@
   "required": [
     "event_id",
     "event_type",
-    "schema_version",
-    "occurred_at",
-    "produced_by",
+    "event_version",
+    "trace_id",
+    "run_id",
+    "produced_at",
+    "source_service",
+    "idempotency_key",
     "payload"
   ],
   "properties": {
     "event_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "event_type": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
-    "schema_version": {
+    "event_version": {
       "type": "string",
       "const": "v1"
     },
-    "occurred_at": {
+    "trace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "produced_at": {
       "type": "string",
       "format": "date-time"
     },
-    "produced_by": {
-      "type": "string"
+    "source_service": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
     },
     "payload": {
       "type": "object"

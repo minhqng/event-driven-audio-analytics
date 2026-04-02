@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 import json
-
-from confluent_kafka import Consumer, Producer
+from typing import TYPE_CHECKING, Any
 
 from event_driven_audio_analytics.shared.models.envelope import EventEnvelope
+
+if TYPE_CHECKING:
+    from confluent_kafka import Consumer, Producer
+else:
+    Consumer = Any
+    Producer = Any
 
 
 def producer_config(bootstrap_servers: str, client_id: str) -> dict[str, object]:
@@ -24,7 +29,11 @@ def producer_config(bootstrap_servers: str, client_id: str) -> dict[str, object]
 def build_producer(bootstrap_servers: str, client_id: str) -> Producer:
     """Build a Kafka producer with the shared runtime defaults."""
 
-    return Producer(producer_config(bootstrap_servers=bootstrap_servers, client_id=client_id))
+    from confluent_kafka import Producer as KafkaProducer
+
+    return KafkaProducer(
+        producer_config(bootstrap_servers=bootstrap_servers, client_id=client_id)
+    )
 
 
 def consumer_config(
@@ -53,7 +62,9 @@ def build_consumer(
 ) -> Consumer:
     """Build and subscribe a Kafka consumer with shared runtime defaults."""
 
-    consumer = Consumer(
+    from confluent_kafka import Consumer as KafkaConsumer
+
+    consumer = KafkaConsumer(
         consumer_config(
             bootstrap_servers=bootstrap_servers,
             group_id=group_id,

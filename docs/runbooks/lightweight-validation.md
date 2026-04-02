@@ -1,7 +1,7 @@
 # Lightweight Validation
 
 Use lightweight checks that match the current Week 2 baseline.
-Run them from the repository root on the Linux/bash path.
+Run them from the repository root.
 
 ## Tree And Script Presence
 
@@ -33,6 +33,10 @@ docker compose run --rm --entrypoint python writer -m unittest discover -s tests
 bash ./scripts/smoke/check-writer-flow.sh
 ```
 
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-writer-flow.ps1
+```
+
 This smoke flow verifies all of the following:
 
 - Kafka topics are created, including `audio.dlq`.
@@ -43,14 +47,6 @@ This smoke flow verifies all of the following:
 
 The smoke flow does **not** prove Kafka offset ordering under failure.
 Keep that guarantee covered by unit tests around the writer pipeline and commit logic.
-
-## Legacy PowerShell Wrappers
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
-```
 
 ## Legacy PowerShell Wrappers
 

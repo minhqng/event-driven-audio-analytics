@@ -1,0 +1,19 @@
+{
+  "event_id": "evt-metadata-v1-002",
+  "event_type": "audio.metadata",
+  "event_version": "v1",
+  "run_id": "demo-run",
+  "produced_at": "2026-04-02T00:00:01Z",
+  "source_service": "ingestion",
+  "idempotency_key": "audio.metadata:v1:demo-run:2",
+  "payload": {
+    "run_id": "demo-run",
+    "track_id": 2,
+    "artist_id": 1,
+    "genre": "Hip-Hop",
+    "source_audio_uri": "data/raw/fma_small/000/000002.mp3",
+    "validation_status": "validated",
+    "duration_s": 29.95,
+    "subset": "small"
+  }
+}

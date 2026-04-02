@@ -5,17 +5,26 @@
   "required": [
     "event_id",
     "event_type",
-    "schema_version",
-    "occurred_at",
-    "produced_by",
+    "event_version",
+    "trace_id",
+    "run_id",
+    "produced_at",
+    "source_service",
+    "idempotency_key",
     "payload"
   ],
   "properties": {
-    "event_id": { "type": "string" },
+    "event_id": { "type": "string", "minLength": 1 },
     "event_type": { "const": "system.metrics" },
-    "schema_version": { "const": "v1" },
-    "occurred_at": { "type": "string", "format": "date-time" },
-    "produced_by": { "type": "string" },
+    "event_version": { "const": "v1" },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "produced_at": { "type": "string", "format": "date-time" },
+    "source_service": {
+      "type": "string",
+      "enum": ["ingestion", "processing", "writer"]
+    },
+    "idempotency_key": { "type": "string", "minLength": 1 },
     "payload": {
       "type": "object",
       "required": [
@@ -23,16 +32,16 @@
         "run_id",
         "service_name",
         "metric_name",
-        "metric_value",
-        "labels_json"
+        "metric_value"
       ],
       "properties": {
         "ts": { "type": "string", "format": "date-time" },
-        "run_id": { "type": "string" },
-        "service_name": { "type": "string" },
-        "metric_name": { "type": "string" },
+        "run_id": { "type": "string", "minLength": 1 },
+        "service_name": { "type": "string", "minLength": 1 },
+        "metric_name": { "type": "string", "minLength": 1 },
         "metric_value": { "type": "number" },
-        "labels_json": { "type": "object" }
+        "labels_json": { "type": "object" },
+        "unit": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

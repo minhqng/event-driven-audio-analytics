@@ -1,7 +1,6 @@
 services:
   kafka:
     image: bitnamilegacy/kafka:3.9.0
-    hostname: kafka
     ports:
       - "${KAFKA_BROKER_PORT:-9092}:9092"
     environment:

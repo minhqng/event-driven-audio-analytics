@@ -1,42 +1,60 @@
 from __future__ import annotations
 
+import json
+from hashlib import sha256
 from pathlib import Path
 import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from event_driven_audio_analytics.shared.kafka import deserialize_envelope, serialize_envelope
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.envelope import build_envelope
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
 class EventModelTests(unittest.TestCase):
-    def test_audio_features_envelope_serializes_payload(self) -> None:
+    def test_audio_features_envelope_serializes_canonical_v1_fields(self) -> None:
         payload = AudioFeaturesPayload(
-            ts="2026-03-24T00:00:00Z",
+            ts="2026-04-02T00:00:10Z",
             run_id="demo-run",
             track_id=2,
             segment_idx=0,
-            artifact_uri="/app/artifacts/runs/demo-run/segments/2/0.wav",
-            checksum="abc123",
-            manifest_uri="/app/artifacts/runs/demo-run/manifests/segments.parquet",
+            artifact_uri="/artifacts/runs/demo-run/segments/2/0.wav",
+            checksum="sha256:segment-000",
             rms=0.42,
             silent_flag=False,
             mel_bins=128,
             mel_frames=300,
             processing_ms=12.5,
+            manifest_uri="/artifacts/runs/demo-run/manifests/segments.parquet",
         )
 
-        envelope = build_envelope("audio.features", "processing", payload).to_dict()
+        envelope = build_envelope(
+            "audio.features",
+            "processing",
+            payload,
+            event_id="evt-features-001",
+            produced_at="2026-04-02T00:00:11Z",
+        ).to_dict()
+        round_trip = deserialize_envelope(serialize_envelope(envelope))
 
+        self.assertEqual(envelope["event_id"], "evt-features-001")
         self.assertEqual(envelope["event_type"], "audio.features")
+        self.assertEqual(envelope["event_version"], "v1")
+        self.assertEqual(envelope["trace_id"], "run/demo-run/track/2")
+        self.assertEqual(envelope["run_id"], "demo-run")
+        self.assertEqual(envelope["produced_at"], "2026-04-02T00:00:11Z")
+        self.assertEqual(envelope["source_service"], "processing")
+        self.assertEqual(envelope["idempotency_key"], "audio.features:v1:demo-run:2:0")
         self.assertEqual(envelope["payload"]["segment_idx"], 0)
         self.assertEqual(envelope["payload"]["mel_bins"], 128)
+        self.assertEqual(round_trip, envelope)
 
     def test_system_metrics_default_labels_are_empty_dict(self) -> None:
         payload = SystemMetricsPayload(
-            ts="2026-03-24T00:00:00Z",
+            ts="2026-04-02T00:00:12Z",
             run_id="demo-run",
             service_name="writer",
             metric_name="rows_upserted",
@@ -44,6 +62,44 @@ class EventModelTests(unittest.TestCase):
         )
 
         self.assertEqual(payload.labels_json, {})
+
+    def test_system_metrics_envelope_uses_service_trace_and_deterministic_labels_hash(self) -> None:
+        payload = SystemMetricsPayload(
+            ts="2026-04-02T00:00:12Z",
+            run_id="demo-run",
+            service_name="processing",
+            metric_name="processing_ms",
+            metric_value=12.5,
+            labels_json={
+                "topic": "audio.features",
+                "status": "ok",
+            },
+            unit="ms",
+        )
+        labels_digest = sha256(
+            json.dumps(
+                payload.labels_json,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()[:16]
+
+        envelope = build_envelope(
+            "system.metrics",
+            "processing",
+            payload,
+            event_id="evt-metric-001",
+            produced_at="2026-04-02T00:00:13Z",
+        ).to_dict()
+
+        self.assertEqual(envelope["trace_id"], "run/demo-run/service/processing")
+        self.assertEqual(
+            envelope["idempotency_key"],
+            (
+                "system.metrics:v1:demo-run:processing:processing_ms:"
+                f"2026-04-02T00:00:12Z:{labels_digest}"
+            ),
+        )
 
 
 if __name__ == "__main__":

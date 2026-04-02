@@ -11,7 +11,7 @@ from event_driven_audio_analytics.shared.settings import load_base_service_setti
 
 
 REPO_ROOT = Path("/app")
-FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "events"
+FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "events" / "v1"
 
 
 def load_fixture(name: str) -> dict[str, object]:
@@ -28,8 +28,8 @@ def main() -> None:
     )
 
     fixture_by_topic = (
-        (AUDIO_METADATA, load_fixture("audio.metadata.json")),
-        (AUDIO_FEATURES, load_fixture("audio.features.json")),
+        (AUDIO_METADATA, load_fixture("audio.metadata.valid.json")),
+        (AUDIO_FEATURES, load_fixture("audio.features.valid.json")),
     )
 
     for topic, envelope in fixture_by_topic:

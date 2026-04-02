@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from confluent_kafka import Consumer, KafkaError, KafkaException, Message
+from typing import TYPE_CHECKING, Any
 
 from event_driven_audio_analytics.shared.contracts.topics import WRITER_INPUT_TOPICS
 from event_driven_audio_analytics.shared.kafka import build_consumer
 from event_driven_audio_analytics.writer.config import WriterSettings
+
+if TYPE_CHECKING:
+    from confluent_kafka import Consumer, Message
+else:
+    Consumer = Any
+    Message = Any
 
 
 @dataclass(slots=True)
@@ -35,6 +40,8 @@ def build_writer_consumer(settings: WriterSettings) -> Consumer:
 
 def poll_record(consumer: Consumer, timeout_s: float = 1.0) -> ConsumedRecord | None:
     """Poll a single Kafka record and decode the shared envelope."""
+
+    from confluent_kafka import KafkaError, KafkaException
 
     message = consumer.poll(timeout_s)
     if message is None:

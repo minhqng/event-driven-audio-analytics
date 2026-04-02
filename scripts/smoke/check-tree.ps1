@@ -9,6 +9,7 @@ $requiredPaths = @(
     "infra/kafka/create-topics.sh",
     "infra/kafka/create-topics.ps1",
     "infra/sql/002_core_tables.sql",
+    "scripts/smoke/check-writer-flow.ps1",
     "run-demo.ps1",
     "src/event_driven_audio_analytics/ingestion/app.py",
     "src/event_driven_audio_analytics/processing/app.py",

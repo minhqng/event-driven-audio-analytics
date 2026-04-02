@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from psycopg import Cursor
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from psycopg import Cursor
+else:
+    Cursor = Any
 
 
 RUN_CHECKPOINT_UPSERT = """

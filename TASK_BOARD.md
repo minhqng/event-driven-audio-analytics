@@ -4,36 +4,34 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ## Immediate Next Tasks
 
-1. Lock the canonical event contract.
-2. Reconcile root docs, repo schemas/models, SQL, and tests around one agreed contract.
-3. Produce a reuse-map from the old data pipeline into `ingestion` and `processing`.
-4. Finish the Week 2 smoke path: fake event to writer to TimescaleDB with evidence.
-5. Implement real ingestion on a small FMA-small sample.
+1. Implement real ingestion on a small FMA-small sample.
+2. Implement real processing parity for RMS, silence gate, log-mel summaries, and Welford behavior.
+3. Extend evidence from the canonical v1 fake-event writer flow to the first real segment-ready path.
+4. Replace placeholder dashboard panels with queries backed by persisted data.
+5. Add real producer-traffic replay evidence on top of the current fixture-driven writer checks.
 
 ## Dependency Ordering
 
-1. Contract reconciliation.
-2. Reuse-map and test fixtures.
-3. Fake-event writer persistence and checkpoint smoke test.
-4. Real ingestion artifact path.
-5. Real processing path.
-6. Real writer path and replay safety.
-7. Real Grafana dashboards.
-8. Restart/replay hardening.
-9. Benchmark/demo/freeze.
+1. Keep the locked v1 contract stable under future runtime work.
+   Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
+2. Real ingestion artifact path.
+3. Real processing path.
+4. Real writer replay hardening under real producer traffic.
+5. Real Grafana dashboards.
+6. Restart/replay hardening.
+7. Benchmark/demo/freeze.
 
 ## Member B Can Do Independently
 
-- Audit the old data pipeline and classify `reuse now`, `refactor`, and `defer`.
-- Prepare sample fixtures: valid track, silent track, short clip, corrupt file if available.
-- Implement or document metadata ETL behavior expected from `tracks.csv`.
+- Port metadata ETL behavior expected from `tracks.csv` into `ingestion`.
+- Port or refactor decode/resample plus segmentation logic from the legacy pipeline into the repo-owned modules.
+- Prepare or extend sample fixtures: valid track, silent track, short clip, corrupt file if available.
 - Define correctness tolerances against the old pipeline for segment count, log-mel shape, RMS, silence gate, and Welford outputs.
 - Write or strengthen unit tests for RMS, silence gate, log-mel shape, checksum validation, and reference comparisons.
 - Draft the DSP/reuse/correctness narrative for future report/demo use.
 
 ## Tasks Requiring A/B Synchronization
 
-- Final envelope fields and payload names.
 - Final topic list, including `audio.dlq`.
 - Natural key and idempotency policy for `audio_features`.
 - Checkpoint semantics and offset-commit rules.
@@ -44,7 +42,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ## Gates / Acceptance Checkpoints
 
 - Gate 1: `docker compose config` and infra bootstrap remain clean after any contract or SQL change.
-- Gate 2: A fake event can be persisted to TimescaleDB through the writer path.
+- Gate 2: The canonical v1 fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
@@ -56,39 +54,36 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ### Session 1
 
-- Resolve contract drift between attached-plan target and repo placeholder implementation.
-- Decide whether `audio.dlq` and the richer envelope are immediate scope or staged follow-up.
-- Leave `ARCHITECTURE_CONTRACTS.md` and repo schemas aligned.
+- Keep `ARCHITECTURE_CONTRACTS.md` and repo schemas aligned while starting real ingestion on a small sample.
+- Leave the full DLQ flow as explicit follow-up unless A/B jointly re-scope it.
 
 ### Session 2
 
-- Build the fake-event writer smoke path.
-- Prove SQL write + checkpoint behavior with lightweight evidence.
+- Lock artifact URI, manifest, checksum, and segment-count behavior from the first real ingestion pass.
 
 ### Session 3
 
-- Implement ingestion over a small real sample.
-- Lock artifact URI, manifest, checksum, and segment-count behavior.
+- Implement processing with legacy-pipeline parity on RMS, silence gate, log-mel, and Welford semantics.
 
 ### Session 4
 
-- Implement processing with old-pipeline parity on RMS, silence gate, log-mel, and Welford semantics.
+- Extend writer verification from fake events to real producer traffic and replay scenarios.
 
 ### Session 5
 
-- Implement real writer consumption, persistence, checkpointing, and replay safety.
+- Replace placeholder dashboards with real queries and validate panel meaning.
 
 ### Session 6
 
-- Replace placeholder dashboards with real queries and validate panel meaning.
+- Run restart/replay/hardening scenarios and document pass/fail outcomes.
 
 ### Session 7
 
-- Run restart/replay/hardening scenarios and document pass/fail outcomes.
+- Run benchmark/demo prep, freeze contracts, and polish docs/evidence.
 
 ### Session 8
 
-- Run benchmark/demo prep, freeze contracts, and polish docs/evidence.
+- Reserve for integration cleanup, report evidence, or unresolved A/B sync items.
 
 ## Items That Should Not Be Started Yet
 
