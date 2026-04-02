@@ -25,6 +25,7 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - `audio.segment.ready`
 - `audio.features`
 - `system.metrics`
+- `audio.dlq`
 
 ## Quick Start
 
@@ -32,10 +33,12 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 2. Review `docs/architecture/system-overview.md`.
 3. Start the scaffold with `bash ./run-demo.sh`.
 4. If you only need Kafka topic bootstrap, run `sh ./infra/kafka/create-topics.sh`.
+5. To verify the first Week 2 writer flow, run `bash ./scripts/smoke/check-writer-flow.sh`.
 
 ## Runtime Notes
 
 - All application code executes inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
 - The scaffold only validates local bootstrapping and contract shape; it does not claim end-to-end analytics execution yet.
-- The `ingestion`, `processing`, and `writer` containers currently log their scaffold steps and exit cleanly; Week 1 success is infra wiring, not long-running service loops.
+- `writer` now runs as a minimal Kafka-to-TimescaleDB consumer for `audio.metadata`, `audio.features`, and `system.metrics`.
+- `ingestion` and `processing` still log scaffold steps and exit `0`; they are not long-running yet.

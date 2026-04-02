@@ -6,7 +6,10 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 COPY pyproject.toml README.md /app/
+COPY infra /app/infra
+COPY schemas /app/schemas
 COPY src /app/src
+COPY tests /app/tests
 COPY services/writer /app/services/writer
 
 RUN sed -i 's/\r$//' /app/services/writer/entrypoint.sh \

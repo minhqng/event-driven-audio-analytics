@@ -21,6 +21,7 @@ class WriterSchemaPlaceholderTests(unittest.TestCase):
         self.assertIn("track_id BIGINT NOT NULL", self.sql)
         self.assertIn("segment_idx INTEGER NOT NULL", self.sql)
         self.assertIn("SELECT create_hypertable('audio_features'", self.sql)
+        self.assertIn("CREATE INDEX IF NOT EXISTS idx_audio_features_lookup", self.sql)
 
     def test_system_metrics_shape_is_fixed(self) -> None:
         self.assertIn("service_name TEXT NOT NULL", self.sql)
@@ -32,6 +33,10 @@ class WriterSchemaPlaceholderTests(unittest.TestCase):
     def test_run_checkpoints_is_regular_table(self) -> None:
         self.assertIn("CREATE TABLE IF NOT EXISTS run_checkpoints", self.sql)
         self.assertIn("PRIMARY KEY (consumer_group, topic_name, partition_id)", self.sql)
+
+    def test_welford_snapshots_table_exists(self) -> None:
+        self.assertIn("CREATE TABLE IF NOT EXISTS welford_snapshots", self.sql)
+        self.assertIn("PRIMARY KEY (run_id, service_name, metric_name)", self.sql)
 
 
 if __name__ == "__main__":

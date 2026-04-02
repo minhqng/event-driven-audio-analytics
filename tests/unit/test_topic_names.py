@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from event_driven_audio_analytics.shared.contracts.topics import ALL_TOPICS
+from event_driven_audio_analytics.shared.contracts.topics import ALL_TOPICS, WRITER_INPUT_TOPICS
 
 
 class TopicNameTests(unittest.TestCase):
@@ -16,6 +16,17 @@ class TopicNameTests(unittest.TestCase):
             (
                 "audio.metadata",
                 "audio.segment.ready",
+                "audio.features",
+                "system.metrics",
+                "audio.dlq",
+            ),
+        )
+
+    def test_writer_input_topics_are_explicit(self) -> None:
+        self.assertEqual(
+            WRITER_INPUT_TOPICS,
+            (
+                "audio.metadata",
                 "audio.features",
                 "system.metrics",
             ),

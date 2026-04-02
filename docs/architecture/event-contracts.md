@@ -32,3 +32,8 @@ All topic messages use the shared envelope defined in `schemas/envelope.v1.json`
 
 - Minimal operational metric event for dashboards and operational views.
 - Payload placeholders are fixed around `ts`, `run_id`, `service_name`, `metric_name`, `metric_value`, and `labels_json`.
+
+### `audio.dlq`
+
+- Reserved topic for future dead-letter handling.
+- Week 2 only guarantees that the topic exists and writer logs failures clearly; replay and DLQ payload policy are not implemented yet.

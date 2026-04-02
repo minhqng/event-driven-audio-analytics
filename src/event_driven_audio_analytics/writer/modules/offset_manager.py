@@ -18,6 +18,6 @@ def build_commit_decision(rows_written: int, checkpoints_ready: bool) -> OffsetC
 
     if not checkpoints_ready:
         return OffsetCommitDecision(commit_allowed=False, reason="checkpoint update not complete")
-    if rows_written < 0:
+    if rows_written <= 0:
         return OffsetCommitDecision(commit_allowed=False, reason="invalid persistence result")
     return OffsetCommitDecision(commit_allowed=True, reason="persistence and checkpoints complete")

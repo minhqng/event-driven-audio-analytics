@@ -1,25 +1,27 @@
 # Week 1 Bootstrap Status
 
-This repository is validated as a local scaffold for infrastructure bring-up only.
+The Week 1 bootstrap foundation remains the base local environment for this repository.
+That baseline is now exercised by the Week 2 writer smoke path instead of staying infrastructure-only.
 
 ## Verified
 
 - Docker Compose config renders successfully.
 - Kafka, TimescaleDB, and Grafana are the Week 1 foundation services.
 - Kafka topic bootstrap is scripted for the Linux container runtime and host-side POSIX helpers.
-- TimescaleDB init SQL defines the expected core tables and operational views.
+- TimescaleDB init SQL defines the core tables, operational views, and the first Week 2 persistence snapshot table.
 - Grafana datasource and dashboard provisioning are file-backed placeholders.
 - Runtime services mount `artifacts/` as the local claim-check boundary.
-- Runtime service containers start under Linux, emit their scaffold logs, and exit cleanly.
+- The `writer` service now stays up as a minimal Kafka-to-TimescaleDB consumer.
+- Fake `audio.metadata` and `audio.features` events can be published and persisted to TimescaleDB with checkpoint updates.
 
-## Current Limits
+## Current Scope
 
-- Writer persistence remains placeholder-only.
-- Dashboard panels are placeholders until Week 2 persistence work lands.
-- End-to-end audio analytics is not claimed in the current scaffold.
+- `ingestion` and `processing` remain scaffold-only services.
+- Dashboard panels are still placeholders and do not imply finished analytics queries.
+- End-to-end audio analytics is still not claimed beyond the Week 2 fake-event writer path.
 
-## Open Follow-Up For Week 2
+## Recommended Validation
 
-- Implement writer persistence and checkpoint-aware offset handling.
-- Tighten contract alignment across schemas, fixtures, docs, and shared models as persistence evolves.
-- Add fake-event smoke coverage for the writer path once persistence logic is introduced.
+- `bash ./scripts/smoke/check-compose.sh`
+- `docker compose run --rm --entrypoint python writer -m unittest discover -s tests -p "test_*.py"`
+- `bash ./scripts/smoke/check-writer-flow.sh`
