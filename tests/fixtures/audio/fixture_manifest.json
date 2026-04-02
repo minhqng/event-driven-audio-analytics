@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generated_on": "2026-04-02",
+  "notes": [
+    "Committed fixtures are deterministic synthetic audio generated locally for Week 1 testing.",
+    "External FMA-small reference tracks are listed for local parity work but are not committed to this repo."
+  ],
+  "committed_fixtures": [
+    {
+      "name": "valid_synthetic_stereo_44k1.mp3",
+      "path": "tests/fixtures/audio/valid_synthetic_stereo_44k1.mp3",
+      "status": "present",
+      "kind": "synthetic-valid",
+      "codec": "mp3",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "duration_s": 4.6,
+      "sha256": "0f2c5f10a77d3b2ede8ec1276e25eef6992c564a61564ae2ac2762c9458427d1",
+      "purpose": "Decode/resample/mono conversion plus segmentation smoke fixture.",
+      "expected_behavior": "Pass legacy validation; sample-rate mismatch is non-blocking; legacy transform yields 3 segments and (1,128,300) mel tensors."
+    },
+    {
+      "name": "silent_mono_32k.wav",
+      "path": "tests/fixtures/audio/silent_mono_32k.wav",
+      "status": "present",
+      "kind": "synthetic-silent",
+      "codec": "pcm_s16le",
+      "sample_rate_hz": 32000,
+      "channels": 1,
+      "duration_s": 3.0,
+      "sha256": "7ebab15e0624e25f6db5b7fa298bad3dfa8ed705156c8a80142ef12ab7673092",
+      "purpose": "Deterministic silence gate and validation fixture.",
+      "expected_behavior": "Legacy validation rejects it as silent; RMS computes as -inf."
+    },
+    {
+      "name": "short_tone_mono_32k.wav",
+      "path": "tests/fixtures/audio/short_tone_mono_32k.wav",
+      "status": "present",
+      "kind": "synthetic-short",
+      "codec": "pcm_s16le",
+      "sample_rate_hz": 32000,
+      "channels": 1,
+      "duration_s": 0.75,
+      "sha256": "b6a918aa67447d6bad697670749faf518880aa9fe5c1442e472cc27f56e26a11",
+      "purpose": "Deterministic minimum-duration validation fixture.",
+      "expected_behavior": "Legacy validation rejects it because duration is below 1.0 second."
+    },
+    {
+      "name": "corrupt_audio.mp3",
+      "path": "tests/fixtures/audio/corrupt_audio.mp3",
+      "status": "present",
+      "kind": "synthetic-corrupt",
+      "codec": "invalid",
+      "sample_rate_hz": null,
+      "channels": null,
+      "duration_s": null,
+      "sha256": "b904d5c0d50316ec2e8d83a709312e892ffa35652cf34ce67d2112d9e6b6557a",
+      "purpose": "Deterministic corrupt decode fixture.",
+      "expected_behavior": "PyAV/FFmpeg open should fail."
+    }
+  ],
+  "external_fma_reference_pack": [
+    {
+      "status": "not_committed_by_design",
+      "genre": "Electronic",
+      "track_id": 1482,
+      "artist_id": 249,
+      "relative_source_path": "001/001482.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Experimental",
+      "track_id": 148,
+      "artist_id": 57,
+      "relative_source_path": "000/000148.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Folk",
+      "track_id": 140,
+      "artist_id": 54,
+      "relative_source_path": "000/000140.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Hip-Hop",
+      "track_id": 2,
+      "artist_id": 1,
+      "relative_source_path": "000/000002.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Instrumental",
+      "track_id": 10250,
+      "artist_id": 42,
+      "relative_source_path": "010/010250.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "International",
+      "track_id": 666,
+      "artist_id": 135,
+      "relative_source_path": "000/000666.mp3",
+      "observed_legacy_segment_count": 20
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Pop",
+      "track_id": 10,
+      "artist_id": 6,
+      "relative_source_path": "000/000010.mp3",
+      "observed_legacy_segment_count": 19
+    },
+    {
+      "status": "not_committed_by_design",
+      "genre": "Rock",
+      "track_id": 182,
+      "artist_id": 64,
+      "relative_source_path": "000/000182.mp3",
+      "observed_legacy_segment_count": 20
+    }
+  ],
+  "missing_or_non_committed": [
+    {
+      "type": "real_fma_audio_binary",
+      "status": "not_committed_by_design",
+      "reason": "Repo guidance and upstream FMA packaging discourage redistributing raw FMA audio in this PoC repo."
+    }
+  ]
+}
