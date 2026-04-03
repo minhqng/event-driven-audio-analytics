@@ -27,7 +27,7 @@ The external FMA pack is described in `fixture_manifest.json` but intentionally 
 
 ## Compose Smoke Mirrors
 
-- `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Week 3 Compose smoke path.
+- `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Week 3 Compose smoke path and now includes `track.duration` so reject-path metadata events stay contract-valid.
 - `fma_small/000/000002.mp3` mirrors the valid synthetic fixture under canonical FMA naming.
 - `fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
 - These are still synthetic or intentionally corrupt repo fixtures, not redistributed FMA audio.

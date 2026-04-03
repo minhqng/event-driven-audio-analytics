@@ -19,6 +19,7 @@ class MetadataRecord:
     subset: str
     source_path: str
     source_audio_uri: str
+    declared_duration_s: float | None = None
 
 
 def _build_flattened_headers(csv_path: Path) -> list[str]:
@@ -87,6 +88,7 @@ def _select_required_columns(frame: pl.DataFrame, subset: str) -> pl.DataFrame:
         "artist_id": None,
         "genre_top": None,
         "subset": None,
+        "duration": None,
     }
 
     for column_name in frame.columns:
@@ -95,6 +97,8 @@ def _select_required_columns(frame: pl.DataFrame, subset: str) -> pl.DataFrame:
             column_by_key["artist_id"] = column_name
         elif lowered == "set.subset":
             column_by_key["subset"] = column_name
+        elif lowered == "track.duration":
+            column_by_key["duration"] = column_name
         elif "genre_top" in lowered:
             column_by_key["genre_top"] = column_name
 
@@ -110,6 +114,9 @@ def _select_required_columns(frame: pl.DataFrame, subset: str) -> pl.DataFrame:
                 pl.col(str(column_by_key["artist_id"])).cast(pl.Int64).alias("artist_id"),
                 pl.col(str(column_by_key["genre_top"])).str.strip_chars().alias("genre_label"),
                 pl.col(str(column_by_key["subset"])).str.strip_chars().alias("subset"),
+                pl.col(str(column_by_key["duration"]))
+                .cast(pl.Float64, strict=False)
+                .alias("declared_duration_s"),
             ]
         )
         .filter(pl.col("subset") == subset)
@@ -142,6 +149,16 @@ def load_small_subset_metadata(
     if max_tracks is not None:
         frame = frame.head(max_tracks)
 
+    invalid_duration_frame = frame.filter(
+        pl.col("declared_duration_s").is_null() | (pl.col("declared_duration_s") <= 0.0)
+    )
+    if invalid_duration_frame.height:
+        invalid_track_ids = invalid_duration_frame["track_id"].head(5).to_list()
+        raise ValueError(
+            "tracks.csv must provide positive track.duration values for the selected subset. "
+            f"Invalid track_ids include: {invalid_track_ids}."
+        )
+
     audio_root = Path(audio_root_path)
     records: list[MetadataRecord] = []
     for row in frame.iter_rows(named=True):
@@ -155,6 +172,7 @@ def load_small_subset_metadata(
                 subset=str(row["subset"]),
                 source_path=source_path,
                 source_audio_uri=(audio_root / source_path).as_posix(),
+                declared_duration_s=float(row["declared_duration_s"]),
             )
         )
 

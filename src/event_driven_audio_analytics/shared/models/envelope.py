@@ -50,7 +50,11 @@ def _payload_to_dict(payload: PayloadT | dict[str, object]) -> dict[str, object]
     else:
         raise TypeError("Envelope payload must be a dataclass instance or dictionary.")
 
-    return payload_data
+    return {
+        field_name: field_value
+        for field_name, field_value in payload_data.items()
+        if field_value is not None
+    }
 
 
 def _require_string(payload_data: dict[str, object], field_name: str) -> str:
