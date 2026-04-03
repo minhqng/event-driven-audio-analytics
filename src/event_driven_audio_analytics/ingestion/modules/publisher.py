@@ -4,21 +4,36 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from event_driven_audio_analytics.shared.contracts.topics import AUDIO_METADATA, AUDIO_SEGMENT_READY
-from event_driven_audio_analytics.shared.kafka import serialize_envelope
+from event_driven_audio_analytics.shared.contracts.topics import (
+    AUDIO_METADATA,
+    AUDIO_SEGMENT_READY,
+    SYSTEM_METRICS,
+)
+from event_driven_audio_analytics.shared.kafka import produce_and_wait, serialize_envelope
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import EventEnvelope, build_envelope
+from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
 class ProducerLike(Protocol):
     """Minimal producer protocol used by the ingestion pipeline."""
 
-    def produce(self, *, topic: str, value: bytes, key: bytes | None = None) -> None:
+    def produce(
+        self,
+        *,
+        topic: str,
+        value: bytes,
+        key: bytes | None = None,
+        on_delivery: object | None = None,
+    ) -> None:
         """Publish a message payload."""
 
-    def flush(self) -> int | None:
+    def flush(self, timeout: float | None = None) -> int | None:
         """Flush any buffered messages."""
+
+    def poll(self, timeout: float = 0.0) -> int | None:
+        """Serve delivery callbacks if the producer implementation requires it."""
 
 
 def build_metadata_event(payload: AudioMetadataPayload) -> EventEnvelope[AudioMetadataPayload]:
@@ -39,17 +54,52 @@ def build_segment_ready_event(
     )
 
 
+def build_system_metric_event(
+    payload: SystemMetricsPayload,
+) -> EventEnvelope[SystemMetricsPayload]:
+    """Wrap system.metrics payloads in the shared event envelope."""
+
+    return build_envelope(
+        event_type="system.metrics",
+        source_service="ingestion",
+        payload=payload,
+    )
+
+
 def publish_metadata_event(
     producer: ProducerLike,
     payload: AudioMetadataPayload,
+    *,
+    delivery_timeout_s: float = 30.0,
 ) -> EventEnvelope[AudioMetadataPayload]:
     """Publish one audio.metadata envelope with the canonical track key."""
 
     envelope = build_metadata_event(payload)
-    producer.produce(
+    produce_and_wait(
+        producer,
         topic=AUDIO_METADATA,
         key=str(payload.track_id).encode("utf-8"),
         value=serialize_envelope(envelope),
+        timeout_s=delivery_timeout_s,
+    )
+    return envelope
+
+
+def publish_system_metric_event(
+    producer: ProducerLike,
+    payload: SystemMetricsPayload,
+    *,
+    delivery_timeout_s: float = 30.0,
+) -> EventEnvelope[SystemMetricsPayload]:
+    """Publish one system.metrics envelope keyed by service_name."""
+
+    envelope = build_system_metric_event(payload)
+    produce_and_wait(
+        producer,
+        topic=SYSTEM_METRICS,
+        key=payload.service_name.encode("utf-8"),
+        value=serialize_envelope(envelope),
+        timeout_s=delivery_timeout_s,
     )
     return envelope
 
@@ -57,13 +107,17 @@ def publish_metadata_event(
 def publish_segment_ready_event(
     producer: ProducerLike,
     payload: AudioSegmentReadyPayload,
+    *,
+    delivery_timeout_s: float = 30.0,
 ) -> EventEnvelope[AudioSegmentReadyPayload]:
     """Publish one audio.segment.ready envelope with the canonical track key."""
 
     envelope = build_segment_ready_event(payload)
-    producer.produce(
+    produce_and_wait(
+        producer,
         topic=AUDIO_SEGMENT_READY,
         key=str(payload.track_id).encode("utf-8"),
         value=serialize_envelope(envelope),
+        timeout_s=delivery_timeout_s,
     )
     return envelope

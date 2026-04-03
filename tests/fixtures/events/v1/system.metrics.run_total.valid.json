@@ -1,0 +1,21 @@
+{
+  "event_id": "evt-metric-run-total-v1-001",
+  "event_type": "system.metrics",
+  "event_version": "v1",
+  "trace_id": "run/demo-run/service/ingestion",
+  "run_id": "demo-run",
+  "produced_at": "2026-04-03T00:00:01Z",
+  "source_service": "ingestion",
+  "idempotency_key": "system.metrics:v1:demo-run:ingestion:tracks_total:run_total:ca4675c0903ea4a0",
+  "payload": {
+    "ts": "2026-04-03T00:00:00Z",
+    "run_id": "demo-run",
+    "service_name": "ingestion",
+    "metric_name": "tracks_total",
+    "metric_value": 5.0,
+    "labels_json": {
+      "scope": "run_total"
+    },
+    "unit": "count"
+  }
+}

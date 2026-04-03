@@ -17,7 +17,7 @@ from event_driven_audio_analytics.writer.modules.persistence import (
 
 
 class FakeCursor:
-    def __init__(self, fetch_results: list[list[tuple[int]]] | None = None) -> None:
+    def __init__(self, fetch_results: list[list[tuple[object, ...]]] | None = None) -> None:
         self.fetch_results = list(fetch_results or [])
         self.executed: list[tuple[str, object]] = []
         self.rowcount = 1
@@ -26,7 +26,7 @@ class FakeCursor:
         self.executed.append((sql, params))
         self.rowcount = 1
 
-    def fetchall(self) -> list[tuple[int]]:
+    def fetchall(self) -> list[tuple[object, ...]]:
         if not self.fetch_results:
             return []
         return self.fetch_results.pop(0)
@@ -72,6 +72,17 @@ class WriterPersistenceTests(unittest.TestCase):
             metric_value=12.5,
             labels_json={"topic": "audio.features"},
             unit="ms",
+        )
+
+    def build_run_total_metrics_payload(self) -> SystemMetricsPayload:
+        return SystemMetricsPayload(
+            ts="2026-04-02T00:00:12Z",
+            run_id="demo-run",
+            service_name="ingestion",
+            metric_name="tracks_total",
+            metric_value=2.0,
+            labels_json={"scope": "run_total"},
+            unit="count",
         )
 
     def test_audio_features_inserts_when_natural_key_is_missing(self) -> None:
@@ -130,6 +141,56 @@ class WriterPersistenceTests(unittest.TestCase):
         self.assertEqual(len(cursor.executed), 1)
         self.assertIn("unit", cursor.executed[0][0])
         self.assertEqual(cursor.executed[0][1]["unit"], "ms")
+
+    def test_run_total_system_metrics_rewrites_existing_logical_row(self) -> None:
+        cursor = FakeCursor(fetch_results=[[(16432, "(0,7)")]])
+
+        rows_written = persist_system_metrics(cursor, self.build_run_total_metrics_payload())
+
+        self.assertEqual(rows_written, 1)
+        self.assertEqual(len(cursor.executed), 4)
+        self.assertIn("pg_advisory_xact_lock", cursor.executed[0][0])
+        self.assertIn("SELECT", cursor.executed[1][0])
+        self.assertIn("tableoid::oid", cursor.executed[1][0])
+        self.assertIn("ctid::text", cursor.executed[1][0])
+        self.assertIn("DELETE FROM system_metrics", cursor.executed[2][0])
+        self.assertIn("tableoid = %(survivor_tableoid)s::oid", cursor.executed[2][0])
+        self.assertIn("ctid = %(survivor_ctid)s::tid", cursor.executed[2][0])
+        self.assertEqual(cursor.executed[2][1]["survivor_tableoid"], 16432)
+        self.assertEqual(cursor.executed[2][1]["survivor_ctid"], "(0,7)")
+        self.assertIn("INSERT INTO system_metrics", cursor.executed[3][0])
+
+    def test_run_total_system_metrics_inserts_when_logical_row_is_missing(self) -> None:
+        cursor = FakeCursor(fetch_results=[[]])
+
+        rows_written = persist_system_metrics(cursor, self.build_run_total_metrics_payload())
+
+        self.assertEqual(rows_written, 1)
+        self.assertEqual(len(cursor.executed), 3)
+        self.assertIn("pg_advisory_xact_lock", cursor.executed[0][0])
+        self.assertIn("tableoid::oid", cursor.executed[1][0])
+        self.assertIn("ctid::text", cursor.executed[1][0])
+        self.assertIn("INSERT INTO system_metrics", cursor.executed[2][0])
+
+    def test_run_total_system_metrics_repairs_duplicate_logical_rows(self) -> None:
+        cursor = FakeCursor(fetch_results=[[(19111, "(0,9)"), (19124, "(0,4)")]])
+
+        rows_written = persist_system_metrics(cursor, self.build_run_total_metrics_payload())
+
+        self.assertEqual(rows_written, 1)
+        self.assertEqual(len(cursor.executed), 5)
+        self.assertIn("pg_advisory_xact_lock", cursor.executed[0][0])
+        self.assertIn("tableoid::oid", cursor.executed[1][0])
+        self.assertIn("ctid::text", cursor.executed[1][0])
+        self.assertIn("DELETE FROM system_metrics", cursor.executed[2][0])
+        self.assertIn("tableoid = %(survivor_tableoid)s::oid", cursor.executed[2][0])
+        self.assertIn("ctid = %(survivor_ctid)s::tid", cursor.executed[2][0])
+        self.assertEqual(cursor.executed[2][1]["survivor_tableoid"], 19111)
+        self.assertEqual(cursor.executed[2][1]["survivor_ctid"], "(0,9)")
+        self.assertIn("DELETE FROM system_metrics", cursor.executed[3][0])
+        self.assertIn("tableoid = %(survivor_tableoid)s::oid", cursor.executed[3][0])
+        self.assertIn("ctid = %(survivor_ctid)s::tid", cursor.executed[3][0])
+        self.assertIn("INSERT INTO system_metrics", cursor.executed[4][0])
 
 
 if __name__ == "__main__":

@@ -171,12 +171,17 @@ Canonical v1 compositions:
 - `audio.metadata`: `audio.metadata:v1:<run_id>:<track_id>`
 - `audio.segment.ready`: `audio.segment.ready:v1:<run_id>:<track_id>:<segment_idx>`
 - `audio.features`: `audio.features:v1:<run_id>:<track_id>:<segment_idx>`
-- `system.metrics`: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:<ts>:<labels_hash>`
+- `system.metrics` append-only metrics: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:<ts>:<labels_hash>`
+- `system.metrics` snapshot metrics where `labels_json.scope=run_total`: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:run_total:<labels_hash>`
 
 `labels_hash` rule for `system.metrics`:
 - Compute SHA-256 over canonical JSON serialization of `labels_json`.
 - Canonical JSON means sorted keys and no extra whitespace.
 - Use the hash so metrics remain deterministic without inflating the event envelope.
+- `run_total` rule:
+- Treat the logical identity as the snapshot row `(run_id, service_name, metric_name, labels_json)`.
+- Replays or timestamp refreshes for the same snapshot must keep the same `idempotency_key`.
+- The payload `ts` still records when that snapshot was observed; it is not part of the snapshot identity.
 
 ## `trace_id` Rules
 
@@ -226,4 +231,4 @@ Propagation expectations:
 - The v1 contract is now locked in docs, schemas, shared models, contract tests, the writer runtime, and the fixture-driven smoke path, but it still has not been exercised by real ingestion/processing traffic.
 - `audio.dlq` remains reserved but is not part of the 4-topic core v1 contract in this task.
 - The current writer schema/persistence now stores `audio.metadata.duration_s` and optional `system.metrics.unit`, but producer-side real traffic has not exercised those fields end to end yet.
-- The long-term dedup/persistence policy for `system.metrics` remains open because the current DB path is append-only.
+- The long-term dedup/persistence policy for `system.metrics` remains open beyond the currently locked `scope=run_total` snapshot rule.

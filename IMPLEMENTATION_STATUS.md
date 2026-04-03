@@ -32,14 +32,20 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: `REUSE_MAP.md` now records the Week 1 Member B reuse audit against the old FMA-small pipeline.
 - `Fact`: `tests/fixtures/audio/` now contains deterministic synthetic audio fixtures plus a manifest-only FMA-small reference pack strategy.
 - `Fact`: `ingestion` now ports the first real Week 3 Member B path: flattened-header metadata ETL, structured audio validation, PyAV decode/resample to mono 32 kHz, 3.0 s / 1.5 s segmentation, WAV claim-check artifact writing with SHA-256 checksums, Parquet manifest updates, and canonical `audio.metadata` plus `audio.segment.ready` envelope emission.
+- `Fact`: Member A Week 3 Compose wiring now mounts `artifacts/` as the shared claim-check bind mount, mounts a read-only bounded fixture dataset for smoke runs, applies bounded container log retention, and exposes env-backed producer retry/backoff settings for `ingestion`.
+- `Fact`: `ingestion` now emits run-level `system.metrics` for `tracks_total`, `segments_total`, `validation_failures`, and `artifact_write_ms` on the canonical v1 envelope.
+- `Fact`: `ingestion` publish helpers now wait for Kafka delivery reports before treating `audio.metadata`, `audio.segment.ready`, or `system.metrics` publication as successful.
+- `Fact`: Canonical v1 now treats `system.metrics` with `labels_json.scope=run_total` as snapshot identities that stay replay-stable across `ts` refreshes, keeping the producer-side event contract aligned with the writer's replay-safe sink rule.
 - `Fact`: `writer` now consumes the locked v1 envelope for `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
+- `Fact`: `writer` now treats `system.metrics` rows with `labels_json.scope=run_total` as replay-safe snapshot upserts keyed by `(run_id, service_name, metric_name, labels_json)`, self-heals historical duplicates under the writer advisory lock using chunk-aware `(tableoid, ctid)` survivor targeting on the Timescale hypertable, rewrites the logical snapshot row with the latest `ts`/value/unit payload, and leaves other metrics append-only.
 - `Fact`: The fake-event smoke path now publishes canonical v1 fixtures for `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
-- `Fact`: Lightweight smoke scripts and targeted writer regression tests exist for the current Week 2 baseline.
+- `Fact`: Lightweight smoke scripts and targeted writer regression tests now also verify `system.metrics` `scope=run_total` duplicate repair on a live Timescale hypertable by seeding cross-chunk duplicates and repairing them through the Kafka writer path.
+- `Fact`: The Week 3 ingestion smoke path now has both shell and PowerShell host wrappers, so the bounded broker-backed smoke run remains runnable from the repo's supported Windows host orchestration path.
 - `Fact`: Week 3 smoke validation now covers committed synthetic fixtures plus a local real-FMA sample run for tracks `2` and `666`, with observed segment counts `19` and `20` matching the documented legacy-reference counts.
 
 ## Repo-Present But Still Placeholder
 
-- `Inference`: `ingestion` now implements the first real track-to-artifact path, but live Kafka broker exercise inside the current repo thread still depends on infra/runtime bring-up outside this Member B change set.
+- `Fact`: `ingestion` now implements the first real track-to-artifact path and is exercised under a live Kafka broker in Compose on a bounded committed smoke fixture set.
 - `Inference`: `processing` service structure exists, but artifact loading, RMS, log-mel, and event loops are mostly placeholders.
 - `Inference`: `writer` runtime is real for the current scaffold contract, but it is not yet exercised by real ingestion/processing traffic and does not publish to `audio.dlq`.
 - `Inference`: `welford_snapshots` storage exists, but the full reused mel-bin Welford processing path is still not implemented.
@@ -51,13 +57,13 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Week 1 infrastructure bring-up is documented as validated.
 - `Fact`: The stack can render Compose config, bring up Kafka/TimescaleDB/Grafana, mount `artifacts/`, and start scaffold containers that exit cleanly.
 - `Fact`: The current repo documents and exercises a fake-event writer path from Kafka to TimescaleDB, including checkpoint updates and idempotent feature replay.
-- `Fact`: The current repo can now execute the ingestion-owned Week 3 path over real FMA-small sample input through artifact writing and canonical event emission, but it still does not claim full end-to-end audio analytics execution through processing, persistence, and dashboards.
+- `Fact`: The current repo can now execute the ingestion-owned Week 3 path over both committed bounded smoke fixtures and local real FMA-small sample input through artifact writing and canonical event emission, but it still does not claim full end-to-end audio analytics execution through processing, persistence, and dashboards.
 
 ## What Is Planned But Not Yet Implemented
 
 - `Fact`: Claim-check artifact load and checksum verification in processing.
 - `Fact`: RMS, silence gate, log-mel, and Welford parity against the old pipeline.
-- `Fact`: Live Kafka broker-backed publication/consumption evidence for the real ingestion path across the runtime stack.
+- `Fact`: Live Kafka broker-backed publication/consumption evidence for the real ingestion path into writer persistence and dashboards.
 - `Fact`: Real dashboard panels backed by real DB data.
 - `Fact`: Restart/replay reliability scenarios, 100-track dry run, benchmark notes, and demo artifacts.
 
@@ -77,7 +83,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 | --- | --- | --- |
 | Week 1 / Phase 1 | Scope lock, infra bootstrap, reuse audit | `Fact`: infra scaffold is documented as complete. `Fact`: `REUSE_MAP.md` and `tests/fixtures/audio/` now document the Week 1 Member B reuse audit and fixture strategy. |
 | Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: Event Contract v1 is now locked in root docs, shared schemas/models, contract fixtures/tests, the writer runtime, and the fake-event smoke path. `Conflict`: the DLQ contract remains unresolved. |
-| Week 3 / Phase 3 | Ingestion on real sample data | `Fact`: initial real ingestion path is implemented for Member B scope. `Fact`: metadata ETL, validation, PyAV decode/resample, segmentation, artifact writing, checksum + manifest creation, and canonical `audio.metadata` / `audio.segment.ready` emission now work on committed fixtures and local real FMA samples. `Inference`: live-broker proof under the full Compose stack remains to be exercised. |
+| Week 3 / Phase 3 | Ingestion on real sample data | `Fact`: initial real ingestion path is implemented for Member B scope. `Fact`: metadata ETL, validation, PyAV decode/resample, segmentation, artifact writing, checksum + manifest creation, and canonical `audio.metadata` / `audio.segment.ready` emission now work on committed fixtures and local real FMA samples. `Fact`: Member A Week 3 Compose/runtime work now proves broker-backed `audio.metadata`, `audio.segment.ready`, and `system.metrics` publication on the bounded smoke path. |
 | Week 4 / Phase 4 | Processing / feature emission | `Inference`: not implemented. |
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: runtime implementation now exists for the current scaffold contract, but broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Inference`: provisioning exists, real data path missing. |
@@ -96,11 +102,11 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 ## Unresolved Blockers And Dependencies
 
-- `Fact`: The canonical v1 contract is now adopted in the shared layer, writer runtime, and fake-event smoke path, but real ingestion/processing traffic is still required before real end-to-end implementation.
+- `Fact`: The canonical v1 contract is now adopted in the shared layer, writer runtime, fake-event smoke path, and broker-backed ingestion smoke path, but real ingestion-to-writer-to-dashboard implementation is still required before real end-to-end completion.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
 - `Fact`: Week 3 reuse-critical audio/data dependencies for metadata ETL and PyAV decode/resample are now declared in `pyproject.toml`; Week 4 mel-processing parity still depends on adding the remaining `torch` / `torchaudio` stack.
-- `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented.
+- `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented; run-level `system.metrics` now rely on a shared snapshot identity plus sink-side timestamp refresh rule.
 - `Fact`: Dashboard work depends on real persistence first; placeholders are not enough.
 
 ## Items Requiring Member A/B Synchronization

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from event_driven_audio_analytics.shared.kafka import deserialize_envelope, serialize_envelope
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
-from event_driven_audio_analytics.shared.models.envelope import build_envelope
+from event_driven_audio_analytics.shared.models.envelope import build_envelope, build_idempotency_key
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
@@ -100,6 +100,42 @@ class EventModelTests(unittest.TestCase):
                 f"2026-04-02T00:00:12Z:{labels_digest}"
             ),
         )
+
+    def test_run_total_system_metrics_use_snapshot_identity_not_ts(self) -> None:
+        first_payload = SystemMetricsPayload(
+            ts="2026-04-03T00:00:00Z",
+            run_id="demo-run",
+            service_name="ingestion",
+            metric_name="tracks_total",
+            metric_value=2.0,
+            labels_json={"scope": "run_total"},
+            unit="count",
+        )
+        second_payload = SystemMetricsPayload(
+            ts="2026-04-03T00:00:30Z",
+            run_id="demo-run",
+            service_name="ingestion",
+            metric_name="tracks_total",
+            metric_value=5.0,
+            labels_json={"scope": "run_total"},
+            unit="count",
+        )
+        labels_digest = sha256(
+            json.dumps(
+                first_payload.labels_json,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()[:16]
+
+        first_key = build_idempotency_key("system.metrics", first_payload)
+        second_key = build_idempotency_key("system.metrics", second_payload)
+
+        self.assertEqual(
+            first_key,
+            f"system.metrics:v1:demo-run:ingestion:tracks_total:run_total:{labels_digest}",
+        )
+        self.assertEqual(first_key, second_key)
 
 
 if __name__ == "__main__":

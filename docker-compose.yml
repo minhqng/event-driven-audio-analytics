@@ -66,16 +66,29 @@ services:
       dockerfile: services/ingestion/Dockerfile
     environment:
       SERVICE_NAME: ingestion
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
+      METADATA_CSV_PATH: "${METADATA_CSV_PATH:-/app/tests/fixtures/audio/smoke_tracks.csv}"
+      AUDIO_ROOT_PATH: "${AUDIO_ROOT_PATH:-/app/tests/fixtures/audio/fma_small}"
+      TRACK_ID_ALLOWLIST: "${TRACK_ID_ALLOWLIST:-2,666}"
+      INGESTION_MAX_TRACKS: "${INGESTION_MAX_TRACKS:-2}"
+      KAFKA_PRODUCER_RETRIES: "${KAFKA_PRODUCER_RETRIES:-10}"
+      KAFKA_PRODUCER_RETRY_BACKOFF_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MS:-250}"
+      KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS:-5000}"
+      KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS: "${KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS:-120000}"
     volumes:
       - ./artifacts:/app/artifacts:Z
+      - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,Z
     depends_on:
       kafka:
         condition: service_healthy
-      timescaledb:
-        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   processing:
     build:

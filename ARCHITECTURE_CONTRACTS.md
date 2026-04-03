@@ -58,7 +58,7 @@
 
 - `Fact`: The shared contract layer, writer runtime, and fake-event smoke path now use the canonical v1 envelope names.
 - `Fact`: Shared semantic validation now enforces `run_id` consistency between the top-level envelope and payload.
-- `Inference`: Contract-definition drift is resolved for the current fixture-driven runtime path, but real producer traffic has not exercised it yet.
+- `Fact`: Contract-definition drift is resolved for the current fixture-driven runtime path, and a broker-backed ingestion smoke run now exercises the canonical v1 envelope on `audio.metadata`, `audio.segment.ready`, and `system.metrics`.
 
 ## Topic Naming And Ownership
 
@@ -102,7 +102,8 @@
 - `Fact`: `labels_json` and `unit` are optional in v1.
 - `Fact`: Current writer schema/persistence now stores optional `unit` alongside `labels_json`.
 - `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
-- `Unknown`: Whether system metrics should stay purely append-only or gain a stronger dedup policy is not fixed.
+- `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
+- `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
 
 ## Idempotency Rules
 
@@ -154,5 +155,5 @@
 ## Unresolved Contract Items
 
 - `Unknown`: Whether `audio.dlq` graduates from a reserved bootstrap topic into the first fully modeled runnable contract.
-- `Unknown`: Final system-metrics dedup treatment for append-only rows is not fixed.
+- `Unknown`: Final system-metrics dedup treatment beyond the current `scope=run_total` snapshot-upsert rule is not fixed.
 - `Unknown`: Final producer/update semantics for `welford_snapshots`.

@@ -4,11 +4,13 @@ import csv
 import numpy as np
 from pathlib import Path
 import tempfile
+from typing import Callable
 
 import polars as pl
 import pytest
 
 from event_driven_audio_analytics.ingestion.config import IngestionSettings
+from event_driven_audio_analytics.ingestion.modules.metrics import IngestionRunMetrics
 from event_driven_audio_analytics.ingestion.modules.artifact_writer import write_segment_artifacts
 from event_driven_audio_analytics.ingestion.modules.audio_validator import (
     VALIDATION_STATUS_MISSING_FILE,
@@ -24,19 +26,68 @@ from event_driven_audio_analytics.ingestion.modules.metadata_loader import (
 )
 from event_driven_audio_analytics.ingestion.modules.segmenter import AudioSegment, segment_audio
 from event_driven_audio_analytics.ingestion.pipeline import IngestionPipeline
-from event_driven_audio_analytics.shared.kafka import deserialize_envelope
-from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
+from event_driven_audio_analytics.shared.kafka import (
+    KafkaDeliveryError,
+    deserialize_envelope,
+    producer_config,
+)
+from event_driven_audio_analytics.shared.models.envelope import (
+    build_idempotency_key,
+    validate_envelope_dict,
+)
+from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
 
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "audio"
 
 
+class _DeliveredMessage:
+    def __init__(self, topic: str) -> None:
+        self._topic = topic
+
+    def topic(self) -> str:
+        return self._topic
+
+
 class RecordingProducer:
     def __init__(self) -> None:
         self.messages: list[dict[str, object]] = []
 
-    def produce(self, *, topic: str, value: bytes, key: bytes | None = None) -> None:
+    def produce(
+        self,
+        *,
+        topic: str,
+        value: bytes,
+        key: bytes | None = None,
+        on_delivery: Callable[[object, object | None], None] | None = None,
+    ) -> None:
+        self.messages.append(
+            {
+                "topic": topic,
+                "key": key.decode("utf-8") if key is not None else None,
+                "value": deserialize_envelope(value),
+            }
+        )
+        if on_delivery is not None:
+            on_delivery(None, _DeliveredMessage(topic))
+
+    def poll(self, timeout: float = 0.0) -> int:
+        return 0
+
+    def flush(self, timeout: float | None = None) -> int:
+        return 0
+
+
+class UndeliveredProducer(RecordingProducer):
+    def produce(
+        self,
+        *,
+        topic: str,
+        value: bytes,
+        key: bytes | None = None,
+        on_delivery: Callable[[object, object | None], None] | None = None,
+    ) -> None:
         self.messages.append(
             {
                 "topic": topic,
@@ -45,8 +96,28 @@ class RecordingProducer:
             }
         )
 
-    def flush(self) -> int:
-        return 0
+    def flush(self, timeout: float | None = None) -> int:
+        return 1
+
+
+class DeliveryErrorProducer(RecordingProducer):
+    def produce(
+        self,
+        *,
+        topic: str,
+        value: bytes,
+        key: bytes | None = None,
+        on_delivery: Callable[[object, object | None], None] | None = None,
+    ) -> None:
+        self.messages.append(
+            {
+                "topic": topic,
+                "key": key.decode("utf-8") if key is not None else None,
+                "value": deserialize_envelope(value),
+            }
+        )
+        if on_delivery is not None:
+            on_delivery(RuntimeError("broker unavailable"), None)
 
 
 def _metadata_record_for_fixture(name: str) -> MetadataRecord:
@@ -245,6 +316,10 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             silence_threshold_db=-60.0,
             track_id_allowlist=(),
             max_tracks=1,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=120000,
         )
         pipeline = IngestionPipeline(settings=settings)
         producer = RecordingProducer()
@@ -262,6 +337,12 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             "audio.segment.ready",
             "audio.segment.ready",
         ]
+        assert [message["key"] for message in producer.messages] == [
+            "2",
+            "2",
+            "2",
+            "2",
+        ]
 
         metadata_envelope = producer.messages[0]["value"]
         assert isinstance(metadata_envelope, dict)
@@ -272,3 +353,180 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             assert isinstance(envelope, dict)
             validate_envelope_dict(envelope, expected_event_type="audio.segment.ready")
             assert Path(str(envelope["payload"]["artifact_uri"])).exists()
+
+
+def test_pipeline_run_publishes_run_level_system_metrics() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = IngestionSettings(
+            base=BaseServiceSettings(
+                service_name="ingestion",
+                run_id="demo-run",
+                kafka_bootstrap_servers="unused:9092",
+                artifacts_root=Path(tmp_dir),
+            ),
+            metadata_csv_path="unused.csv",
+            audio_root_path="unused",
+            subset="small",
+            target_sample_rate_hz=32000,
+            segment_duration_s=3.0,
+            segment_overlap_s=1.5,
+            min_duration_s=1.0,
+            silence_threshold_db=-60.0,
+            track_id_allowlist=(),
+            max_tracks=2,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=120000,
+        )
+        
+        class StubbedPipeline(IngestionPipeline):
+            def load_metadata_records(self) -> list[MetadataRecord]:
+                return [
+                    _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
+                    _metadata_record_for_fixture("corrupt_audio.mp3"),
+                ]
+
+        pipeline = StubbedPipeline(settings=settings)
+        producer = RecordingProducer()
+
+        pipeline.run(producer=producer)
+
+        metric_messages = [message for message in producer.messages if message["topic"] == "system.metrics"]
+        assert [message["key"] for message in metric_messages] == [
+            "ingestion",
+            "ingestion",
+            "ingestion",
+            "ingestion",
+        ]
+        assert [message["value"]["payload"]["metric_name"] for message in metric_messages] == [
+            "tracks_total",
+            "segments_total",
+            "validation_failures",
+            "artifact_write_ms",
+        ]
+        assert [message["value"]["payload"]["metric_value"] for message in metric_messages[:3]] == [
+            2.0,
+            3.0,
+            1.0,
+        ]
+        assert metric_messages[3]["value"]["payload"]["unit"] == "ms"
+
+
+def test_ingestion_run_metrics_render_expected_payloads() -> None:
+    metrics = IngestionRunMetrics()
+    metrics.record_track(segment_count=3, validation_failed=False, artifact_write_ms=12.5)
+    metrics.record_track(segment_count=0, validation_failed=True, artifact_write_ms=0.0)
+
+    payloads = metrics.as_payloads(run_id="demo-run", service_name="ingestion")
+
+    assert [payload.metric_name for payload in payloads] == [
+        "tracks_total",
+        "segments_total",
+        "validation_failures",
+        "artifact_write_ms",
+    ]
+    assert [payload.metric_value for payload in payloads] == [2.0, 3.0, 1.0, 12.5]
+    assert payloads[-1].unit == "ms"
+
+
+def test_ingestion_run_total_metrics_keep_stable_identity_across_ts_refresh() -> None:
+    metrics = IngestionRunMetrics()
+    metrics.record_track(segment_count=3, validation_failed=False, artifact_write_ms=12.5)
+
+    first_payload = metrics.as_payloads(run_id="demo-run", service_name="ingestion")[0]
+    second_payload = SystemMetricsPayload(
+        ts="2026-04-03T00:00:30Z",
+        run_id=first_payload.run_id,
+        service_name=first_payload.service_name,
+        metric_name=first_payload.metric_name,
+        metric_value=first_payload.metric_value,
+        labels_json=first_payload.labels_json,
+        unit=first_payload.unit,
+    )
+
+    first_key = build_idempotency_key("system.metrics", first_payload)
+    second_key = build_idempotency_key("system.metrics", second_payload)
+
+    assert ":run_total:" in first_key
+    assert first_key == second_key
+
+
+def test_producer_config_sets_idempotence_and_retry_backoff_defaults() -> None:
+    config = producer_config(
+        bootstrap_servers="kafka:29092",
+        client_id="ingestion-producer",
+    )
+
+    assert config["enable.idempotence"] is True
+    assert config["acks"] == "all"
+    assert config["retries"] == 10
+    assert config["retry.backoff.ms"] == 250
+    assert config["retry.backoff.max.ms"] == 5000
+    assert config["delivery.timeout.ms"] == 120000
+
+
+def test_process_record_raises_when_kafka_delivery_times_out() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = IngestionSettings(
+            base=BaseServiceSettings(
+                service_name="ingestion",
+                run_id="demo-run",
+                kafka_bootstrap_servers="unused:9092",
+                artifacts_root=Path(tmp_dir),
+            ),
+            metadata_csv_path="unused.csv",
+            audio_root_path="unused",
+            subset="small",
+            target_sample_rate_hz=32000,
+            segment_duration_s=3.0,
+            segment_overlap_s=1.5,
+            min_duration_s=1.0,
+            silence_threshold_db=-60.0,
+            track_id_allowlist=(),
+            max_tracks=1,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=100,
+        )
+        pipeline = IngestionPipeline(settings=settings)
+
+        with pytest.raises(KafkaDeliveryError, match="timed out waiting for delivery report"):
+            pipeline.process_record(
+                UndeliveredProducer(),
+                _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
+            )
+
+
+def test_process_record_raises_when_kafka_delivery_reports_error() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = IngestionSettings(
+            base=BaseServiceSettings(
+                service_name="ingestion",
+                run_id="demo-run",
+                kafka_bootstrap_servers="unused:9092",
+                artifacts_root=Path(tmp_dir),
+            ),
+            metadata_csv_path="unused.csv",
+            audio_root_path="unused",
+            subset="small",
+            target_sample_rate_hz=32000,
+            segment_duration_s=3.0,
+            segment_overlap_s=1.5,
+            min_duration_s=1.0,
+            silence_threshold_db=-60.0,
+            track_id_allowlist=(),
+            max_tracks=1,
+            producer_retries=10,
+            producer_retry_backoff_ms=250,
+            producer_retry_backoff_max_ms=5000,
+            producer_delivery_timeout_ms=120000,
+        )
+        pipeline = IngestionPipeline(settings=settings)
+
+        with pytest.raises(KafkaDeliveryError, match="broker unavailable"):
+            pipeline.process_record(
+                DeliveryErrorProducer(),
+                _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
+            )
