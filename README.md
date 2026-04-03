@@ -34,6 +34,7 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 3. Start the scaffold with `bash ./run-demo.sh`.
 4. If you only need Kafka topic bootstrap, run `sh ./infra/kafka/create-topics.sh`.
 5. If you want a broker-backed Week 3 ingestion smoke run, use `bash ./scripts/smoke/check-ingestion-flow.sh`.
+   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1`.
 
 ## Runtime Notes
 

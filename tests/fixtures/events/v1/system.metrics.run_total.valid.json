@@ -6,7 +6,7 @@
   "run_id": "demo-run",
   "produced_at": "2026-04-03T00:00:01Z",
   "source_service": "ingestion",
-  "idempotency_key": "system.metrics:v1:demo-run:ingestion:tracks_total:2026-04-03T00:00:00Z:ca4675c0903ea4a0",
+  "idempotency_key": "system.metrics:v1:demo-run:ingestion:tracks_total:run_total:ca4675c0903ea4a0",
   "payload": {
     "ts": "2026-04-03T00:00:00Z",
     "run_id": "demo-run",

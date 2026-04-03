@@ -31,7 +31,11 @@ from event_driven_audio_analytics.shared.kafka import (
     deserialize_envelope,
     producer_config,
 )
-from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
+from event_driven_audio_analytics.shared.models.envelope import (
+    build_idempotency_key,
+    validate_envelope_dict,
+)
+from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
 
 
@@ -424,6 +428,28 @@ def test_ingestion_run_metrics_render_expected_payloads() -> None:
     ]
     assert [payload.metric_value for payload in payloads] == [2.0, 3.0, 1.0, 12.5]
     assert payloads[-1].unit == "ms"
+
+
+def test_ingestion_run_total_metrics_keep_stable_identity_across_ts_refresh() -> None:
+    metrics = IngestionRunMetrics()
+    metrics.record_track(segment_count=3, validation_failed=False, artifact_write_ms=12.5)
+
+    first_payload = metrics.as_payloads(run_id="demo-run", service_name="ingestion")[0]
+    second_payload = SystemMetricsPayload(
+        ts="2026-04-03T00:00:30Z",
+        run_id=first_payload.run_id,
+        service_name=first_payload.service_name,
+        metric_name=first_payload.metric_name,
+        metric_value=first_payload.metric_value,
+        labels_json=first_payload.labels_json,
+        unit=first_payload.unit,
+    )
+
+    first_key = build_idempotency_key("system.metrics", first_payload)
+    second_key = build_idempotency_key("system.metrics", second_payload)
+
+    assert ":run_total:" in first_key
+    assert first_key == second_key
 
 
 def test_producer_config_sets_idempotence_and_retry_backoff_defaults() -> None:

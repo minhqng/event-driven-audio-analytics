@@ -55,8 +55,16 @@ Keep that guarantee covered by unit tests around the writer pipeline and commit 
 bash ./scripts/smoke/check-ingestion-flow.sh
 ```
 
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
+```
+
 ```sh
 sh ./scripts/smoke/observe-topic.sh audio.metadata 5
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\observe-topic.ps1 audio.metadata 5
 ```
 
 This smoke flow verifies all of the following:
@@ -73,6 +81,8 @@ This smoke flow verifies all of the following:
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\observe-topic.ps1 audio.metadata 5
 ```
 
 Do not claim full correctness from these checks alone.

@@ -99,6 +99,14 @@ def _require_utc_timestamp(value: object, field_name: str) -> str:
     return value
 
 
+def _labels_digest(labels: object) -> str:
+    """Hash labels_json using the canonical JSON form expected by the contract."""
+
+    return sha256(
+        json.dumps(labels, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    ).hexdigest()[:16]
+
+
 def validate_envelope_dict(
     envelope: dict[str, object],
     *,
@@ -206,11 +214,15 @@ def build_idempotency_key(
     if event_type == "system.metrics":
         service_name = _require_string(payload_data, "service_name")
         metric_name = _require_string(payload_data, "metric_name")
-        ts = _require_string(payload_data, "ts")
         labels = payload_data.get("labels_json", {})
-        labels_digest = sha256(
-            json.dumps(labels, separators=(",", ":"), sort_keys=True).encode("utf-8")
-        ).hexdigest()[:16]
+        labels_digest = _labels_digest(labels)
+        if isinstance(labels, dict) and labels.get("scope") == "run_total":
+            return (
+                f"{event_type}:{event_version}:{run_id}:{service_name}:"
+                f"{metric_name}:run_total:{labels_digest}"
+            )
+
+        ts = _require_string(payload_data, "ts")
         return (
             f"{event_type}:{event_version}:{run_id}:{service_name}:"
             f"{metric_name}:{ts}:{labels_digest}"

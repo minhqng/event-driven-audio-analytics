@@ -35,10 +35,12 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Member A Week 3 Compose wiring now mounts `artifacts/` as the shared claim-check bind mount, mounts a read-only bounded fixture dataset for smoke runs, applies bounded container log retention, and exposes env-backed producer retry/backoff settings for `ingestion`.
 - `Fact`: `ingestion` now emits run-level `system.metrics` for `tracks_total`, `segments_total`, `validation_failures`, and `artifact_write_ms` on the canonical v1 envelope.
 - `Fact`: `ingestion` publish helpers now wait for Kafka delivery reports before treating `audio.metadata`, `audio.segment.ready`, or `system.metrics` publication as successful.
+- `Fact`: Canonical v1 now treats `system.metrics` with `labels_json.scope=run_total` as snapshot identities that stay replay-stable across `ts` refreshes, keeping the producer-side event contract aligned with the writer's replay-safe sink rule.
 - `Fact`: `writer` now consumes the locked v1 envelope for `audio.metadata`, `audio.features`, and `system.metrics`, persists them transactionally, updates checkpoints, and commits offsets only after successful persistence.
 - `Fact`: `writer` now treats `system.metrics` rows with `labels_json.scope=run_total` as replay-safe snapshot upserts keyed by `(run_id, service_name, metric_name, labels_json)`, self-heals historical duplicates under the writer advisory lock using chunk-aware `(tableoid, ctid)` survivor targeting on the Timescale hypertable, rewrites the logical snapshot row with the latest `ts`/value/unit payload, and leaves other metrics append-only.
 - `Fact`: The fake-event smoke path now publishes canonical v1 fixtures for `audio.metadata` plus `audio.features`, asserts TimescaleDB rows and checkpoint rows, and verifies replay-safe feature row counts.
 - `Fact`: Lightweight smoke scripts and targeted writer regression tests now also verify `system.metrics` `scope=run_total` duplicate repair on a live Timescale hypertable by seeding cross-chunk duplicates and repairing them through the Kafka writer path.
+- `Fact`: The Week 3 ingestion smoke path now has both shell and PowerShell host wrappers, so the bounded broker-backed smoke run remains runnable from the repo's supported Windows host orchestration path.
 - `Fact`: Week 3 smoke validation now covers committed synthetic fixtures plus a local real-FMA sample run for tracks `2` and `666`, with observed segment counts `19` and `20` matching the documented legacy-reference counts.
 
 ## Repo-Present But Still Placeholder
@@ -104,7 +106,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
 - `Fact`: Week 3 reuse-critical audio/data dependencies for metadata ETL and PyAV decode/resample are now declared in `pyproject.toml`; Week 4 mel-processing parity still depends on adding the remaining `torch` / `torchaudio` stack.
-- `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented; run-level `system.metrics` now already rely on a snapshot-style dedup and timestamp-refresh rule at the sink.
+- `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented; run-level `system.metrics` now rely on a shared snapshot identity plus sink-side timestamp refresh rule.
 - `Fact`: Dashboard work depends on real persistence first; placeholders are not enough.
 
 ## Items Requiring Member A/B Synchronization

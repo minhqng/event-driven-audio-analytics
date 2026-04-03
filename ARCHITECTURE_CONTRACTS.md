@@ -102,7 +102,7 @@
 - `Fact`: `labels_json` and `unit` are optional in v1.
 - `Fact`: Current writer schema/persistence now stores optional `unit` alongside `labels_json`.
 - `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
-- `Fact`: Current writer persistence now treats `labels_json.scope=run_total` metrics as replay-safe snapshot upserts keyed by `(run_id, service_name, metric_name, labels_json)`.
+- `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
 - `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
 
 ## Idempotency Rules

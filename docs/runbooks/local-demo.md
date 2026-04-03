@@ -4,7 +4,7 @@
 
 - Docker with Compose support.
 - A copied `.env` file based on `.env.example`.
-- `bash` for the host-side helper scripts.
+- `bash` or PowerShell for the host-side helper scripts.
 
 ## Demo Steps
 
@@ -27,6 +27,10 @@
 
    ```sh
    bash ./scripts/smoke/check-ingestion-flow.sh
+   ```
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
    ```
 
 ## Notes
