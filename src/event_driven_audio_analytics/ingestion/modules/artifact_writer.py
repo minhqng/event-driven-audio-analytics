@@ -15,6 +15,20 @@ from event_driven_audio_analytics.shared.storage import manifest_uri, segment_ar
 from .segmenter import AudioSegment
 
 
+MANIFEST_REQUIRED_FIELDS = (
+    "run_id",
+    "track_id",
+    "segment_idx",
+    "artifact_uri",
+    "checksum",
+    "manifest_uri",
+    "sample_rate",
+    "duration_s",
+    "is_last_segment",
+)
+MANIFEST_OPTIONAL_FIELDS: tuple[str, ...] = ()
+
+
 @dataclass(slots=True)
 class SegmentDescriptor:
     """Claim-check descriptor for one persisted audio segment artifact."""
@@ -56,6 +70,71 @@ def _manifest_frame(entries: list[SegmentDescriptor]) -> pl.DataFrame:
     """Convert written segment descriptors into a Parquet-friendly frame."""
 
     return pl.DataFrame([asdict(entry) for entry in entries])
+
+
+def read_manifest_frame(manifest_path: Path) -> pl.DataFrame:
+    """Load the run manifest and enforce the current Week 4 required columns."""
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Segment manifest does not exist: {manifest_path.as_posix()}")
+
+    frame = pl.read_parquet(manifest_path)
+    missing_fields = sorted(set(MANIFEST_REQUIRED_FIELDS) - set(frame.columns))
+    if missing_fields:
+        raise ValueError(
+            "Segment manifest is missing required fields: "
+            f"{', '.join(missing_fields)}."
+        )
+    return frame
+
+
+def verify_manifest_consistency(descriptors: list[SegmentDescriptor]) -> None:
+    """Verify artifact, checksum, and manifest linkage before events are published."""
+
+    if not descriptors:
+        return
+
+    manifest_uris = {descriptor.manifest_uri for descriptor in descriptors}
+    if len(manifest_uris) != 1:
+        raise ValueError("Segment descriptors must share exactly one manifest_uri.")
+
+    manifest_path = Path(next(iter(manifest_uris)))
+    manifest_frame = read_manifest_frame(manifest_path)
+
+    for descriptor in descriptors:
+        artifact_path = Path(descriptor.artifact_uri)
+        if not artifact_path.exists():
+            raise FileNotFoundError(
+                f"Segment artifact does not exist: {artifact_path.as_posix()}"
+            )
+
+        actual_checksum = sha256_file(artifact_path)
+        if actual_checksum != descriptor.checksum:
+            raise ValueError(
+                "Segment artifact checksum does not match its descriptor "
+                f"for track_id={descriptor.track_id} segment_idx={descriptor.segment_idx}."
+            )
+
+        matches = manifest_frame.filter(
+            (pl.col("run_id") == descriptor.run_id)
+            & (pl.col("track_id") == descriptor.track_id)
+            & (pl.col("segment_idx") == descriptor.segment_idx)
+        )
+        if matches.height != 1:
+            raise ValueError(
+                "Segment manifest must contain exactly one row per logical segment "
+                f"for track_id={descriptor.track_id} segment_idx={descriptor.segment_idx}."
+            )
+
+        manifest_row = matches.to_dicts()[0]
+        expected_row = asdict(descriptor)
+        for field_name in MANIFEST_REQUIRED_FIELDS:
+            if manifest_row[field_name] != expected_row[field_name]:
+                raise ValueError(
+                    "Segment manifest row does not match the written descriptor "
+                    f"for field={field_name} track_id={descriptor.track_id} "
+                    f"segment_idx={descriptor.segment_idx}."
+                )
 
 
 def write_segment_artifacts(
@@ -107,4 +186,5 @@ def write_segment_artifacts(
         )
 
     current_frame.write_parquet(manifest_path)
+    verify_manifest_consistency(descriptors)
     return descriptors

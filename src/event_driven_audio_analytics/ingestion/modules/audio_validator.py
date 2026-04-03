@@ -17,6 +17,7 @@ VALIDATION_STATUS_PROBE_FAILED = "probe_failed"
 VALIDATION_STATUS_TOO_SHORT = "too_short"
 VALIDATION_STATUS_DECODE_FAILED = "decode_failed"
 VALIDATION_STATUS_SILENT = "silent"
+VALIDATION_STATUS_NO_SEGMENTS = "no_segments"
 
 
 @dataclass(slots=True)

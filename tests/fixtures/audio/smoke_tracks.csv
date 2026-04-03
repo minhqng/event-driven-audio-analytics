@@ -1,5 +1,5 @@
-,artist,set,track
-,id,subset,genre_top
-track_id,,,
-2,1,small,Hip-Hop
-666,99,small,Experimental
+,artist,set,track,track
+,id,subset,genre_top,duration
+track_id,,,,
+2,1,small,Hip-Hop,29.95
+666,99,small,Experimental,30.60
