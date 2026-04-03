@@ -718,8 +718,14 @@ def test_audio_metadata_payload_fields_align_with_track_metadata_upsert() -> Non
     assert payload_fields == insert_columns
 
 
-def test_pipeline_run_publishes_run_level_system_metrics() -> None:
+def test_pipeline_run_publishes_run_level_system_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
+        monkeypatch.setattr(
+            "event_driven_audio_analytics.ingestion.pipeline.wait_for_runtime_dependencies",
+            lambda settings, logger: None,
+        )
         settings = IngestionSettings(
             base=BaseServiceSettings(
                 service_name="ingestion",

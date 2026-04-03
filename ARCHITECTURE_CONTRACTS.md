@@ -68,7 +68,7 @@
 | `audio.segment.ready` | `track_id` | `ingestion` | `processing` | Claim-check reference to a ready segment artifact | Present |
 | `audio.features` | `track_id` | `processing` | `writer` | Feature summaries and processing quality data | Present |
 | `system.metrics` | `service_name` in plan | all core services | `writer` and Grafana queries/views | Operational metrics and health/throughput signals | Present |
-| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Reserved in bootstrap/constants; no schema/model/fixture or runtime DLQ flow yet |
+| `audio.dlq` | `original_key` | any service | ops/debug only | Failed-event holding area with error context | Reserved in bootstrap/constants; no schema/model/fixture or runtime DLQ flow yet, and current ingestion runtime logs unrecoverable failures explicitly instead of publishing DLQ events |
 
 ## Payload Contracts
 

@@ -78,12 +78,19 @@ services:
       KAFKA_PRODUCER_RETRY_BACKOFF_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MS:-250}"
       KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS:-5000}"
       KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS: "${KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS:-120000}"
+      INGESTION_STARTUP_TIMEOUT_S: "${INGESTION_STARTUP_TIMEOUT_S:-90}"
+      INGESTION_STARTUP_RETRY_INTERVAL_S: "${INGESTION_STARTUP_RETRY_INTERVAL_S:-2}"
     volumes:
       - ./artifacts:/app/artifacts:Z
       - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,Z
     depends_on:
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "event_driven_audio_analytics.ingestion.app", "preflight"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
     logging:
       driver: json-file
       options:

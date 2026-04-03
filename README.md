@@ -33,7 +33,7 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 2. Review `docs/architecture/system-overview.md`.
 3. Start the scaffold with `bash ./run-demo.sh`.
 4. If you only need Kafka topic bootstrap, run `sh ./infra/kafka/create-topics.sh`.
-5. If you want a broker-backed Week 3 ingestion smoke run, use `bash ./scripts/smoke/check-ingestion-flow.sh`.
+5. If you want a broker-backed Week 4 ingestion smoke run for the currently configured input selection, use `bash ./scripts/smoke/check-ingestion-flow.sh`.
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1`.
 
 ## Runtime Notes
@@ -41,6 +41,6 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - All application code executes inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
 - The scaffold only validates local bootstrapping and contract shape; it does not claim end-to-end analytics execution yet.
-- `ingestion` now runs a bounded Week 3 replay path in Compose: it reads configured sample metadata, writes claim-check artifacts under `artifacts/`, publishes `audio.metadata`, `audio.segment.ready`, and run-level `system.metrics`, then exits cleanly.
-- The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`; override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
+- `ingestion` now runs a bounded Week 4 replay path in Compose: it performs a startup preflight, reads configured sample metadata, writes claim-check artifacts plus the run manifest under `artifacts/`, publishes `audio.metadata`, `audio.segment.ready`, and run-level `system.metrics`, then exits cleanly.
+- The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`, and the Python verifier derives its exact expectations from the active `METADATA_CSV_PATH`, `AUDIO_ROOT_PATH`, allowlist, and run id. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
 - `processing` remains placeholder, and full end-to-end analytics through `writer` and dashboards still needs later phases.

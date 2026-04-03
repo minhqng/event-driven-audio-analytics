@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-import logging
 from time import perf_counter
 from typing import Any
 
@@ -16,6 +15,7 @@ from event_driven_audio_analytics.ingestion.modules.audio_validator import (
 )
 from event_driven_audio_analytics.ingestion.modules.metadata_loader import MetadataRecord, load_small_subset_metadata
 from event_driven_audio_analytics.ingestion.modules.metrics import IngestionRunMetrics
+from event_driven_audio_analytics.ingestion.modules.runtime import wait_for_runtime_dependencies
 from event_driven_audio_analytics.ingestion.modules.publisher import (
     ProducerLike,
     publish_metadata_event,
@@ -24,10 +24,16 @@ from event_driven_audio_analytics.ingestion.modules.publisher import (
 )
 from event_driven_audio_analytics.ingestion.modules.segmenter import segment_audio
 from .config import IngestionSettings
+from event_driven_audio_analytics.shared.contracts.topics import (
+    AUDIO_METADATA,
+    AUDIO_SEGMENT_READY,
+    SYSTEM_METRICS,
+)
 from event_driven_audio_analytics.shared.kafka import build_producer
+from event_driven_audio_analytics.shared.logging import ServiceLoggerAdapter, get_service_logger
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
-from event_driven_audio_analytics.shared.models.envelope import EventEnvelope
+from event_driven_audio_analytics.shared.models.envelope import EventEnvelope, build_trace_id
 
 
 @dataclass(slots=True)
@@ -47,6 +53,49 @@ class IngestionPipeline:
     """Run the Week 3 ingestion path from metadata ETL to event emission."""
 
     settings: IngestionSettings
+
+    def _service_logger(self) -> ServiceLoggerAdapter:
+        """Return the service-scoped structured logger."""
+
+        return get_service_logger(
+            self.settings.base.service_name,
+            run_id=self.settings.base.run_id,
+        ).bind(
+            trace_id=build_trace_id(
+                {
+                    "run_id": self.settings.base.run_id,
+                    "service_name": self.settings.base.service_name,
+                },
+                source_service=self.settings.base.service_name,
+            )
+        )
+
+    def _track_logger(
+        self,
+        track_id: int,
+        *,
+        validation_status: str | None = None,
+        failure_class: str | None = None,
+        topic: str | None = None,
+    ) -> ServiceLoggerAdapter:
+        """Return a structured logger bound to one logical track flow."""
+
+        return get_service_logger(
+            self.settings.base.service_name,
+            run_id=self.settings.base.run_id,
+        ).bind(
+            trace_id=build_trace_id(
+                {
+                    "run_id": self.settings.base.run_id,
+                    "track_id": track_id,
+                },
+                source_service=self.settings.base.service_name,
+            ),
+            track_id=track_id,
+            validation_status=validation_status,
+            failure_class=failure_class,
+            topic=topic,
+        )
 
     def describe(self) -> list[str]:
         return [
@@ -109,7 +158,7 @@ class IngestionPipeline:
     ) -> TrackIngestionResult:
         """Validate, segment, persist, and publish one track."""
 
-        logger = logging.getLogger(self.settings.base.service_name)
+        track_logger = self._track_logger(record.track_id)
         validation = validate_audio_record(
             record,
             target_sample_rate_hz=self.settings.target_sample_rate_hz,
@@ -122,10 +171,13 @@ class IngestionPipeline:
                 self._build_metadata_payload(record, validation),
                 delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
             )
-            logger.info(
-                "Published metadata only track_id=%s metadata_topic=audio.metadata validation_status=%s",
-                record.track_id,
-                validation.validation_status,
+            track_logger.bind(
+                trace_id=metadata_event.trace_id,
+                validation_status=validation.validation_status,
+                topic=AUDIO_METADATA,
+            ).warning(
+                "Published metadata only for rejected track reason=%s",
+                validation.validation_error or "validation rejected without explicit reason",
             )
             return TrackIngestionResult(
                 record=record,
@@ -158,10 +210,13 @@ class IngestionPipeline:
                 self._build_metadata_payload(record, validation),
                 delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
             )
-            logger.info(
-                "Published metadata only track_id=%s metadata_topic=audio.metadata validation_status=%s",
-                record.track_id,
-                validation.validation_status,
+            track_logger.bind(
+                trace_id=metadata_event.trace_id,
+                validation_status=validation.validation_status,
+                topic=AUDIO_METADATA,
+            ).warning(
+                "Published metadata only for rejected track reason=%s",
+                validation.validation_error or "decoded audio yielded no legal segments",
             )
             return TrackIngestionResult(
                 record=record,
@@ -208,9 +263,10 @@ class IngestionPipeline:
             )
             for descriptor in segment_descriptors
         ]
-        logger.info(
-            "Published track events track_id=%s metadata_topic=audio.metadata segment_topic=audio.segment.ready segments=%s artifact_write_ms=%.3f",
-            record.track_id,
+        track_logger.bind(trace_id=metadata_event.trace_id).info(
+            "Published track events metadata_topic=%s segment_topic=%s segments=%s artifact_write_ms=%.3f",
+            AUDIO_METADATA,
+            AUDIO_SEGMENT_READY,
             len(segment_events),
             artifact_write_ms,
         )
@@ -228,21 +284,34 @@ class IngestionPipeline:
         """Execute the Week 3 ingestion path for the configured sample set."""
 
         own_producer = producer is None
-        logger = logging.getLogger(self.settings.base.service_name)
-        active_producer = producer or build_producer(
-            bootstrap_servers=self.settings.base.kafka_bootstrap_servers,
-            client_id=f"{self.settings.base.service_name}-producer",
-            retries=self.settings.producer_retries,
-            retry_backoff_ms=self.settings.producer_retry_backoff_ms,
-            retry_backoff_max_ms=self.settings.producer_retry_backoff_max_ms,
-            delivery_timeout_ms=self.settings.producer_delivery_timeout_ms,
-        )
+        logger = self._service_logger()
+        active_producer = producer
 
         try:
+            wait_for_runtime_dependencies(self.settings, logger)
+            if active_producer is None:
+                active_producer = build_producer(
+                    bootstrap_servers=self.settings.base.kafka_bootstrap_servers,
+                    client_id=f"{self.settings.base.service_name}-producer",
+                    retries=self.settings.producer_retries,
+                    retry_backoff_ms=self.settings.producer_retry_backoff_ms,
+                    retry_backoff_max_ms=self.settings.producer_retry_backoff_max_ms,
+                    delivery_timeout_ms=self.settings.producer_delivery_timeout_ms,
+                )
+
             metrics = IngestionRunMetrics()
             results: list[TrackIngestionResult] = []
             for record in self.load_metadata_records():
-                result = self.process_record(active_producer, record)
+                try:
+                    result = self.process_record(active_producer, record)
+                except Exception:
+                    self._track_logger(
+                        record.track_id,
+                        failure_class="unrecoverable",
+                    ).exception(
+                        "Ingestion failed for selected track; audio.dlq is reserved and not published in Week 4."
+                    )
+                    raise
                 metrics.record_track(
                     segment_count=len(result.segment_events),
                     validation_failed=result.validation.validation_status != VALIDATION_STATUS_VALIDATED,
@@ -250,21 +319,30 @@ class IngestionPipeline:
                 )
                 results.append(result)
 
-            for payload in metrics.as_payloads(
-                run_id=self.settings.base.run_id,
-                service_name=self.settings.base.service_name,
-            ):
-                publish_system_metric_event(
-                    active_producer,
-                    payload,
-                    delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
-                )
+            try:
+                for payload in metrics.as_payloads(
+                    run_id=self.settings.base.run_id,
+                    service_name=self.settings.base.service_name,
+                ):
+                    publish_system_metric_event(
+                        active_producer,
+                        payload,
+                        delivery_timeout_s=self.settings.producer_delivery_timeout_ms / 1000.0,
+                    )
 
-            remaining_messages = active_producer.flush()
-            if remaining_messages not in (0, None):
-                raise RuntimeError(
-                    "Ingestion finished with undelivered Kafka messages still queued."
+                remaining_messages = active_producer.flush()
+                if remaining_messages not in (0, None):
+                    raise RuntimeError(
+                        "Ingestion finished with undelivered Kafka messages still queued."
+                    )
+            except Exception:
+                logger.bind(
+                    failure_class="unrecoverable",
+                    topic=SYSTEM_METRICS,
+                ).exception(
+                    "Ingestion failed after track processing; audio.dlq is reserved and not published in Week 4."
                 )
+                raise
             logger.info(
                 "Ingestion run complete tracks_total=%s segments_total=%s validation_failures=%s artifact_write_ms=%.3f",
                 metrics.tracks_total,
@@ -274,5 +352,5 @@ class IngestionPipeline:
             )
             return results
         finally:
-            if own_producer:
+            if own_producer and active_producer is not None:
                 active_producer.flush()

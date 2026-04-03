@@ -20,8 +20,18 @@
 5. `Fact`: For tracks that produce at least one legal segment, WAV claim-check artifacts are written under `/artifacts/runs/<run_id>/segments/<track_id>/<segment_idx>.wav`.
 6. `Fact`: A run manifest is written under `/artifacts/runs/<run_id>/manifests/segments.parquet`.
 7. `Fact`: After artifact write, ingestion verifies artifact existence, SHA-256 checksum, and descriptor-to-manifest row consistency before publishing segment-ready events.
+8. `Fact`: Before the batch replay starts, `ingestion` now gates on a startup-readiness check that requires Kafka topic visibility plus readable/writable mounted paths for `ARTIFACTS_ROOT`, `METADATA_CSV_PATH`, and `AUDIO_ROOT_PATH`.
 8. `Fact`: `audio.metadata` is emitted once per track.
 9. `Fact`: `audio.segment.ready` is emitted once per written segment after the metadata event for that same track.
+
+## Runtime Readiness And Logging
+
+- `Fact`: `python -m event_driven_audio_analytics.ingestion.app preflight` now performs a one-shot readiness check for Kafka topics and mounted input/output paths, including a short-lived write probe under the run-scoped artifact target.
+- `Fact`: The normal batch run now retries the same readiness checks for a bounded startup window before failing.
+- `Fact`: The Compose `ingestion` service now exposes a healthcheck that runs the one-shot preflight probe.
+- `Fact`: Structured JSON logs now carry `trace_id`, `run_id`, and `track_id` when they are known.
+- `Fact`: Reject-path logs carry `validation_status` and stay metadata-only; they do not publish `audio.dlq` events in the current Week 4 runtime.
+- `Fact`: Unrecoverable post-selection runtime failures are logged explicitly with the current log-only `audio.dlq` fallback note and then fail the batch run non-zero.
 
 ## Checksum And Manifest Baseline
 

@@ -10,6 +10,28 @@ import sys
 from typing import Any
 
 
+OPTIONAL_LOG_CONTEXT_FIELDS = (
+    "run_id",
+    "trace_id",
+    "track_id",
+    "validation_status",
+    "failure_class",
+    "topic",
+)
+
+
+def _should_include_log_value(value: object) -> bool:
+    """Return whether an optional structured-log field should be emitted."""
+
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value)
+    if isinstance(value, bool):
+        return False
+    return isinstance(value, (int, float))
+
+
 class JsonLogFormatter(logging.Formatter):
     """Render one JSON log line per record for container-friendly logs."""
 
@@ -24,9 +46,10 @@ class JsonLogFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        run_id = getattr(record, "run_id", None)
-        if isinstance(run_id, str) and run_id:
-            payload["run_id"] = run_id
+        for field_name in OPTIONAL_LOG_CONTEXT_FIELDS:
+            value = getattr(record, field_name, None)
+            if _should_include_log_value(value):
+                payload[field_name] = value
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, separators=(",", ":"), sort_keys=True)
@@ -36,13 +59,50 @@ class ServiceLoggerAdapter(logging.LoggerAdapter[logging.Logger]):
     """Attach stable service metadata to every emitted record."""
 
     def process(self, msg: object, kwargs: dict[str, object]) -> tuple[object, dict[str, object]]:
-        extra = dict(kwargs.get("extra", {}))
+        extra = {
+            key: value
+            for key, value in dict(self.extra).items()
+            if key == "service_name" or _should_include_log_value(value)
+        }
+        extra.update(
+            {
+                key: value
+                for key, value in dict(kwargs.get("extra", {})).items()
+                if key == "service_name" or _should_include_log_value(value)
+            }
+        )
         extra.setdefault("service_name", self.extra["service_name"])
-        run_id = self.extra.get("run_id")
-        if run_id:
-            extra.setdefault("run_id", run_id)
         kwargs["extra"] = extra
         return msg, kwargs
+
+    def bind(self, **context: object) -> "ServiceLoggerAdapter":
+        """Return a new adapter with additional structured-log context."""
+
+        merged = dict(self.extra)
+        for key, value in context.items():
+            if key == "service_name":
+                merged[key] = value
+            elif _should_include_log_value(value):
+                merged[key] = value
+            else:
+                merged.pop(key, None)
+        return ServiceLoggerAdapter(self.logger, merged)
+
+
+def get_service_logger(
+    service_name: str,
+    *,
+    run_id: str | None = None,
+) -> ServiceLoggerAdapter:
+    """Return a structured logger adapter for a configured service logger."""
+
+    return ServiceLoggerAdapter(
+        logging.getLogger(service_name),
+        {
+            "service_name": service_name,
+            "run_id": run_id,
+        },
+    )
 
 
 def configure_logging(
@@ -65,10 +125,4 @@ def configure_logging(
     logger = logging.getLogger(service_name)
     logger.setLevel(resolved_level)
     logger.propagate = True
-    return ServiceLoggerAdapter(
-        logger,
-        {
-            "service_name": service_name,
-            "run_id": run_id,
-        },
-    )
+    return get_service_logger(service_name, run_id=run_id)
