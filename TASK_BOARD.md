@@ -43,7 +43,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 1: `docker compose config` and infra bootstrap remain clean after any contract or SQL change.
 - Gate 2: The canonical v1 fake `audio.metadata` / `audio.features` writer path remains green, including checkpoint rows and replay-safe feature counts.
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
-  Current status: Member B-owned code path is green with a recording producer plus real local FMA tracks `2` and `666`. Member A-owned Compose smoke now proves broker-backed publication, delivery-backed success handling, and direct topic observation on a bounded committed fixture set. Real broker-backed writer persistence on ingestion traffic is still pending.
+  Current status: Member B-owned code path is green with a recording producer plus real local FMA tracks `2` and `666`. Member A-owned Compose smoke now proves one-shot `ingestion preflight`, startup gating with run-scoped artifact-target probing, broker-backed publication, exact current-run counts by `RUN_ID`, reject-path metadata-only behavior for track `666`, run-manifest verification, and structured success/reject logs on a bounded committed fixture set. Real broker-backed writer persistence on ingestion traffic is still pending.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
   Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable; broader real producer-traffic replay still needs proof.
@@ -56,7 +56,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ### Session 1
 
 - Keep `ARCHITECTURE_CONTRACTS.md` and repo schemas aligned while starting real ingestion on a small sample.
-- Leave the full DLQ flow as explicit follow-up unless A/B jointly re-scope it.
+- Leave the full DLQ flow as explicit follow-up unless A/B jointly re-scope it; current Week 4 ingestion runtime should stay on explicit structured-error logging only.
 
 ### Session 2
 

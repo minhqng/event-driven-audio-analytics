@@ -42,6 +42,8 @@ class IngestionSettings:
     producer_retry_backoff_ms: int
     producer_retry_backoff_max_ms: int
     producer_delivery_timeout_ms: int
+    startup_timeout_s: float = 90.0
+    startup_retry_interval_s: float = 2.0
 
     @classmethod
     def from_env(cls) -> "IngestionSettings":
@@ -65,5 +67,9 @@ class IngestionSettings:
             ),
             producer_delivery_timeout_ms=int(
                 os.getenv("KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS", "120000")
+            ),
+            startup_timeout_s=float(os.getenv("INGESTION_STARTUP_TIMEOUT_S", "90")),
+            startup_retry_interval_s=float(
+                os.getenv("INGESTION_STARTUP_RETRY_INTERVAL_S", "2")
             ),
         )
