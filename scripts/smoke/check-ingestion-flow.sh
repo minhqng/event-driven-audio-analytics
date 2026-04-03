@@ -49,40 +49,45 @@ printf '%s\n' "$metadata_messages"
 printf '%s\n' "$segment_messages"
 printf '%s\n' "$metric_messages"
 
-echo "Verifying exact current-run Kafka payloads against the run manifest..."
-docker compose run --rm --no-deps --entrypoint python ingestion \
-  -m event_driven_audio_analytics.smoke.verify_ingestion_flow
+echo "Verifying exact current-run Kafka payloads against the configured input selection..."
+verification_summary="$(docker compose run --rm --no-deps --entrypoint python ingestion \
+  -m event_driven_audio_analytics.smoke.verify_ingestion_flow)"
+printf '%s\n' "$verification_summary"
 
 echo "Checking structured ingestion logs..."
 ingestion_logs="$(docker compose logs ingestion)"
 printf '%s\n' "$ingestion_logs"
 
-if ! printf '%s\n' "$ingestion_logs" \
-  | grep 'Published track events' \
-  | grep -Fq "\"trace_id\":\"run/$effective_run_id/track/2\""; then
-  echo "Expected success log line with trace_id for track_id=2." >&2
-  exit 1
+if printf '%s\n' "$verification_summary" | grep -Eq '"validated_track_ids":\[[^]]*[0-9]'; then
+  if ! printf '%s\n' "$ingestion_logs" \
+    | grep 'Published track events' \
+    | grep -Eq "\"trace_id\":\"run/$effective_run_id/track/[0-9]+\""; then
+    echo "Expected a success log line with a current-run track trace_id." >&2
+    exit 1
+  fi
+
+  if ! printf '%s\n' "$ingestion_logs" \
+    | grep 'Published track events' \
+    | grep -Eq '"track_id":[0-9]+'; then
+    echo "Expected a success log line with track_id context." >&2
+    exit 1
+  fi
 fi
 
-if ! printf '%s\n' "$ingestion_logs" \
-  | grep 'Published track events' \
-  | grep -q '"track_id":2'; then
-  echo "Expected success log line with track_id=2." >&2
-  exit 1
-fi
+if printf '%s\n' "$verification_summary" | grep -Eq '"rejected_track_ids":\[[^]]*[0-9]'; then
+  if ! printf '%s\n' "$ingestion_logs" \
+    | grep 'Published metadata only for rejected track' \
+    | grep -Eq "\"trace_id\":\"run/$effective_run_id/track/[0-9]+\""; then
+    echo "Expected a reject log line with a current-run track trace_id." >&2
+    exit 1
+  fi
 
-if ! printf '%s\n' "$ingestion_logs" \
-  | grep 'Published metadata only for rejected track' \
-  | grep -Fq "\"trace_id\":\"run/$effective_run_id/track/666\""; then
-  echo "Expected reject log line with trace_id for track_id=666." >&2
-  exit 1
-fi
-
-if ! printf '%s\n' "$ingestion_logs" \
-  | grep 'Published metadata only for rejected track' \
-  | grep -q '"validation_status":"probe_failed"'; then
-  echo "Expected reject log line with validation_status=probe_failed." >&2
-  exit 1
+  if ! printf '%s\n' "$ingestion_logs" \
+    | grep 'Published metadata only for rejected track' \
+    | grep -q '"validation_status":"'; then
+    echo "Expected a reject log line with validation_status context." >&2
+    exit 1
+  fi
 fi
 
 echo "Ingestion smoke flow passed."

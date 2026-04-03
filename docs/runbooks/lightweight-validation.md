@@ -72,13 +72,13 @@ This smoke flow verifies all of the following:
 - The `ingestion` service runs inside Compose against a bounded sample set.
 - `ingestion preflight` succeeds before the batch run starts.
 - Kafka receives real `audio.metadata`, `audio.segment.ready`, and `system.metrics` messages.
-- The Python verifier, not the sample topic printout, is the authority for exact current-run message counts by `RUN_ID`.
+- The Python verifier, not the sample topic printout, is the authority for exact current-run message counts by `RUN_ID`, and it derives those expectations from the active metadata/audio input selection.
 - `audio.metadata` and `audio.segment.ready` stay keyed by `track_id`.
 - `system.metrics` stays keyed by `service_name=ingestion`.
-- Reject-path track `666` stays metadata-only with `validation_status=probe_failed`.
+- Any reject-path track stays metadata-only with `validation_status` context preserved in logs; on the committed synthetic fixture set that remains track `666` with `validation_status=probe_failed`.
 - Claim-check artifacts are written under the shared `artifacts/` bind mount.
 - The run manifest exists under `/artifacts/runs/<run_id>/manifests/segments.parquet` and matches the published `audio.segment.ready` artifact URIs plus checksums.
-- Structured ingestion logs expose `trace_id`, `run_id`, and `track_id` for one success case and one reject case.
+- Structured ingestion logs expose `trace_id`, `run_id`, and `track_id` for current-run success and reject paths when those paths are present in the selected input set.
 - Override `RUN_ID` if needed; the shell and PowerShell wrappers now clean artifacts and validate logs for the current run, not only `demo-run`.
 
 ## Legacy PowerShell Wrappers

@@ -23,7 +23,7 @@
 
 4. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
 5. Open Grafana on `http://localhost:3000`.
-6. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest, and prints observed topic samples, use:
+6. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest against the currently configured input selection, and prints observed topic samples, use:
 
    ```sh
    bash ./scripts/smoke/check-ingestion-flow.sh
@@ -40,5 +40,5 @@
 - The ingestion smoke wrappers respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The application code itself executes inside Linux containers; the host only runs Docker Compose helpers.
 - Dashboard JSON and datasource provisioning are placeholders that must load cleanly, but they do not imply real analytics queries exist yet.
-- The default ingestion smoke path uses committed synthetic fixtures mounted read-only into the container. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` to point at a local FMA-small pack when needed.
+- The default ingestion smoke path uses committed synthetic fixtures mounted read-only into the container, and the Python verifier derives expected outputs from the active metadata/audio inputs. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` to point at a local FMA-small pack when needed.
 - `processing` is still placeholder. `writer` remains the persistence path for later cross-service validation.

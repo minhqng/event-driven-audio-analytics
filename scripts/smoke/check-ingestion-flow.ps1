@@ -74,27 +74,34 @@ $metadataMessages
 $segmentMessages
 $metricMessages
 
-Write-Host "Verifying exact current-run Kafka payloads against the run manifest..."
-docker compose run --rm --no-deps --entrypoint python ingestion -m event_driven_audio_analytics.smoke.verify_ingestion_flow
+Write-Host "Verifying exact current-run Kafka payloads against the configured input selection..."
+$verificationSummary = docker compose run --rm --no-deps --entrypoint python ingestion -m event_driven_audio_analytics.smoke.verify_ingestion_flow
 Assert-LastExitCode "docker compose run verify_ingestion_flow"
+$verificationSummary
 
 Write-Host "Checking structured ingestion logs..."
 $ingestionLogs = docker compose logs ingestion
 Assert-LastExitCode "docker compose logs ingestion"
 $ingestionLogs
 
-$successLog = @($ingestionLogs | Where-Object {
-    $_ -match 'Published track events' -and $_.Contains("""trace_id"":""run/$effectiveRunId/track/2""") -and $_ -match '"track_id":2'
-})
-if ($successLog.Count -lt 1) {
-    throw "Expected success log line with trace_id and track_id for track 2."
+$expectsSuccessLogs = $verificationSummary -match '"validated_track_ids":\[[^\]]*[0-9]'
+if ($expectsSuccessLogs) {
+    $successLog = @($ingestionLogs | Where-Object {
+        $_ -match 'Published track events' -and $_ -match ('"trace_id":"run/' + [regex]::Escape($effectiveRunId) + '/track/[0-9]+"') -and $_ -match '"track_id":[0-9]+'
+    })
+    if ($successLog.Count -lt 1) {
+        throw "Expected a success log line with current-run trace_id and track_id context."
+    }
 }
 
-$rejectLog = @($ingestionLogs | Where-Object {
-    $_ -match 'Published metadata only for rejected track' -and $_.Contains("""trace_id"":""run/$effectiveRunId/track/666""") -and $_ -match '"validation_status":"probe_failed"'
-})
-if ($rejectLog.Count -lt 1) {
-    throw "Expected reject log line with trace_id and validation_status for track 666."
+$expectsRejectLogs = $verificationSummary -match '"rejected_track_ids":\[[^\]]*[0-9]'
+if ($expectsRejectLogs) {
+    $rejectLog = @($ingestionLogs | Where-Object {
+        $_ -match 'Published metadata only for rejected track' -and $_ -match ('"trace_id":"run/' + [regex]::Escape($effectiveRunId) + '/track/[0-9]+"') -and $_ -match '"validation_status":"'
+    })
+    if ($rejectLog.Count -lt 1) {
+        throw "Expected a reject log line with current-run trace_id and validation_status context."
+    }
 }
 
 Write-Host "Ingestion smoke flow passed."
