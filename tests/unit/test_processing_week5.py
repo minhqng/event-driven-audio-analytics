@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 import wave
@@ -20,6 +21,7 @@ from event_driven_audio_analytics.processing.modules.artifact_loader import (
     ArtifactChecksumMismatch,
     load_segment_artifact,
 )
+from event_driven_audio_analytics.processing.modules.metrics import processing_metrics_state_path
 from event_driven_audio_analytics.processing.modules.rms import summarize_rms
 from event_driven_audio_analytics.processing.modules.welford import build_welford_state_ref
 from event_driven_audio_analytics.processing.pipeline import (
@@ -167,6 +169,7 @@ def _write_tone_wav(
     amplitude: float = 0.2,
     frequency_hz: float = 440.0,
 ) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     sample_count = int(round(duration_s * sample_rate_hz))
     timeline = np.arange(sample_count, dtype=np.float64) / float(sample_rate_hz)
     waveform = amplitude * np.sin(2.0 * np.pi * frequency_hz * timeline)
@@ -413,6 +416,82 @@ def test_silent_ratio_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
         and message["value"]["payload"]["metric_name"] == "silent_ratio"
     )
     assert other_run_silent_ratio_payload["metric_value"] == pytest.approx(0.0)
+
+
+def test_silent_ratio_recovers_from_persisted_run_state_after_restart(tmp_path: Path) -> None:
+    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    tone_artifact = tmp_path / "tone.wav"
+    _write_tone_wav(tone_artifact, duration_s=3.0)
+    first_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    replay_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    producer = RecordingProducer()
+
+    first_result = first_pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            silent_artifact,
+            run_id="demo-run",
+            track_id=77,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+    second_result = replay_pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            tone_artifact,
+            run_id="demo-run",
+            track_id=78,
+            segment_idx=1,
+            duration_s=3.0,
+        ),
+    )
+
+    state_payload = json.loads(
+        processing_metrics_state_path(tmp_path, "demo-run").read_text(encoding="utf-8")
+    )
+    assert first_result.silent_ratio == pytest.approx(1.0)
+    assert second_result.silent_ratio == pytest.approx(0.5)
+    assert replay_pipeline.run_metrics.successful_segments == 2
+    assert replay_pipeline.run_metrics.silent_segments == 1
+    assert len(state_payload["segments"]) == 2
+
+
+def test_replayed_segment_keeps_silent_ratio_stable_after_restart(tmp_path: Path) -> None:
+    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    first_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    replay_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    producer = RecordingProducer()
+
+    first_result = first_pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            silent_artifact,
+            run_id="demo-run",
+            track_id=77,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+    replay_result = replay_pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            silent_artifact,
+            run_id="demo-run",
+            track_id=77,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+
+    state_payload = json.loads(
+        processing_metrics_state_path(tmp_path, "demo-run").read_text(encoding="utf-8")
+    )
+    assert first_result.silent_ratio == pytest.approx(1.0)
+    assert replay_result.silent_ratio == pytest.approx(1.0)
+    assert replay_pipeline.run_metrics.successful_segments == 1
+    assert replay_pipeline.run_metrics.silent_segments == 1
+    assert len(state_payload["segments"]) == 1
 
 
 def test_welford_state_stays_scoped_to_each_run_id(tmp_path: Path) -> None:

@@ -35,6 +35,7 @@
 - `Fact`: Shared storage under `artifacts/` is the current PoC claim-check boundary.
 - `Fact`: Artifact path shape is stable under `/artifacts/runs/<run_id>/...`.
 - `Fact`: A run-level manifest belongs under `/artifacts/runs/<run_id>/manifests/segments.parquet`.
+- `Fact`: Processing-owned replay-stable runtime state for `silent_ratio` currently lives under `/artifacts/runs/<run_id>/state/processing_metrics.json`.
 - `Fact`: Optional feature artifacts may live under `/artifacts/runs/<run_id>/features/<track_id>/<segment_idx>.*`.
 - `Fact`: Reference assets may live under `/artifacts/shared/reference/`.
 - `Conflict`: The detailed plan allows `.npy` or `.wav` for stored segments; the current repo helper emits `.wav` paths.
@@ -104,6 +105,7 @@
 - `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
 - `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
 - `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
+- `Fact`: The current Week 5 `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
 - `Fact`: The current Week 5 `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
 
 ## Idempotency Rules

@@ -136,7 +136,6 @@ services:
       interval: 15s
       timeout: 10s
       retries: 3
-    restart: on-failure
     logging:
       driver: json-file
       options:

@@ -11,6 +11,10 @@ import pytest
 
 from event_driven_audio_analytics.ingestion.modules.publisher import build_segment_ready_event
 from event_driven_audio_analytics.processing.config import ProcessingSettings
+from event_driven_audio_analytics.processing.modules.metrics import (
+    ProcessingMetricsStateError,
+    processing_metrics_state_path,
+)
 from event_driven_audio_analytics.processing.modules.artifact_loader import ArtifactChecksumMismatch
 from event_driven_audio_analytics.processing.modules.runtime import (
     ProcessingReadinessError,
@@ -154,6 +158,7 @@ def _write_tone_wav(
     amplitude: float = 0.2,
     frequency_hz: float = 440.0,
 ) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     sample_count = int(round(duration_s * sample_rate_hz))
     timeline = np.arange(sample_count, dtype=np.float64) / float(sample_rate_hz)
     waveform = amplitude * np.sin(2.0 * np.pi * frequency_hz * timeline)
@@ -250,6 +255,7 @@ def test_processing_readiness_succeeds_when_topics_and_artifacts_root_are_ready(
     )
 
     check_runtime_dependencies(_processing_settings(tmp_path))
+    assert processing_metrics_state_path(tmp_path, "demo-run").parent.is_dir()
 
 
 def test_processing_readiness_fails_when_required_topic_is_missing(
@@ -291,6 +297,9 @@ def test_classify_processing_failure_marks_retryable_artifact_errors() -> None:
     retryable_checksum = classify_processing_failure(
         ArtifactChecksumMismatch("checksum mismatch")
     )
+    terminal_metrics_state = classify_processing_failure(
+        ProcessingMetricsStateError("metrics state drifted")
+    )
     terminal_stage = classify_processing_failure(
         ProcessingStageError("feature_publish_failed", "publish failed")
     )
@@ -299,6 +308,8 @@ def test_classify_processing_failure_marks_retryable_artifact_errors() -> None:
     assert retryable_file_missing.retryable is True
     assert retryable_checksum.failure_class == "checksum_mismatch"
     assert retryable_checksum.retryable is True
+    assert terminal_metrics_state.failure_class == "metrics_state_failed"
+    assert terminal_metrics_state.retryable is False
     assert terminal_stage.failure_class == "feature_publish_failed"
     assert terminal_stage.retryable is False
 
@@ -423,6 +434,7 @@ def test_processing_run_commits_after_successful_outputs(
     assert [commit.offset() for commit in consumer.commit_calls] == [12]
     assert consumer.close_calls == 1
     assert len(producer.messages) == 3
+    assert processing_metrics_state_path(tmp_path, "demo-run").is_file()
 
 
 def test_processing_run_does_not_emit_feature_errors_when_offset_commit_fails(

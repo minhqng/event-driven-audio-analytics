@@ -16,7 +16,11 @@ from event_driven_audio_analytics.processing.modules.artifact_loader import (
     load_segment_artifact,
 )
 from event_driven_audio_analytics.processing.modules.log_mel import LogMelExtractor
-from event_driven_audio_analytics.processing.modules.metrics import ProcessingRunMetrics
+from event_driven_audio_analytics.processing.modules.metrics import (
+    ProcessingMetricsStateError,
+    ProcessingRunMetrics,
+    processing_metrics_state_path,
+)
 from event_driven_audio_analytics.processing.modules.publisher import (
     ProducerLike,
     publish_audio_features_event,
@@ -167,14 +171,8 @@ class ProcessingPipeline:
             f_max=self.settings.f_max,
             log_epsilon=self.settings.log_epsilon,
         )
-        self._welford_state_by_run_id = {
-            self.settings.base.run_id: WelfordState(
-                ref=build_welford_state_ref(self.settings.base.run_id)
-            ),
-        }
-        self._run_metrics_by_run_id = {
-            self.settings.base.run_id: ProcessingRunMetrics(),
-        }
+        self._welford_state_by_run_id = {}
+        self._run_metrics_by_run_id = {}
 
     def describe(self) -> list[str]:
         return [
@@ -208,7 +206,14 @@ class ProcessingPipeline:
     def run_metrics_for(self, run_id: str) -> ProcessingRunMetrics:
         """Return the in-memory run metrics tracker for one logical run."""
 
-        return self._run_metrics_by_run_id.setdefault(run_id, ProcessingRunMetrics())
+        current_metrics = self._run_metrics_by_run_id.get(run_id)
+        if current_metrics is not None:
+            return current_metrics
+
+        state_path = processing_metrics_state_path(self.settings.base.artifacts_root, run_id)
+        recovered_metrics = ProcessingRunMetrics.from_state_file(state_path, run_id=run_id)
+        self._run_metrics_by_run_id[run_id] = recovered_metrics
+        return recovered_metrics
 
     def _service_trace_id(self) -> str:
         """Return the stable service-scoped trace id for processing logs and metrics."""
@@ -276,15 +281,14 @@ class ProcessingPipeline:
         *,
         run_id: str,
         processing_ms: float,
-        silent_flag: bool,
+        run_metrics: ProcessingRunMetrics,
     ) -> tuple[SystemMetricsPayload, SystemMetricsPayload]:
         """Build the success-path processing metrics for one segment."""
 
-        return self.run_metrics_for(run_id).build_success_payloads(
+        return run_metrics.build_success_payloads(
             run_id=run_id,
             service_name=self.settings.base.service_name,
             processing_ms=processing_ms,
-            silent_flag=silent_flag,
         )
 
     def _publish_success_metrics(
@@ -324,6 +328,19 @@ class ProcessingPipeline:
             run_id=run_id,
             service_name=self.settings.base.service_name,
             failure_class=failure_class,
+        )
+
+    def _persist_run_metrics(
+        self,
+        *,
+        run_id: str,
+        run_metrics: ProcessingRunMetrics,
+    ) -> None:
+        """Persist replay-stable processing run metrics for restart recovery."""
+
+        run_metrics.persist(
+            state_path=processing_metrics_state_path(self.settings.base.artifacts_root, run_id),
+            run_id=run_id,
         )
 
     def _emit_failure_metric(
@@ -456,10 +473,23 @@ class ProcessingPipeline:
             ) from exc
 
         processing_ms = (perf_counter() - started_at) * 1000.0
+        try:
+            current_run_metrics = self.run_metrics_for(payload.run_id)
+            next_run_metrics = current_run_metrics.with_recorded_success(
+                track_id=payload.track_id,
+                segment_idx=payload.segment_idx,
+                silent_flag=silent_flag,
+            )
+        except ProcessingMetricsStateError as exc:
+            raise ProcessingStageError(
+                failure_class="metrics_state_failed",
+                reason="Processing failed while recovering replay-stable run metrics.",
+            ) from exc
+
         metric_payloads = self._build_success_metric_payloads(
             run_id=payload.run_id,
             processing_ms=processing_ms,
-            silent_flag=silent_flag,
+            run_metrics=next_run_metrics,
         )
         silent_ratio = metric_payloads[1].metric_value
 
@@ -487,8 +517,20 @@ class ProcessingPipeline:
             trace_id=trace_id,
             metric_payloads=metric_payloads,
         )
+        try:
+            if next_run_metrics is not current_run_metrics:
+                self._persist_run_metrics(
+                    run_id=payload.run_id,
+                    run_metrics=next_run_metrics,
+                )
+        except ProcessingMetricsStateError as exc:
+            raise ProcessingStageError(
+                failure_class="metrics_state_failed",
+                reason="Processing failed while persisting replay-stable run metrics.",
+            ) from exc
+
         self._welford_state_by_run_id[payload.run_id] = next_welford_state
-        self.run_metrics_for(payload.run_id).record_success(silent_flag=silent_flag)
+        self._run_metrics_by_run_id[payload.run_id] = next_run_metrics
         return ProcessingResult(
             segment_ready=payload,
             loaded_artifact=artifact,
@@ -681,6 +723,11 @@ def classify_processing_failure(error: Exception) -> ProcessingFailureDecision:
     if isinstance(error, ArtifactLoadError):
         return ProcessingFailureDecision(
             failure_class="artifact_load_failed",
+            retryable=False,
+        )
+    if isinstance(error, ProcessingMetricsStateError):
+        return ProcessingFailureDecision(
+            failure_class="metrics_state_failed",
             retryable=False,
         )
     return ProcessingFailureDecision(
