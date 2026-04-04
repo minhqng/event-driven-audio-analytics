@@ -8,12 +8,34 @@ import os
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings, load_base_service_settings
 
 
+def _getenv_with_fallback(primary: str, fallback: str | None, default: str) -> str:
+    """Read one environment variable with an optional legacy fallback name."""
+
+    value = os.getenv(primary)
+    if value is not None:
+        return value
+    if fallback is not None:
+        legacy_value = os.getenv(fallback)
+        if legacy_value is not None:
+            return legacy_value
+    return default
+
+
 @dataclass(slots=True)
 class ProcessingSettings:
     """Runtime settings for feature extraction."""
 
     base: BaseServiceSettings
     consumer_group: str
+    auto_offset_reset: str
+    poll_timeout_s: float
+    session_timeout_ms: int
+    max_poll_interval_ms: int
+    consumer_retry_backoff_ms: int
+    consumer_retry_backoff_max_ms: int
+    artifact_retry_attempts: int
+    artifact_retry_backoff_ms: int
+    artifact_retry_backoff_max_ms: int
     target_sample_rate_hz: int
     n_mels: int
     n_fft: int
@@ -37,6 +59,23 @@ class ProcessingSettings:
                 "PROCESSING_CONSUMER_GROUP",
                 "event-driven-audio-analytics-processing",
             ),
+            auto_offset_reset=os.getenv("PROCESSING_AUTO_OFFSET_RESET", "earliest"),
+            poll_timeout_s=float(os.getenv("PROCESSING_POLL_TIMEOUT_S", "1.0")),
+            session_timeout_ms=int(os.getenv("PROCESSING_SESSION_TIMEOUT_MS", "45000")),
+            max_poll_interval_ms=int(os.getenv("PROCESSING_MAX_POLL_INTERVAL_MS", "300000")),
+            consumer_retry_backoff_ms=int(
+                os.getenv("PROCESSING_CONSUMER_RETRY_BACKOFF_MS", "250")
+            ),
+            consumer_retry_backoff_max_ms=int(
+                os.getenv("PROCESSING_CONSUMER_RETRY_BACKOFF_MAX_MS", "5000")
+            ),
+            artifact_retry_attempts=int(os.getenv("PROCESSING_ARTIFACT_RETRY_ATTEMPTS", "5")),
+            artifact_retry_backoff_ms=int(
+                os.getenv("PROCESSING_ARTIFACT_RETRY_BACKOFF_MS", "250")
+            ),
+            artifact_retry_backoff_max_ms=int(
+                os.getenv("PROCESSING_ARTIFACT_RETRY_BACKOFF_MAX_MS", "5000")
+            ),
             target_sample_rate_hz=int(os.getenv("TARGET_SAMPLE_RATE_HZ", "32000")),
             n_mels=int(os.getenv("N_MELS", "128")),
             n_fft=int(os.getenv("N_FFT", "1024")),
@@ -47,12 +86,28 @@ class ProcessingSettings:
             silence_threshold_db=float(os.getenv("SILENCE_THRESHOLD_DB", "-60.0")),
             segment_silence_floor=float(os.getenv("SEGMENT_SILENCE_FLOOR", "1e-7")),
             log_epsilon=float(os.getenv("LOG_EPSILON", "1e-9")),
-            producer_retries=int(os.getenv("PRODUCER_RETRIES", "10")),
-            producer_retry_backoff_ms=int(os.getenv("PRODUCER_RETRY_BACKOFF_MS", "250")),
+            producer_retries=int(
+                _getenv_with_fallback("KAFKA_PRODUCER_RETRIES", "PRODUCER_RETRIES", "10")
+            ),
+            producer_retry_backoff_ms=int(
+                _getenv_with_fallback(
+                    "KAFKA_PRODUCER_RETRY_BACKOFF_MS",
+                    "PRODUCER_RETRY_BACKOFF_MS",
+                    "250",
+                )
+            ),
             producer_retry_backoff_max_ms=int(
-                os.getenv("PRODUCER_RETRY_BACKOFF_MAX_MS", "5000")
+                _getenv_with_fallback(
+                    "KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS",
+                    "PRODUCER_RETRY_BACKOFF_MAX_MS",
+                    "5000",
+                )
             ),
             producer_delivery_timeout_ms=int(
-                os.getenv("PRODUCER_DELIVERY_TIMEOUT_MS", "120000")
+                _getenv_with_fallback(
+                    "KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS",
+                    "PRODUCER_DELIVERY_TIMEOUT_MS",
+                    "120000",
+                )
             ),
         )

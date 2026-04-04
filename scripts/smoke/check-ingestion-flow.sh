@@ -38,7 +38,7 @@ echo "Running ingestion preflight..."
 docker compose run --rm --no-deps ingestion preflight
 
 echo "Running ingestion service in Compose..."
-docker compose up --build --no-deps ingestion
+docker compose up --no-deps ingestion
 
 echo "Observing Kafka messages for debugging only..."
 metadata_messages="$(sh ./scripts/smoke/observe-topic.sh audio.metadata 2)"

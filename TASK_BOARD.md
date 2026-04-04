@@ -13,10 +13,11 @@ Operational backlog based on the current scaffold and the attached project plans
 
 1. Keep the locked v1 contract stable under future runtime work.
    Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
-2. Real writer replay hardening under real producer traffic.
-3. Real Grafana dashboards.
-4. Restart/replay hardening.
-5. Benchmark/demo/freeze.
+2. Keep the per-service image extras and official containerized `pytest` path green while extending runtime evidence.
+3. Real writer replay hardening under real producer traffic.
+4. Real Grafana dashboards.
+5. Restart/replay hardening.
+6. Benchmark/demo/freeze.
 
 ## Member B Can Do Independently
 
@@ -43,7 +44,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 3: `audio.metadata` and `audio.segment.ready` publish from a real FMA-small sample without sending raw PCM through Kafka.
   Current status: Member B-owned code path is green with a recording producer plus real local FMA tracks `2` and `666`. Member A-owned Compose smoke now proves one-shot `ingestion preflight`, startup gating with run-scoped artifact-target probing, broker-backed publication, exact current-run counts by `RUN_ID`, reject-path metadata-only behavior for track `666`, run-manifest verification, and structured success/reject logs on a bounded committed fixture set. Real broker-backed writer persistence on ingestion traffic is still pending.
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
-  Current status: Member B Week 5 unit coverage now proves claim-check artifact loading, checksum gating, RMS summary emission, inherited silence decisions, exact `(1,128,300)` log-mel enforcement, vector Welford updates, and canonical `audio.features` envelopes on tone, silent, short-clip, and ingestion-produced artifacts. Broker-backed writer persistence on real `audio.features` traffic is still pending.
+  Current status: Member B Week 5 unit coverage now proves claim-check artifact loading, checksum gating, RMS summary emission, inherited silence decisions, exact `(1,128,300)` log-mel enforcement, vector Welford updates, and canonical `audio.features` envelopes on tone, silent, short-clip, and ingestion-produced artifacts. Member A Week 5 runtime work now adds a long-lived `processing` consumer with `preflight`, bounded artifact retry, structured logs, `processing_ms` plus `silent_ratio` publication, replay-stable `silent_ratio` recovery under `/artifacts/runs/<run_id>/state/processing_metrics.json`, and non-commit exit behavior on terminal failures without poison-record auto-restart loops. The bounded broker-backed `ingestion -> Kafka -> processing` smoke path is now green on a clean `RUN_ID` without healthy-path `feature_errors`. Broker-backed writer persistence on real `audio.features` traffic is still pending.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
   Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable; broader real producer-traffic replay still needs proof.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
@@ -64,6 +65,7 @@ Operational backlog based on the current scaffold and the attached project plans
 ### Session 3
 
 - Use the now-implemented processing path to collect broker-backed evidence from `audio.segment.ready` through writer persistence on real `audio.features` traffic.
+- Keep the Week 5 processing smoke harness green while extending the evidence from Kafka outputs into writer persistence.
 
 ### Session 4
 

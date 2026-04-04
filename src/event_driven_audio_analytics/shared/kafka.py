@@ -84,16 +84,33 @@ def consumer_config(
     group_id: str,
     client_id: str,
     auto_offset_reset: str = "earliest",
+    *,
+    enable_auto_commit: bool = False,
+    enable_auto_offset_store: bool = False,
+    session_timeout_ms: int | None = None,
+    max_poll_interval_ms: int | None = None,
+    retry_backoff_ms: int | None = None,
+    retry_backoff_max_ms: int | None = None,
 ) -> dict[str, object]:
     """Return shared consumer configuration."""
 
-    return {
+    config: dict[str, object] = {
         "bootstrap.servers": bootstrap_servers,
         "group.id": group_id,
         "client.id": client_id,
         "auto.offset.reset": auto_offset_reset,
-        "enable.auto.commit": False,
+        "enable.auto.commit": enable_auto_commit,
+        "enable.auto.offset.store": enable_auto_offset_store,
     }
+    if session_timeout_ms is not None:
+        config["session.timeout.ms"] = session_timeout_ms
+    if max_poll_interval_ms is not None:
+        config["max.poll.interval.ms"] = max_poll_interval_ms
+    if retry_backoff_ms is not None:
+        config["retry.backoff.ms"] = retry_backoff_ms
+    if retry_backoff_max_ms is not None:
+        config["retry.backoff.max.ms"] = retry_backoff_max_ms
+    return config
 
 
 def build_consumer(
@@ -102,6 +119,13 @@ def build_consumer(
     client_id: str,
     topics: Iterable[str],
     auto_offset_reset: str = "earliest",
+    *,
+    enable_auto_commit: bool = False,
+    enable_auto_offset_store: bool = False,
+    session_timeout_ms: int | None = None,
+    max_poll_interval_ms: int | None = None,
+    retry_backoff_ms: int | None = None,
+    retry_backoff_max_ms: int | None = None,
 ) -> Consumer:
     """Build and subscribe a Kafka consumer with shared runtime defaults."""
 
@@ -113,6 +137,12 @@ def build_consumer(
             group_id=group_id,
             client_id=client_id,
             auto_offset_reset=auto_offset_reset,
+            enable_auto_commit=enable_auto_commit,
+            enable_auto_offset_store=enable_auto_offset_store,
+            session_timeout_ms=session_timeout_ms,
+            max_poll_interval_ms=max_poll_interval_ms,
+            retry_backoff_ms=retry_backoff_ms,
+            retry_backoff_max_ms=retry_backoff_max_ms,
         )
     )
     consumer.subscribe(list(topics))

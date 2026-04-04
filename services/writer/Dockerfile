@@ -13,6 +13,6 @@ COPY tests /app/tests
 COPY services/writer /app/services/writer
 
 RUN sed -i 's/\r$//' /app/services/writer/entrypoint.sh \
-    && pip install --no-cache-dir .
+    && pip install --no-cache-dir ".[writer]"
 
 ENTRYPOINT ["sh", "/app/services/writer/entrypoint.sh"]

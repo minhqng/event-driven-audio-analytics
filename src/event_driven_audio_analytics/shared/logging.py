@@ -14,13 +14,23 @@ OPTIONAL_LOG_CONTEXT_FIELDS = (
     "run_id",
     "trace_id",
     "track_id",
+    "segment_idx",
     "validation_status",
     "failure_class",
     "topic",
+    "partition",
+    "offset",
+    "attempt",
+    "metric_name",
+    "metric_value",
+    "silent_flag",
 )
+BOOLEAN_LOG_CONTEXT_FIELDS = {
+    "silent_flag",
+}
 
 
-def _should_include_log_value(value: object) -> bool:
+def _should_include_log_value(field_name: str, value: object) -> bool:
     """Return whether an optional structured-log field should be emitted."""
 
     if value is None:
@@ -28,7 +38,7 @@ def _should_include_log_value(value: object) -> bool:
     if isinstance(value, str):
         return bool(value)
     if isinstance(value, bool):
-        return False
+        return field_name in BOOLEAN_LOG_CONTEXT_FIELDS
     return isinstance(value, (int, float))
 
 
@@ -48,7 +58,7 @@ class JsonLogFormatter(logging.Formatter):
         }
         for field_name in OPTIONAL_LOG_CONTEXT_FIELDS:
             value = getattr(record, field_name, None)
-            if _should_include_log_value(value):
+            if _should_include_log_value(field_name, value):
                 payload[field_name] = value
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
@@ -62,13 +72,13 @@ class ServiceLoggerAdapter(logging.LoggerAdapter[logging.Logger]):
         extra = {
             key: value
             for key, value in dict(self.extra).items()
-            if key == "service_name" or _should_include_log_value(value)
+            if key == "service_name" or _should_include_log_value(key, value)
         }
         extra.update(
             {
                 key: value
                 for key, value in dict(kwargs.get("extra", {})).items()
-                if key == "service_name" or _should_include_log_value(value)
+                if key == "service_name" or _should_include_log_value(key, value)
             }
         )
         extra.setdefault("service_name", self.extra["service_name"])
@@ -82,7 +92,7 @@ class ServiceLoggerAdapter(logging.LoggerAdapter[logging.Logger]):
         for key, value in context.items():
             if key == "service_name":
                 merged[key] = value
-            elif _should_include_log_value(value):
+            elif _should_include_log_value(key, value):
                 merged[key] = value
             else:
                 merged.pop(key, None)

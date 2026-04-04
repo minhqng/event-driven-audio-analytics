@@ -62,7 +62,7 @@ docker compose run --rm --no-deps ingestion preflight
 Assert-LastExitCode "docker compose run ingestion preflight"
 
 Write-Host "Running ingestion service in Compose..."
-docker compose up --build --no-deps ingestion
+docker compose up --no-deps ingestion
 Assert-LastExitCode "docker compose up ingestion"
 
 Write-Host "Observing Kafka messages for debugging only..."

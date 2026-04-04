@@ -81,8 +81,8 @@ services:
       INGESTION_STARTUP_TIMEOUT_S: "${INGESTION_STARTUP_TIMEOUT_S:-90}"
       INGESTION_STARTUP_RETRY_INTERVAL_S: "${INGESTION_STARTUP_RETRY_INTERVAL_S:-2}"
     volumes:
-      - ./artifacts:/app/artifacts:Z
-      - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,Z
+      - ./artifacts:/app/artifacts:z
+      - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,z
     depends_on:
       kafka:
         condition: service_healthy
@@ -103,14 +103,44 @@ services:
       dockerfile: services/processing/Dockerfile
     environment:
       SERVICE_NAME: processing
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
       RUN_ID: "${RUN_ID:-demo-run}"
+      METADATA_CSV_PATH: "${METADATA_CSV_PATH:-/app/tests/fixtures/audio/smoke_tracks.csv}"
+      AUDIO_ROOT_PATH: "${AUDIO_ROOT_PATH:-/app/tests/fixtures/audio/fma_small}"
+      TRACK_ID_ALLOWLIST: "${TRACK_ID_ALLOWLIST:-2,666}"
+      INGESTION_MAX_TRACKS: "${INGESTION_MAX_TRACKS:-2}"
+      PROCESSING_CONSUMER_GROUP: "${PROCESSING_CONSUMER_GROUP:-event-driven-audio-analytics-processing}"
+      PROCESSING_AUTO_OFFSET_RESET: "${PROCESSING_AUTO_OFFSET_RESET:-earliest}"
+      PROCESSING_POLL_TIMEOUT_S: "${PROCESSING_POLL_TIMEOUT_S:-1.0}"
+      PROCESSING_SESSION_TIMEOUT_MS: "${PROCESSING_SESSION_TIMEOUT_MS:-45000}"
+      PROCESSING_MAX_POLL_INTERVAL_MS: "${PROCESSING_MAX_POLL_INTERVAL_MS:-300000}"
+      PROCESSING_CONSUMER_RETRY_BACKOFF_MS: "${PROCESSING_CONSUMER_RETRY_BACKOFF_MS:-250}"
+      PROCESSING_CONSUMER_RETRY_BACKOFF_MAX_MS: "${PROCESSING_CONSUMER_RETRY_BACKOFF_MAX_MS:-5000}"
+      PROCESSING_ARTIFACT_RETRY_ATTEMPTS: "${PROCESSING_ARTIFACT_RETRY_ATTEMPTS:-5}"
+      PROCESSING_ARTIFACT_RETRY_BACKOFF_MS: "${PROCESSING_ARTIFACT_RETRY_BACKOFF_MS:-250}"
+      PROCESSING_ARTIFACT_RETRY_BACKOFF_MAX_MS: "${PROCESSING_ARTIFACT_RETRY_BACKOFF_MAX_MS:-5000}"
+      KAFKA_PRODUCER_RETRIES: "${KAFKA_PRODUCER_RETRIES:-10}"
+      KAFKA_PRODUCER_RETRY_BACKOFF_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MS:-250}"
+      KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS: "${KAFKA_PRODUCER_RETRY_BACKOFF_MAX_MS:-5000}"
+      KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS: "${KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS:-120000}"
     volumes:
-      - ./artifacts:/app/artifacts:Z
+      - ./artifacts:/app/artifacts:z
+      - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,z
     depends_on:
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "event_driven_audio_analytics.processing.app", "preflight"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   writer:
     build:
@@ -130,3 +160,10 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+
+  pytest:
+    build:
+      context: .
+      dockerfile: services/pytest/Dockerfile
+    environment:
+      PYTHONPATH: /app/src
