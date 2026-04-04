@@ -21,11 +21,24 @@ bash ./scripts/smoke/check-compose.sh
 bash ./scripts/smoke/check-imports.sh
 ```
 
-## Minimal Test Hooks
+## Official Pytest Path
 
 ```sh
-docker compose run --rm --entrypoint python writer -m unittest discover -s tests -p "test_*.py"
+bash ./scripts/smoke/check-pytest.sh
 ```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
+```
+
+```sh
+bash ./scripts/smoke/check-pytest.sh tests/unit/test_processing_runtime.py -q
+```
+
+Use the containerized `pytest` path as the authoritative repo test entrypoint.
+The current unit suite relies on `pytest` fixtures, parametrization, and `raises` assertions, so `unittest discover` is no longer a complete validation path.
+The `pytest` container now runs against image-bundled repo contents rather than a host bind mount, which avoids the permission-discovery drift that previously blocked full-suite collection on some SELinux-enabled hosts.
+Use the wrapper examples above when targeting a specific file as well, because they rebuild the `pytest` image before execution and keep the test run aligned with the current workspace.
 
 ## Writer Smoke Flow
 
@@ -81,6 +94,28 @@ This smoke flow verifies all of the following:
 - Structured ingestion logs expose `trace_id`, `run_id`, and `track_id` for current-run success and reject paths when those paths are present in the selected input set.
 - Override `RUN_ID` if needed; the shell and PowerShell wrappers now clean artifacts and validate logs for the current run, not only `demo-run`.
 
+## Processing Broker Smoke Flow
+
+```sh
+bash ./scripts/smoke/check-processing-flow.sh
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
+```
+
+This smoke flow verifies all of the following:
+
+- The `processing` service passes `preflight` before the bounded run starts.
+- `processing` stays up as a long-lived Compose consumer while `ingestion` feeds Kafka one-shot.
+- Kafka receives real `audio.features` and `processing`-owned `system.metrics` messages for the active `RUN_ID`.
+- The Python verifier, not the sample topic printout, is the authority for exact current-run `audio.features`, `processing_ms`, and `silent_ratio` counts.
+- `audio.features` stays keyed by `track_id` and keeps the locked `(mel_bins=128, mel_frames=300)` summary shape.
+- `system.metrics` stays keyed by `service_name=processing`, with per-segment `processing_ms` labels and `silent_ratio` `run_total` snapshots.
+- Healthy smoke runs do not emit `feature_errors`.
+- Structured processing logs expose `trace_id`, `run_id`, `track_id`, `segment_idx`, and `silent_flag` for current-run success paths.
+- The default wrapper is portable against committed fixtures, while the same wrapper can be reused with local FMA-small overrides to observe a bounded multi-segment burst.
+
 ## Legacy PowerShell Wrappers
 
 ```powershell
@@ -88,8 +123,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\observe-topic.ps1 audio.metadata 5
 ```
 
 Do not claim full correctness from these checks alone.
-They validate the bootstrap, the bounded Week 4 ingestion runtime path, and the first writer persistence path only.
+They validate the bootstrap, the bounded Week 4 ingestion runtime path, the bounded Week 5 processing runtime path, and the first writer persistence path only.

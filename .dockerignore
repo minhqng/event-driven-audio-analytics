@@ -1,0 +1,11 @@
+.git
+.gitignore
+.idea
+.pytest_cache
+.pytest-tmp-gate
+.ruff_cache
+.venv
+__pycache__/
+*.py[cod]
+artifacts/
+references/legacy-fma-pipeline/

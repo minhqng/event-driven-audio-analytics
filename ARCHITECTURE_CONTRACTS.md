@@ -104,6 +104,7 @@
 - `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
 - `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
 - `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
+- `Fact`: The current Week 5 `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
 
 ## Idempotency Rules
 

@@ -22,9 +22,12 @@ from event_driven_audio_analytics.processing.modules.artifact_loader import (
 )
 from event_driven_audio_analytics.processing.modules.rms import summarize_rms
 from event_driven_audio_analytics.processing.modules.welford import build_welford_state_ref
-from event_driven_audio_analytics.processing.pipeline import ProcessingPipeline
+from event_driven_audio_analytics.processing.pipeline import (
+    ProcessingPipeline,
+    ProcessingStageError,
+)
 from event_driven_audio_analytics.shared.checksum import sha256_file
-from event_driven_audio_analytics.shared.kafka import KafkaDeliveryError, deserialize_envelope
+from event_driven_audio_analytics.shared.kafka import deserialize_envelope
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
@@ -92,6 +95,35 @@ class FailingProducer(RecordingProducer):
             on_delivery(RuntimeError("broker unavailable"), None)
 
 
+class FailAfterNProducer(RecordingProducer):
+    def __init__(self, fail_on_produce_call: int) -> None:
+        super().__init__()
+        self._produce_calls = 0
+        self._fail_on_produce_call = fail_on_produce_call
+
+    def produce(
+        self,
+        *,
+        topic: str,
+        value: bytes,
+        key: bytes | None = None,
+        on_delivery: object | None = None,
+    ) -> None:
+        self._produce_calls += 1
+        self.messages.append(
+            {
+                "topic": topic,
+                "key": key.decode("utf-8") if key is not None else None,
+                "value": deserialize_envelope(value),
+            }
+        )
+        if on_delivery is not None:
+            if self._produce_calls == self._fail_on_produce_call:
+                on_delivery(RuntimeError("broker unavailable"), None)
+            else:
+                on_delivery(None, _DeliveredMessage(topic))
+
+
 def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
     return ProcessingSettings(
         base=BaseServiceSettings(
@@ -101,6 +133,15 @@ def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
             artifacts_root=artifacts_root,
         ),
         consumer_group="event-driven-audio-analytics-processing",
+        auto_offset_reset="earliest",
+        poll_timeout_s=1.0,
+        session_timeout_ms=45000,
+        max_poll_interval_ms=300000,
+        consumer_retry_backoff_ms=250,
+        consumer_retry_backoff_max_ms=5000,
+        artifact_retry_attempts=5,
+        artifact_retry_backoff_ms=250,
+        artifact_retry_backoff_max_ms=5000,
         target_sample_rate_hz=32000,
         n_mels=128,
         n_fft=1024,
@@ -140,13 +181,14 @@ def _write_tone_wav(
 def _segment_ready_payload_for_artifact(
     artifact_path: Path,
     *,
+    run_id: str = "demo-run",
     track_id: int,
     segment_idx: int,
     duration_s: float,
     manifest_uri: str | None = None,
 ) -> AudioSegmentReadyPayload:
     return AudioSegmentReadyPayload(
-        run_id="demo-run",
+        run_id=run_id,
         track_id=track_id,
         segment_idx=segment_idx,
         artifact_uri=artifact_path.as_posix(),
@@ -252,10 +294,18 @@ def test_processing_pipeline_emits_audio_features_from_claim_check_artifact(tmp_
 
     assert tuple(int(dimension) for dimension in result.mel.shape) == (1, 128, 300)
     assert result.silent_flag is False
+    assert result.silent_ratio == pytest.approx(0.0)
     assert result.welford_state_ref == build_welford_state_ref("demo-run")
-    assert len(producer.messages) == 1
+    assert pipeline.run_metrics.successful_segments == 1
+    assert pipeline.run_metrics.silent_segments == 0
+    assert len(producer.messages) == 3
 
-    produced_message = producer.messages[0]
+    feature_messages = [message for message in producer.messages if message["topic"] == "audio.features"]
+    metric_messages = [message for message in producer.messages if message["topic"] == "system.metrics"]
+    assert len(feature_messages) == 1
+    assert len(metric_messages) == 2
+
+    produced_message = feature_messages[0]
     assert produced_message["topic"] == "audio.features"
     assert produced_message["key"] == str(payload.track_id)
 
@@ -275,6 +325,22 @@ def test_processing_pipeline_emits_audio_features_from_claim_check_artifact(tmp_
     assert produced_payload["processing_ms"] >= 0.0
     assert produced_payload["manifest_uri"] == payload.manifest_uri
 
+    metric_payloads = [message["value"]["payload"] for message in metric_messages]
+    processing_ms_payload = next(
+        metric_payload for metric_payload in metric_payloads if metric_payload["metric_name"] == "processing_ms"
+    )
+    silent_ratio_payload = next(
+        metric_payload for metric_payload in metric_payloads if metric_payload["metric_name"] == "silent_ratio"
+    )
+    assert processing_ms_payload["service_name"] == "processing"
+    assert processing_ms_payload["labels_json"] == {"topic": "audio.features", "status": "ok"}
+    assert processing_ms_payload["unit"] == "ms"
+    assert processing_ms_payload["metric_value"] == pytest.approx(produced_payload["processing_ms"])
+    assert silent_ratio_payload["service_name"] == "processing"
+    assert silent_ratio_payload["labels_json"] == {"scope": "run_total"}
+    assert silent_ratio_payload["unit"] == "ratio"
+    assert silent_ratio_payload["metric_value"] == pytest.approx(0.0)
+
 
 def test_processing_pipeline_marks_silent_fixture_and_clamps_transport_rms(tmp_path: Path) -> None:
     artifact_path = FIXTURES_DIR / "silent_mono_32k.wav"
@@ -290,13 +356,106 @@ def test_processing_pipeline_marks_silent_fixture_and_clamps_transport_rms(tmp_p
     result = pipeline.process_payload(producer, payload)
 
     assert result.silent_flag is True
+    assert result.silent_ratio == pytest.approx(1.0)
     assert not math.isfinite(result.rms_summary.rms_dbfs)
     assert result.welford_state.count == 1
-    produced_envelope = producer.messages[0]["value"]
+    assert pipeline.run_metrics.successful_segments == 1
+    assert pipeline.run_metrics.silent_segments == 1
+    produced_envelope = next(
+        message["value"] for message in producer.messages if message["topic"] == "audio.features"
+    )
     assert isinstance(produced_envelope, dict)
     _assert_valid_audio_features_envelope(produced_envelope)
     assert produced_envelope["payload"]["silent_flag"] is True
     assert produced_envelope["payload"]["rms"] == pytest.approx(-60.0)
+
+
+def test_silent_ratio_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
+    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    tone_artifact = tmp_path / "tone.wav"
+    _write_tone_wav(tone_artifact, duration_s=3.0)
+    pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    producer = RecordingProducer()
+
+    first_result = pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            silent_artifact,
+            run_id="demo-run",
+            track_id=77,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+    second_result = pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            tone_artifact,
+            run_id="other-run",
+            track_id=88,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+
+    assert first_result.silent_ratio == pytest.approx(1.0)
+    assert second_result.silent_ratio == pytest.approx(0.0)
+    assert pipeline.run_metrics_for("demo-run").successful_segments == 1
+    assert pipeline.run_metrics_for("demo-run").silent_segments == 1
+    assert pipeline.run_metrics_for("other-run").successful_segments == 1
+    assert pipeline.run_metrics_for("other-run").silent_segments == 0
+
+    other_run_silent_ratio_payload = next(
+        message["value"]["payload"]
+        for message in producer.messages
+        if message["topic"] == "system.metrics"
+        and message["value"]["run_id"] == "other-run"
+        and message["value"]["payload"]["metric_name"] == "silent_ratio"
+    )
+    assert other_run_silent_ratio_payload["metric_value"] == pytest.approx(0.0)
+
+
+def test_welford_state_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
+    first_artifact = tmp_path / "first-tone.wav"
+    second_artifact = tmp_path / "second-tone.wav"
+    _write_tone_wav(first_artifact, duration_s=3.0, amplitude=0.2, frequency_hz=440.0)
+    _write_tone_wav(second_artifact, duration_s=3.0, amplitude=0.1, frequency_hz=880.0)
+    pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    producer = RecordingProducer()
+
+    first_result = pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            first_artifact,
+            run_id="demo-run",
+            track_id=90,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+    second_result = pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            second_artifact,
+            run_id="other-run",
+            track_id=91,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+
+    demo_run_state = pipeline.welford_state_for("demo-run")
+    other_run_state = pipeline.welford_state_for("other-run")
+
+    assert demo_run_state.count == 1
+    assert other_run_state.count == 1
+    assert demo_run_state.ref == build_welford_state_ref("demo-run")
+    assert other_run_state.ref == build_welford_state_ref("other-run")
+    assert first_result.welford_state_ref == build_welford_state_ref("demo-run")
+    assert second_result.welford_state_ref == build_welford_state_ref("other-run")
+    assert demo_run_state.mean is not None
+    assert other_run_state.mean is not None
+    assert not np.allclose(demo_run_state.mean, other_run_state.mean)
 
 
 def test_short_clip_fixture_keeps_exact_mel_shape(tmp_path: Path) -> None:
@@ -362,6 +521,8 @@ def test_welford_updates_match_manual_per_bin_statistics(tmp_path: Path) -> None
     assert state.std is not None
     assert np.allclose(state.mean, expected_mean)
     assert np.allclose(state.std, expected_std)
+    assert pipeline.run_metrics.successful_segments == 2
+    assert pipeline.run_metrics.silent_segments == 0
 
 
 def test_processing_rejects_non_32khz_segment_ready_event(tmp_path: Path) -> None:
@@ -392,7 +553,7 @@ def test_welford_state_does_not_advance_when_feature_publish_fails(tmp_path: Pat
     _write_tone_wav(artifact_path, duration_s=3.0)
     pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
 
-    with pytest.raises(KafkaDeliveryError, match="broker unavailable"):
+    with pytest.raises(ProcessingStageError, match="audio.features"):
         pipeline.process_payload(
             FailingProducer(),
             _segment_ready_payload_for_artifact(
@@ -404,3 +565,26 @@ def test_welford_state_does_not_advance_when_feature_publish_fails(tmp_path: Pat
         )
 
     assert pipeline.welford_state.count == 0
+    assert pipeline.run_metrics.successful_segments == 0
+    assert pipeline.run_metrics.silent_segments == 0
+
+
+def test_run_metrics_do_not_advance_when_metric_publish_fails(tmp_path: Path) -> None:
+    artifact_path = tmp_path / "tone.wav"
+    _write_tone_wav(artifact_path, duration_s=3.0)
+    pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+
+    with pytest.raises(ProcessingStageError, match="system.metrics"):
+        pipeline.process_payload(
+            FailAfterNProducer(fail_on_produce_call=2),
+            _segment_ready_payload_for_artifact(
+                artifact_path,
+                track_id=104,
+                segment_idx=0,
+                duration_s=3.0,
+            ),
+        )
+
+    assert pipeline.welford_state.count == 0
+    assert pipeline.run_metrics.successful_segments == 0
+    assert pipeline.run_metrics.silent_segments == 0

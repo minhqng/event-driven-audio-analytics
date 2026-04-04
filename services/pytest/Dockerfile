@@ -11,13 +11,15 @@ WORKDIR /app
 
 COPY pyproject.toml README.md /app/
 COPY src /app/src
-COPY services/processing /app/services/processing
 
 RUN pip install --no-cache-dir \
       --index-url "${PYTORCH_CPU_INDEX_URL}" \
       "torch==${TORCH_CPU_VERSION}" \
       "torchaudio==${TORCHAUDIO_CPU_VERSION}" \
-    && sed -i 's/\r$//' /app/services/processing/entrypoint.sh \
-    && pip install --no-cache-dir ".[ingestion,processing]"
+    && pip install --no-cache-dir ".[dev,ingestion,processing,writer]"
 
-ENTRYPOINT ["sh", "/app/services/processing/entrypoint.sh"]
+COPY infra /app/infra
+COPY schemas /app/schemas
+COPY tests /app/tests
+
+ENTRYPOINT ["python", "-m", "pytest"]

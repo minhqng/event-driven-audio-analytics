@@ -10,6 +10,6 @@ COPY src /app/src
 COPY services/ingestion /app/services/ingestion
 
 RUN sed -i 's/\r$//' /app/services/ingestion/entrypoint.sh \
-    && pip install --no-cache-dir .
+    && pip install --no-cache-dir ".[ingestion]"
 
 ENTRYPOINT ["sh", "/app/services/ingestion/entrypoint.sh"]
