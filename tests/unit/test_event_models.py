@@ -52,6 +52,30 @@ class EventModelTests(unittest.TestCase):
         self.assertEqual(envelope["payload"]["mel_bins"], 128)
         self.assertEqual(round_trip, envelope)
 
+    def test_build_envelope_accepts_trace_id_override_when_scoped_to_run(self) -> None:
+        payload = AudioFeaturesPayload(
+            ts="2026-04-02T00:00:10Z",
+            run_id="demo-run",
+            track_id=2,
+            segment_idx=0,
+            artifact_uri="/artifacts/runs/demo-run/segments/2/0.wav",
+            checksum="sha256:segment-000",
+            rms=0.42,
+            silent_flag=False,
+            mel_bins=128,
+            mel_frames=300,
+            processing_ms=12.5,
+        )
+
+        envelope = build_envelope(
+            "audio.features",
+            "processing",
+            payload,
+            trace_id="run/demo-run/track/2/custom-hop",
+        ).to_dict()
+
+        self.assertEqual(envelope["trace_id"], "run/demo-run/track/2/custom-hop")
+
     def test_system_metrics_default_labels_are_empty_dict(self) -> None:
         payload = SystemMetricsPayload(
             ts="2026-04-02T00:00:12Z",

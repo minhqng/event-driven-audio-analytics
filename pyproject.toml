@@ -19,6 +19,8 @@ dependencies = [
   "polars>=1.0.0",
   "psycopg[binary]>=3.2.0",
   "PyYAML>=6.0.2",
+  "torch>=2.10.0",
+  "torchaudio>=2.10.0",
 ]
 
 [project.optional-dependencies]

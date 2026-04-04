@@ -33,6 +33,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: `tests/fixtures/audio/` now contains deterministic synthetic audio fixtures plus a manifest-only FMA-small reference pack strategy.
 - `Fact`: `ingestion` now ports the first real Week 3 Member B path: flattened-header metadata ETL, structured audio validation, PyAV decode/resample to mono 32 kHz, 3.0 s / 1.5 s segmentation, WAV claim-check artifact writing with SHA-256 checksums, Parquet manifest updates, and canonical `audio.metadata` plus `audio.segment.ready` envelope emission.
 - `Fact`: The Week 4 Member B ingestion hardening baseline now verifies artifact/checksum/manifest linkage before segment-ready publication, omits optional payload fields instead of serializing schema-invalid `null`s, emits an explicit `validation_status=no_segments` outcome when decoded audio yields no legal segments under the inherited tail-padding rule, and requires positive metadata-side `track.duration` so reject-path `audio.metadata` events stay contract-valid.
+- `Fact`: `processing` now ports the real Member B Week 5 path: claim-check artifact loading from `artifact_uri`, checksum validation before DSP work, segment RMS summaries, inherited post-log-mel silence gating, exact `(1,128,300)` log-mel extraction, vector-valued Welford updates over mel-bin means, canonical `audio.features` emission, and unit coverage over tone, silent, and short-clip fixtures.
 - `Fact`: Member A Week 3 Compose wiring now mounts `artifacts/` as the shared claim-check bind mount, mounts a read-only bounded fixture dataset for smoke runs, applies bounded container log retention, and exposes env-backed producer retry/backoff settings for `ingestion`.
 - `Fact`: Member A Week 4 runtime hardening now adds an explicit `ingestion preflight` path, startup dependency gating for Kafka topics plus mounted inputs, a Compose healthcheck that exercises the one-shot preflight, run-scoped artifact-target write probing under `/artifacts/runs/<run_id>/...`, and structured JSON logs that now carry `trace_id`, `run_id`, and `track_id` context on the bounded ingestion path.
 - `Fact`: `ingestion` now emits run-level `system.metrics` for `tracks_total`, `segments_total`, `validation_failures`, and `artifact_write_ms` on the canonical v1 envelope.
@@ -49,11 +50,11 @@ Status reconciled from the attached documents and the current repo scaffold.
 ## Repo-Present But Still Placeholder
 
 - `Fact`: `ingestion` now implements the first real track-to-artifact path and is exercised under a live Kafka broker in Compose on a bounded committed smoke fixture set.
-- `Inference`: `processing` service structure exists, but artifact loading, RMS, log-mel, and event loops are mostly placeholders.
+- `Inference`: `processing` now has a real claim-check-to-`audio.features` path, but broker-backed evidence from processing into writer persistence and dashboards is still pending.
 - `Inference`: `writer` runtime is real for the current scaffold contract, but it is not yet exercised by real ingestion/processing traffic and does not publish to `audio.dlq`; `ingestion` likewise keeps `audio.dlq` log-only for unrecoverable failures in the current Week 4 runtime.
-- `Inference`: `welford_snapshots` storage exists, but the full reused mel-bin Welford processing path is still not implemented.
+- `Inference`: `welford_snapshots` storage exists, but the current Week 5 processing path keeps Welford state in memory only; persisted snapshot semantics remain unresolved.
 - `Inference`: Dashboards are provisioned but remain placeholder dashboards, not evidence of real analytics.
-- `Inference`: Current tests validate shape/contracts/scaffold assumptions more than runnable end-to-end behavior.
+- `Inference`: Current tests now validate the real processing DSP path and contract shape, but they still do not prove a full broker-backed ingestion -> processing -> writer -> dashboard run.
 
 ## What Is Documented As Implemented
 
@@ -64,8 +65,6 @@ Status reconciled from the attached documents and the current repo scaffold.
 
 ## What Is Planned But Not Yet Implemented
 
-- `Fact`: Claim-check artifact load and checksum verification in processing.
-- `Fact`: RMS, silence gate, log-mel, and Welford parity against the old pipeline.
 - `Fact`: Live Kafka broker-backed publication/consumption evidence for the real ingestion path into writer persistence and dashboards.
 - `Fact`: Real dashboard panels backed by real DB data.
 - `Fact`: Restart/replay reliability scenarios, 100-track dry run, benchmark notes, and demo artifacts.
@@ -87,7 +86,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 | Week 1 / Phase 1 | Scope lock, infra bootstrap, reuse audit | `Fact`: infra scaffold is documented as complete. `Fact`: `REUSE_MAP.md` and `tests/fixtures/audio/` now document the Week 1 Member B reuse audit and fixture strategy. |
 | Week 2 / Phase 2 | Shared layer, event contract, DB schema, fake-event smoke path | `Fact`: schemas/SQL/helpers exist. `Fact`: Event Contract v1 is now locked in root docs, shared schemas/models, contract fixtures/tests, the writer runtime, and the fake-event smoke path. `Conflict`: the DLQ contract remains unresolved. |
 | Week 3 / Phase 3 | Ingestion on real sample data | `Fact`: initial real ingestion path is implemented for Member B scope. `Fact`: metadata ETL, validation, PyAV decode/resample, segmentation, artifact writing, checksum + manifest creation, and canonical `audio.metadata` / `audio.segment.ready` emission now work on committed fixtures and local real FMA samples. `Fact`: Member A Week 3 Compose/runtime work now proves broker-backed `audio.metadata`, `audio.segment.ready`, and `system.metrics` publication on the bounded smoke path. |
-| Week 4 / Phase 4 | Processing / feature emission | `Inference`: processing remains not implemented, but the Member A-owned ingestion runtime hardening for startup readiness, preflight, log context, and bounded Kafka integration smoke is now implemented. |
+| Week 4 / Phase 4 | Processing / feature emission | `Fact`: processing now implements the Member B claim-check path from `audio.segment.ready` through checksum validation, RMS / silence gate / exact log-mel / vector Welford, and canonical `audio.features` publication, with unit coverage on tone, silent, and short-clip fixtures. |
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Inference`: runtime implementation now exists for the current scaffold contract, but broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Inference`: provisioning exists, real data path missing. |
 | Week 7 / Phase 7 | Hardening / restart / benchmark prep | `Inference`: not implemented. |
@@ -100,15 +99,15 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Conflict`: Detailed plan uses logical natural key `(run_id, track_id, segment_idx)`; current SQL physical PK includes `ts`.
 - `Conflict`: Documents disagree on overall schedule length: 8 weeks versus 10 weeks.
 - `Conflict`: One plan names openSUSE Tumbleweed as host baseline; current repo/runbooks are effectively host-agnostic via Linux containers plus bash/PowerShell helpers.
-- `Conflict`: The old audio pipeline depends on `av`, `polars`, `torch`, and `torchaudio`; the current repo now declares the Week 3-critical `av` and `polars` dependencies, but the Week 4 processing path still lacks the heavier `torch` / `torchaudio` reuse-critical dependencies.
-- `Conflict`: The current repo has reserved `welford_snapshots` storage, but the old pipeline's recoverable Welford behavior is still vector-oriented over mel bins and not yet wired into runtime processing.
+- `Conflict`: The locked `audio.features` v1 payload requires JSON-finite `rms`, while the inherited RMS helper returns `-inf` for truly silent audio; the current Week 5 processing path therefore clamps non-finite transport values to `-60.0` while preserving `silent_flag=true`.
+- `Conflict`: The current repo has reserved `welford_snapshots` storage, but the old pipeline's recoverable Welford behavior is now wired into runtime processing only as in-memory vector state; persisted snapshot semantics still need A/B synchronization.
 
 ## Unresolved Blockers And Dependencies
 
 - `Fact`: The canonical v1 contract is now adopted in the shared layer, writer runtime, fake-event smoke path, and broker-backed ingestion smoke path, but real ingestion-to-writer-to-dashboard implementation is still required before real end-to-end completion.
 - `Fact`: A concrete reuse-map from the old pipeline is now checked in as `REUSE_MAP.md`.
 - `Fact`: Processing correctness depends on access to sample FMA-small data and old-pipeline reference behavior.
-- `Fact`: Week 3 reuse-critical audio/data dependencies for metadata ETL and PyAV decode/resample are now declared in `pyproject.toml`; Week 4 mel-processing parity still depends on adding the remaining `torch` / `torchaudio` stack.
+- `Fact`: Week 3 and Week 5 reuse-critical audio/data dependencies are now declared in `pyproject.toml`, including the `torch` / `torchaudio` stack required for log-mel parity.
 - `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented; run-level `system.metrics` now rely on a shared snapshot identity plus sink-side timestamp refresh rule.
 - `Fact`: Dashboard work depends on real persistence first; placeholders are not enough.
 

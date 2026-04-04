@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 import json
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from event_driven_audio_analytics.shared.ids import generate_event_id
 
@@ -272,17 +272,23 @@ def build_envelope(
     *,
     event_id: str | None = None,
     produced_at: str | None = None,
+    trace_id: str | None = None,
 ) -> EventEnvelope[PayloadT]:
     """Build a canonical v1 event envelope from a typed payload."""
 
     payload_data = _payload_to_dict(payload)
     run_id = _require_string(payload_data, "run_id")
+    envelope_trace_id = trace_id or build_trace_id(payload_data, source_service=source_service)
+    if not isinstance(envelope_trace_id, str) or not envelope_trace_id:
+        raise ValueError("Envelope trace_id override must be a non-empty string.")
+    if not envelope_trace_id.startswith(f"run/{run_id}/"):
+        raise ValueError("Envelope trace_id override must stay scoped to the top-level run_id.")
 
     return EventEnvelope(
         event_id=event_id or generate_event_id(),
         event_type=event_type,
         event_version=EVENT_VERSION,
-        trace_id=build_trace_id(payload_data, source_service=source_service),
+        trace_id=envelope_trace_id,
         run_id=run_id,
         produced_at=produced_at or _utc_now_iso(),
         source_service=source_service,
