@@ -67,19 +67,24 @@ def decode_audio_pyav(path: str | Path, *, target_sample_rate_hz: int) -> Decode
             raise RuntimeError(f"Audio sample rate is unavailable for {path}.")
 
         original_sample_rate_hz = int(stream.rate)
-        resampler = av.audio.resampler.AudioResampler(
-            format="flt",
-            layout="mono",
-            rate=target_sample_rate_hz,
-        )
-
+        resampler: av.audio.resampler.AudioResampler | None = None
         frames: list[np.ndarray] = []
         for frame in container.decode(audio=0):
+            if resampler is None:
+                layout_name = frame.layout.name if frame.layout is not None else "mono"
+                # Preserve the original channel layout during resample, then apply the
+                # legacy arithmetic-mean mono fold-down explicitly after concatenation.
+                resampler = av.audio.resampler.AudioResampler(
+                    format="fltp",
+                    layout=layout_name,
+                    rate=target_sample_rate_hz,
+                )
             for output_frame in resampler.resample(frame):
                 frames.append(output_frame.to_ndarray().astype(np.float32, copy=False))
 
-        for output_frame in resampler.resample(None):
-            frames.append(output_frame.to_ndarray().astype(np.float32, copy=False))
+        if resampler is not None:
+            for output_frame in resampler.resample(None):
+                frames.append(output_frame.to_ndarray().astype(np.float32, copy=False))
 
         if not frames:
             raise RuntimeError(f"No audio frames decoded from {path}.")
@@ -87,6 +92,8 @@ def decode_audio_pyav(path: str | Path, *, target_sample_rate_hz: int) -> Decode
         waveform = np.concatenate(frames, axis=1)
         if waveform.ndim == 1:
             waveform = waveform[np.newaxis, :]
+        elif waveform.shape[0] > 1:
+            waveform = waveform.mean(axis=0, keepdims=True, dtype=np.float32)
 
         duration_s = waveform.shape[-1] / float(target_sample_rate_hz)
         return DecodedAudio(
