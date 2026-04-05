@@ -12,7 +12,7 @@ from event_driven_audio_analytics.shared.models.system_metrics import SystemMetr
 from event_driven_audio_analytics.writer.modules.metrics import build_writer_metric_payload
 from event_driven_audio_analytics.writer.modules.persistence import (
     WriterPayloadValidationError,
-    persist_envelope_payload,
+    coerce_payload_model,
 )
 from event_driven_audio_analytics.writer.modules.upsert_features import (
     AudioFeaturesNaturalKeyError,
@@ -132,12 +132,9 @@ class WriterPersistenceTests(unittest.TestCase):
         self.assertEqual(rows_written, 1)
         self.assertIsNone(cursor.executed[2][1]["manifest_uri"])
 
-    def test_persist_envelope_payload_rejects_payload_schema_drift(self) -> None:
-        cursor = FakeCursor()
-
+    def test_coerce_payload_model_rejects_payload_schema_drift(self) -> None:
         with self.assertRaises(WriterPayloadValidationError):
-            persist_envelope_payload(
-                cursor,
+            coerce_payload_model(
                 "audio.features",
                 {
                     "run_id": "demo-run",
@@ -216,6 +213,28 @@ class WriterPersistenceTests(unittest.TestCase):
         self.assertIn("ctid = %(survivor_ctid)s::tid", cursor.executed[3][0])
         self.assertIn("INSERT INTO system_metrics", cursor.executed[4][0])
 
+    def test_writer_record_system_metrics_rewrites_existing_logical_row(self) -> None:
+        cursor = FakeCursor(fetch_results=[[(16432, "(0,7)")]])
+        payload = build_writer_metric_payload(
+            run_id="demo-run",
+            topic="audio.features",
+            metric_name="write_ms",
+            metric_value=14.25,
+            unit="ms",
+            status="ok",
+            partition=0,
+            offset=12,
+        )
+
+        rows_written = persist_system_metrics(cursor, payload)
+
+        self.assertEqual(rows_written, 1)
+        self.assertEqual(len(cursor.executed), 4)
+        self.assertIn("pg_advisory_xact_lock", cursor.executed[0][0])
+        self.assertIn("SELECT", cursor.executed[1][0])
+        self.assertIn("DELETE FROM system_metrics", cursor.executed[2][0])
+        self.assertIn("INSERT INTO system_metrics", cursor.executed[3][0])
+
     def test_writer_internal_metric_payload_uses_locked_labels_and_unit(self) -> None:
         payload = build_writer_metric_payload(
             run_id="demo-run",
@@ -224,6 +243,8 @@ class WriterPersistenceTests(unittest.TestCase):
             metric_value=14.25,
             unit="ms",
             status="ok",
+            partition=0,
+            offset=12,
         )
 
         self.assertEqual(payload.service_name, "writer")
@@ -233,8 +254,11 @@ class WriterPersistenceTests(unittest.TestCase):
         self.assertEqual(
             payload.labels_json,
             {
+                "scope": "writer_record",
                 "topic": "audio.features",
                 "status": "ok",
+                "partition": 0,
+                "offset": 12,
             },
         )
 

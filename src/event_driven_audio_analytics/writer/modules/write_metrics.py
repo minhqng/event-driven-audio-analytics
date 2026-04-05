@@ -37,7 +37,10 @@ VALUES (
 """.strip()
 
 
-SYSTEM_METRICS_RUN_TOTAL_SELECT = """
+REPLAY_SAFE_METRIC_SCOPES = {"run_total", "writer_record"}
+
+
+SYSTEM_METRICS_REPLAY_SAFE_SELECT = """
 SELECT
     tableoid::oid,
     ctid::text
@@ -50,7 +53,7 @@ ORDER BY ts DESC, tableoid::oid DESC, ctid DESC;
 """.strip()
 
 
-SYSTEM_METRICS_RUN_TOTAL_DELETE_DUPLICATES = """
+SYSTEM_METRICS_REPLAY_SAFE_DELETE_DUPLICATES = """
 DELETE FROM system_metrics
 WHERE run_id = %(run_id)s
   AND service_name = %(service_name)s
@@ -63,7 +66,7 @@ WHERE run_id = %(run_id)s
 """.strip()
 
 
-SYSTEM_METRICS_RUN_TOTAL_DELETE_SURVIVOR = """
+SYSTEM_METRICS_REPLAY_SAFE_DELETE_SURVIVOR = """
 DELETE FROM system_metrics
 WHERE tableoid = %(survivor_tableoid)s::oid
   AND ctid = %(survivor_ctid)s::tid;
@@ -71,7 +74,7 @@ WHERE tableoid = %(survivor_tableoid)s::oid
 
 
 def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int:
-    """Persist one operational metric row with replay-safe run_total snapshot handling."""
+    """Persist one operational metric row with replay-safe handling for selected scopes."""
 
     try:
         from psycopg.types.json import Jsonb
@@ -80,7 +83,7 @@ def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int
 
     params = asdict(payload)
     params["labels_json"] = Jsonb(payload.labels_json)
-    if payload.labels_json.get("scope") != "run_total":
+    if payload.labels_json.get("scope") not in REPLAY_SAFE_METRIC_SCOPES:
         cursor.execute(SYSTEM_METRICS_INSERT, params)
         return cursor.rowcount
 
@@ -92,14 +95,14 @@ def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int
         payload.metric_name,
         logical_key,
     )
-    cursor.execute(SYSTEM_METRICS_RUN_TOTAL_SELECT, params)
+    cursor.execute(SYSTEM_METRICS_REPLAY_SAFE_SELECT, params)
     matches = cursor.fetchall()
     if len(matches) >= 1:
         params["survivor_tableoid"] = matches[0][0]
         params["survivor_ctid"] = matches[0][1]
         if len(matches) > 1:
-            cursor.execute(SYSTEM_METRICS_RUN_TOTAL_DELETE_DUPLICATES, params)
-        cursor.execute(SYSTEM_METRICS_RUN_TOTAL_DELETE_SURVIVOR, params)
+            cursor.execute(SYSTEM_METRICS_REPLAY_SAFE_DELETE_DUPLICATES, params)
+        cursor.execute(SYSTEM_METRICS_REPLAY_SAFE_DELETE_SURVIVOR, params)
         cursor.execute(SYSTEM_METRICS_INSERT, params)
         return cursor.rowcount
 

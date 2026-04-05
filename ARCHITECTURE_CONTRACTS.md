@@ -108,7 +108,7 @@
 - `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
 - `Fact`: The current Week 5 `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
 - `Fact`: The current Week 5 `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
-- `Fact`: The current Week 6 `writer` runtime writes per-record `write_ms` metrics with `labels_json={"topic":"...","status":"ok"}`, per-record `rows_upserted` metrics with the same labels, and best-effort terminal `write_failures` metrics with `labels_json.failure_class` describing the failure path.
+- `Fact`: The current Week 6 `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
 
 ## Idempotency Rules
 

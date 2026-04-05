@@ -112,6 +112,7 @@ class WriterPipelineTests(unittest.TestCase):
                 track_id=2,
                 segment_idx=0,
             ),
+            write_ms=9.5,
         )
 
     def build_logger(self) -> ServiceLoggerAdapter:
@@ -181,12 +182,11 @@ class WriterPipelineTests(unittest.TestCase):
             WriterPipeline,
             "_persist_record",
             return_value=self.build_outcome(),
-        ), patch.object(WriterPipeline, "_emit_success_metrics") as emit_success_metrics:
+        ):
             with self.assertRaises(KeyboardInterrupt):
                 pipeline.run(logger=self.build_logger())
 
         self.assertEqual(consumer.commit_calls, [(record.message, False)])
-        emit_success_metrics.assert_called_once()
         self.assertTrue(consumer.closed)
         close_database_pool.assert_called_once()
 
@@ -227,12 +227,14 @@ class WriterPipelineTests(unittest.TestCase):
         close_database_pool.assert_called_once()
 
     @patch("event_driven_audio_analytics.writer.pipeline.persist_checkpoint")
+    @patch("event_driven_audio_analytics.writer.pipeline.persist_system_metrics")
     @patch("event_driven_audio_analytics.writer.pipeline.persist_envelope_payload")
     @patch("event_driven_audio_analytics.writer.pipeline.transaction_cursor")
     def test_persist_record_accepts_canonical_v1_envelope(
         self,
         transaction_cursor: object,
         persist_envelope_payload: object,
+        persist_system_metrics: object,
         persist_checkpoint: object,
     ) -> None:
         @contextmanager
@@ -258,14 +260,23 @@ class WriterPipelineTests(unittest.TestCase):
         self.assertEqual(result.checkpoint_rows, 1)
         self.assertEqual(result.context.run_id, "demo-run")
         self.assertEqual(result.context.track_id, 2)
+        self.assertGreaterEqual(result.write_ms, 0.0)
         persist_envelope_payload.assert_called_once_with(
             cursor=unittest.mock.ANY,
             topic="audio.features",
-            payload_data=envelope["payload"],
+            payload=unittest.mock.ANY,
         )
+        persisted_payload = persist_envelope_payload.call_args.kwargs["payload"]
+        self.assertIsInstance(persisted_payload, AudioFeaturesPayload)
+        self.assertEqual(persisted_payload.processing_ms, 12.5)
         self.assertEqual(
             persist_checkpoint.call_args.args[1]["run_id"],
             "demo-run",
+        )
+        self.assertEqual(persist_system_metrics.call_count, 2)
+        self.assertEqual(
+            [call.args[1].metric_name for call in persist_system_metrics.call_args_list],
+            ["write_ms", "rows_upserted"],
         )
 
     @patch("event_driven_audio_analytics.writer.pipeline.persist_checkpoint")
@@ -324,22 +335,6 @@ class WriterPipelineTests(unittest.TestCase):
             pipeline._persist_record(record)
 
         self.assertEqual(exc_info.exception.failure_class, "envelope_invalid")
-
-    @patch("event_driven_audio_analytics.writer.pipeline.pooled_transaction_cursor")
-    def test_success_metric_failures_do_not_raise(
-        self,
-        pooled_transaction_cursor: object,
-    ) -> None:
-        pooled_transaction_cursor.side_effect = RuntimeError("metric store unavailable")
-        pipeline = WriterPipeline(settings=self.build_settings())
-
-        pipeline._emit_success_metrics(
-            pool=object(),
-            record=self.build_record(),
-            outcome=self.build_outcome(),
-            write_ms=9.5,
-            logger=self.build_logger(),
-        )
 
     def test_classify_writer_failure_distinguishes_feature_key_conflicts(self) -> None:
         decision = classify_writer_failure(
