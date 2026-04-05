@@ -1,4 +1,4 @@
-"""Kafka-consumption placeholders for the writer service."""
+"""Kafka consumption helpers for the writer service."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ else:
 
 @dataclass(slots=True)
 class ConsumedRecord:
-    """A minimal consumed Kafka record placeholder."""
+    """A minimal consumed Kafka record for the writer loop."""
 
     topic: str
     partition: int
@@ -35,6 +35,13 @@ def build_writer_consumer(settings: WriterSettings) -> Consumer:
         group_id=settings.consumer_group,
         client_id=settings.base.service_name,
         topics=WRITER_INPUT_TOPICS,
+        auto_offset_reset=settings.auto_offset_reset,
+        enable_auto_commit=False,
+        enable_auto_offset_store=False,
+        session_timeout_ms=settings.session_timeout_ms,
+        max_poll_interval_ms=settings.max_poll_interval_ms,
+        retry_backoff_ms=settings.consumer_retry_backoff_ms,
+        retry_backoff_max_ms=settings.consumer_retry_backoff_max_ms,
     )
 
 

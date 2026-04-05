@@ -1,0 +1,2 @@
+This file keeps the references/ directory present so Docker COPY references /app/references
+does not fail on a fresh checkout when the optional legacy reference repo is absent.

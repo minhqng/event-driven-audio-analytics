@@ -9,10 +9,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
+from event_driven_audio_analytics.writer.modules.metrics import build_writer_metric_payload
 from event_driven_audio_analytics.writer.modules.persistence import (
+    WriterPayloadValidationError,
+    persist_envelope_payload,
+)
+from event_driven_audio_analytics.writer.modules.upsert_features import (
+    AudioFeaturesNaturalKeyError,
     persist_audio_features,
-    persist_system_metrics,
+)
+from event_driven_audio_analytics.writer.modules.upsert_metadata import (
     persist_track_metadata,
+)
+from event_driven_audio_analytics.writer.modules.write_metrics import (
+    persist_system_metrics,
 )
 
 
@@ -109,7 +119,7 @@ class WriterPersistenceTests(unittest.TestCase):
     def test_audio_features_fails_when_natural_key_matches_multiple_rows(self) -> None:
         cursor = FakeCursor(fetch_results=[[(1,), (1,)]])
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AudioFeaturesNaturalKeyError):
             persist_audio_features(cursor, self.build_features_payload())
 
     def test_audio_features_allows_missing_manifest_uri(self) -> None:
@@ -121,6 +131,20 @@ class WriterPersistenceTests(unittest.TestCase):
 
         self.assertEqual(rows_written, 1)
         self.assertIsNone(cursor.executed[2][1]["manifest_uri"])
+
+    def test_persist_envelope_payload_rejects_payload_schema_drift(self) -> None:
+        cursor = FakeCursor()
+
+        with self.assertRaises(WriterPayloadValidationError):
+            persist_envelope_payload(
+                cursor,
+                "audio.features",
+                {
+                    "run_id": "demo-run",
+                    "track_id": 2,
+                    "segment_idx": 0,
+                },
+            )
 
     def test_track_metadata_persists_duration_s(self) -> None:
         cursor = FakeCursor()
@@ -191,6 +215,28 @@ class WriterPersistenceTests(unittest.TestCase):
         self.assertIn("tableoid = %(survivor_tableoid)s::oid", cursor.executed[3][0])
         self.assertIn("ctid = %(survivor_ctid)s::tid", cursor.executed[3][0])
         self.assertIn("INSERT INTO system_metrics", cursor.executed[4][0])
+
+    def test_writer_internal_metric_payload_uses_locked_labels_and_unit(self) -> None:
+        payload = build_writer_metric_payload(
+            run_id="demo-run",
+            topic="audio.features",
+            metric_name="write_ms",
+            metric_value=14.25,
+            unit="ms",
+            status="ok",
+        )
+
+        self.assertEqual(payload.service_name, "writer")
+        self.assertEqual(payload.metric_name, "write_ms")
+        self.assertEqual(payload.metric_value, 14.25)
+        self.assertEqual(payload.unit, "ms")
+        self.assertEqual(
+            payload.labels_json,
+            {
+                "topic": "audio.features",
+                "status": "ok",
+            },
+        )
 
 
 if __name__ == "__main__":

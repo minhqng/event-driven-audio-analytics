@@ -58,7 +58,9 @@ require_topic "system.metrics"
 require_topic "audio.dlq"
 
 echo "Starting writer after topic bootstrap..."
-docker compose up --build -d writer
+docker compose build writer
+docker compose run --rm --no-deps writer preflight
+docker compose up -d --no-deps writer
 sleep 5
 
 echo "Publishing fake metadata and features..."

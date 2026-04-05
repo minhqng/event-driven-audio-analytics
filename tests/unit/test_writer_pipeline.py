@@ -11,19 +11,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from event_driven_audio_analytics.shared.kafka import serialize_envelope
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.envelope import build_envelope
-
+from event_driven_audio_analytics.shared.logging import ServiceLoggerAdapter
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings, DatabaseSettings
 from event_driven_audio_analytics.writer.config import WriterSettings
 from event_driven_audio_analytics.writer.modules.consumer import ConsumedRecord
-from event_driven_audio_analytics.writer.pipeline import WriterPipeline
+from event_driven_audio_analytics.writer.pipeline import (
+    WriterPersistenceOutcome,
+    WriterPipeline,
+    WriterRecordContext,
+    classify_writer_failure,
+    WriterStageError,
+)
+from event_driven_audio_analytics.writer.modules.upsert_features import AudioFeaturesNaturalKeyError
 
 
 class FakeConsumer:
-    def __init__(self) -> None:
+    def __init__(self, *, fail_commit: bool = False) -> None:
         self.commit_calls: list[tuple[object, bool]] = []
         self.closed = False
+        self.fail_commit = fail_commit
+        self.commit_attempts = 0
 
     def commit(self, *, message: object, asynchronous: bool) -> None:
+        self.commit_attempts += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
         self.commit_calls.append((message, asynchronous))
 
     def close(self) -> None:
@@ -47,6 +59,15 @@ class WriterPipelineTests(unittest.TestCase):
                 password="audio_analytics",
             ),
             consumer_group="event-driven-audio-analytics-writer",
+            auto_offset_reset="earliest",
+            poll_timeout_s=1.0,
+            session_timeout_ms=45000,
+            max_poll_interval_ms=300000,
+            consumer_retry_backoff_ms=250,
+            consumer_retry_backoff_max_ms=5000,
+            db_pool_min_size=1,
+            db_pool_max_size=4,
+            db_pool_timeout_s=30.0,
         )
 
     def build_record(self) -> ConsumedRecord:
@@ -54,7 +75,7 @@ class WriterPipelineTests(unittest.TestCase):
             topic="audio.features",
             partition=0,
             offset=12,
-            value=b"{}",
+            value=serialize_envelope(self.build_features_envelope()),
             message=object(),
         )
 
@@ -81,44 +102,129 @@ class WriterPipelineTests(unittest.TestCase):
             produced_at="2026-04-02T00:00:11Z",
         ).to_dict()
 
+    def build_outcome(self) -> WriterPersistenceOutcome:
+        return WriterPersistenceOutcome(
+            rows_written=1,
+            checkpoint_rows=1,
+            context=WriterRecordContext(
+                run_id="demo-run",
+                trace_id="run/demo-run/track/2",
+                track_id=2,
+                segment_idx=0,
+            ),
+        )
+
+    def build_logger(self) -> ServiceLoggerAdapter:
+        import logging
+
+        logger = logging.getLogger("writer-test")
+        logger.handlers.clear()
+        logger.propagate = False
+        logger.setLevel(logging.INFO)
+        return ServiceLoggerAdapter(
+            logger,
+            {
+                "service_name": "writer",
+                "run_id": "demo-run",
+            },
+        )
+
+    @patch("event_driven_audio_analytics.writer.pipeline.close_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.open_database_pool")
     @patch("event_driven_audio_analytics.writer.pipeline.build_writer_consumer")
     @patch("event_driven_audio_analytics.writer.pipeline.poll_record")
-    def test_failed_record_is_left_uncommitted(
+    def test_failed_record_is_left_uncommitted_and_exits(
         self,
         poll_record: object,
         build_writer_consumer: object,
+        open_database_pool: object,
+        close_database_pool: object,
     ) -> None:
         consumer = FakeConsumer()
         build_writer_consumer.return_value = consumer
-        poll_record.side_effect = [self.build_record(), KeyboardInterrupt()]
+        open_database_pool.return_value = object()
+        poll_record.side_effect = [self.build_record()]
         pipeline = WriterPipeline(settings=self.build_settings())
 
-        with patch.object(WriterPipeline, "_persist_record", side_effect=ValueError("boom")):
-            with self.assertRaises(KeyboardInterrupt):
-                pipeline.run()
+        with patch.object(
+            WriterPipeline,
+            "_persist_record",
+            side_effect=WriterStageError("writer_persistence_failed", "boom"),
+        ), patch.object(WriterPipeline, "_emit_failure_metric") as emit_failure_metric:
+            with self.assertRaises(WriterStageError):
+                pipeline.run(logger=self.build_logger())
 
         self.assertEqual(consumer.commit_calls, [])
+        self.assertTrue(emit_failure_metric.called)
         self.assertTrue(consumer.closed)
+        close_database_pool.assert_called_once()
 
+    @patch("event_driven_audio_analytics.writer.pipeline.close_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.open_database_pool")
     @patch("event_driven_audio_analytics.writer.pipeline.build_writer_consumer")
     @patch("event_driven_audio_analytics.writer.pipeline.poll_record")
-    def test_successful_record_is_committed(
+    def test_successful_record_is_committed_once(
         self,
         poll_record: object,
         build_writer_consumer: object,
+        open_database_pool: object,
+        close_database_pool: object,
     ) -> None:
         consumer = FakeConsumer()
         build_writer_consumer.return_value = consumer
+        open_database_pool.return_value = object()
         record = self.build_record()
         poll_record.side_effect = [record, KeyboardInterrupt()]
         pipeline = WriterPipeline(settings=self.build_settings())
 
-        with patch.object(WriterPipeline, "_persist_record", return_value=(1, True)):
+        with patch.object(
+            WriterPipeline,
+            "_persist_record",
+            return_value=self.build_outcome(),
+        ), patch.object(WriterPipeline, "_emit_success_metrics") as emit_success_metrics:
             with self.assertRaises(KeyboardInterrupt):
-                pipeline.run()
+                pipeline.run(logger=self.build_logger())
 
         self.assertEqual(consumer.commit_calls, [(record.message, False)])
+        emit_success_metrics.assert_called_once()
         self.assertTrue(consumer.closed)
+        close_database_pool.assert_called_once()
+
+    @patch("event_driven_audio_analytics.writer.pipeline.close_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.open_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.build_writer_consumer")
+    @patch("event_driven_audio_analytics.writer.pipeline.poll_record")
+    def test_commit_failure_emits_failure_metric_and_stops_before_next_record(
+        self,
+        poll_record: object,
+        build_writer_consumer: object,
+        open_database_pool: object,
+        close_database_pool: object,
+    ) -> None:
+        consumer = FakeConsumer(fail_commit=True)
+        build_writer_consumer.return_value = consumer
+        open_database_pool.return_value = object()
+        first_record = self.build_record()
+        second_record = self.build_record()
+        second_record.offset = 13
+        poll_record.side_effect = [first_record, second_record]
+        pipeline = WriterPipeline(settings=self.build_settings())
+
+        with patch.object(
+            WriterPipeline,
+            "_persist_record",
+            return_value=self.build_outcome(),
+        ), patch.object(WriterPipeline, "_emit_failure_metric") as emit_failure_metric:
+            with self.assertRaises(WriterStageError) as exc_info:
+                pipeline.run(logger=self.build_logger())
+
+        self.assertEqual(exc_info.exception.failure_class, "offset_commit_failed")
+        self.assertEqual(consumer.commit_calls, [])
+        self.assertEqual(consumer.commit_attempts, 1)
+        self.assertEqual(poll_record.call_count, 1)
+        emit_failure_metric.assert_called_once()
+        self.assertTrue(consumer.closed)
+        close_database_pool.assert_called_once()
 
     @patch("event_driven_audio_analytics.writer.pipeline.persist_checkpoint")
     @patch("event_driven_audio_analytics.writer.pipeline.persist_envelope_payload")
@@ -148,7 +254,10 @@ class WriterPipelineTests(unittest.TestCase):
 
         result = pipeline._persist_record(record)
 
-        self.assertEqual(result, (1, True))
+        self.assertEqual(result.rows_written, 1)
+        self.assertEqual(result.checkpoint_rows, 1)
+        self.assertEqual(result.context.run_id, "demo-run")
+        self.assertEqual(result.context.track_id, 2)
         persist_envelope_payload.assert_called_once_with(
             cursor=unittest.mock.ANY,
             topic="audio.features",
@@ -159,10 +268,33 @@ class WriterPipelineTests(unittest.TestCase):
             "demo-run",
         )
 
-    def test_persist_record_rejects_run_id_mismatch(self) -> None:
+    @patch("event_driven_audio_analytics.writer.pipeline.persist_checkpoint")
+    @patch("event_driven_audio_analytics.writer.pipeline.persist_envelope_payload")
+    @patch("event_driven_audio_analytics.writer.pipeline.transaction_cursor")
+    def test_persist_record_rejects_invalid_checkpoint_result_before_commit(
+        self,
+        transaction_cursor: object,
+        persist_envelope_payload: object,
+        persist_checkpoint: object,
+    ) -> None:
+        @contextmanager
+        def fake_transaction_cursor(_: object):
+            yield (object(), object())
+
+        transaction_cursor.side_effect = fake_transaction_cursor
+        persist_envelope_payload.return_value = 1
+        persist_checkpoint.return_value = 0
+        pipeline = WriterPipeline(settings=self.build_settings())
+
+        with self.assertRaises(WriterStageError) as exc_info:
+            pipeline._persist_record(self.build_record())
+
+        self.assertEqual(exc_info.exception.failure_class, "checkpoint_failed")
+
+    def test_persist_record_rejects_top_level_payload_run_id_mismatch(self) -> None:
         pipeline = WriterPipeline(settings=self.build_settings())
         envelope = self.build_features_envelope()
-        envelope["run_id"] = "other-run"
+        envelope["payload"]["run_id"] = "other-run"
         record = ConsumedRecord(
             topic="audio.features",
             partition=0,
@@ -171,8 +303,90 @@ class WriterPipelineTests(unittest.TestCase):
             message=object(),
         )
 
-        with self.assertRaisesRegex(ValueError, "run_id"):
+        with self.assertRaises(WriterStageError) as exc_info:
             pipeline._persist_record(record)
+
+        self.assertEqual(exc_info.exception.failure_class, "envelope_invalid")
+
+    def test_persist_record_rejects_payload_schema_drift(self) -> None:
+        pipeline = WriterPipeline(settings=self.build_settings())
+        envelope = self.build_features_envelope()
+        del envelope["payload"]["processing_ms"]
+        record = ConsumedRecord(
+            topic="audio.features",
+            partition=0,
+            offset=12,
+            value=serialize_envelope(envelope),
+            message=object(),
+        )
+
+        with self.assertRaises(WriterStageError) as exc_info:
+            pipeline._persist_record(record)
+
+        self.assertEqual(exc_info.exception.failure_class, "envelope_invalid")
+
+    @patch("event_driven_audio_analytics.writer.pipeline.pooled_transaction_cursor")
+    def test_success_metric_failures_do_not_raise(
+        self,
+        pooled_transaction_cursor: object,
+    ) -> None:
+        pooled_transaction_cursor.side_effect = RuntimeError("metric store unavailable")
+        pipeline = WriterPipeline(settings=self.build_settings())
+
+        pipeline._emit_success_metrics(
+            pool=object(),
+            record=self.build_record(),
+            outcome=self.build_outcome(),
+            write_ms=9.5,
+            logger=self.build_logger(),
+        )
+
+    def test_classify_writer_failure_distinguishes_feature_key_conflicts(self) -> None:
+        decision = classify_writer_failure(
+            AudioFeaturesNaturalKeyError("duplicate natural-key rows"),
+        )
+
+        self.assertEqual(decision.failure_class, "feature_natural_key_conflict")
+
+    def test_classify_writer_failure_keeps_generic_value_errors_out_of_envelope_bucket(self) -> None:
+        decision = classify_writer_failure(ValueError("unexpected sink-side value error"))
+
+        self.assertEqual(decision.failure_class, "writer_persistence_failed")
+
+    @patch("event_driven_audio_analytics.writer.pipeline.close_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.open_database_pool")
+    @patch("event_driven_audio_analytics.writer.pipeline.build_writer_consumer")
+    @patch("event_driven_audio_analytics.writer.pipeline.poll_record")
+    def test_invalid_json_is_classified_as_envelope_invalid(
+        self,
+        poll_record: object,
+        build_writer_consumer: object,
+        open_database_pool: object,
+        close_database_pool: object,
+    ) -> None:
+        consumer = FakeConsumer()
+        build_writer_consumer.return_value = consumer
+        open_database_pool.return_value = object()
+        poll_record.side_effect = [
+            ConsumedRecord(
+                topic="audio.features",
+                partition=0,
+                offset=12,
+                value=b"{not-json",
+                message=object(),
+            )
+        ]
+        pipeline = WriterPipeline(settings=self.build_settings())
+
+        with patch.object(WriterPipeline, "_emit_failure_metric") as emit_failure_metric:
+            with self.assertRaises(WriterStageError) as exc_info:
+                pipeline.run(logger=self.build_logger())
+
+        self.assertEqual(exc_info.exception.failure_class, "envelope_invalid")
+        self.assertEqual(consumer.commit_calls, [])
+        emit_failure_metric.assert_called_once()
+        self.assertTrue(consumer.closed)
+        close_database_pool.assert_called_once()
 
 
 if __name__ == "__main__":
