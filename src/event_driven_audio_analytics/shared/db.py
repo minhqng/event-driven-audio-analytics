@@ -11,9 +11,11 @@ from event_driven_audio_analytics.shared.settings import DatabaseSettings
 
 if TYPE_CHECKING:
     from psycopg import Connection, Cursor
+    from psycopg_pool import ConnectionPool
 else:
     Connection = Any
     Cursor = Any
+    ConnectionPool = Any
 
 
 def build_postgres_dsn(settings: DatabaseSettings) -> str:
@@ -33,11 +35,56 @@ def open_database_connection(settings: DatabaseSettings) -> Connection:
     return psycopg.connect(build_postgres_dsn(settings), autocommit=False)
 
 
+def open_database_pool(
+    settings: DatabaseSettings,
+    *,
+    min_size: int = 1,
+    max_size: int = 4,
+    timeout_s: float = 30.0,
+) -> ConnectionPool:
+    """Open a psycopg connection pool for long-lived writer access."""
+
+    from psycopg_pool import ConnectionPool as PsycopgConnectionPool
+
+    pool = PsycopgConnectionPool(
+        conninfo=build_postgres_dsn(settings),
+        min_size=min_size,
+        max_size=max_size,
+        timeout=timeout_s,
+        open=True,
+        kwargs={"autocommit": False},
+    )
+    wait = getattr(pool, "wait", None)
+    if callable(wait):
+        wait(timeout=timeout_s)
+    return pool
+
+
+def close_database_pool(pool: ConnectionPool) -> None:
+    """Close a previously opened psycopg connection pool."""
+
+    pool.close()
+
+
 @contextmanager
 def transaction_cursor(settings: DatabaseSettings) -> Iterator[tuple[Connection, Cursor]]:
     """Yield a cursor wrapped in a commit-or-rollback transaction."""
 
     with open_database_connection(settings) as connection:
+        with connection.cursor() as cursor:
+            try:
+                yield connection, cursor
+            except Exception:
+                connection.rollback()
+                raise
+            connection.commit()
+
+
+@contextmanager
+def pooled_transaction_cursor(pool: ConnectionPool) -> Iterator[tuple[Connection, Cursor]]:
+    """Yield one pooled cursor wrapped in a commit-or-rollback transaction."""
+
+    with pool.connection() as connection:
         with connection.cursor() as cursor:
             try:
                 yield connection, cursor

@@ -37,7 +37,9 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1`.
 6. If you want a broker-backed Week 5 processing smoke run for the currently configured input selection, use `bash ./scripts/smoke/check-processing-flow.sh`.
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1`.
-7. If you want the official repo test path without relying on host-installed `pytest`, use `bash ./scripts/smoke/check-pytest.sh`.
+7. If you want a broker-backed Week 6 persistence smoke run from `ingestion` through `processing` into `writer` and TimescaleDB, use `bash ./scripts/smoke/check-processing-writer-flow.sh`.
+   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1`.
+8. If you want the official repo test path without relying on host-installed `pytest`, use `bash ./scripts/smoke/check-pytest.sh`.
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1`.
 
 ## Runtime Notes
@@ -51,7 +53,9 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - `processing` now runs as a long-lived Compose service: it performs a startup preflight, consumes `audio.segment.ready`, retries bounded artifact-readiness failures, publishes `audio.features`, and emits `processing_ms`, `silent_ratio`, plus terminal `feature_errors` metrics on `system.metrics`.
 - `processing` also persists restart-recovery state under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
 - When `processing` hits a terminal record failure, the container now stays stopped for inspection instead of auto-restarting into a poison-record replay loop while `audio.dlq` is still only reserved.
+- `writer` now runs as a long-lived Compose service: it performs a startup preflight, consumes `audio.metadata`, `audio.features`, and `system.metrics`, persists them through a psycopg pool, updates checkpoints inside the same DB transaction, commits offsets only after DB success, and writes direct-to-DB internal metrics `write_ms`, `rows_upserted`, and best-effort `write_failures`.
+- When `writer` hits a terminal record failure, the container likewise stays stopped for inspection instead of auto-restarting into a poison-record replay loop while `audio.dlq` is still only reserved.
 - The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`, and the Python verifier derives its exact expectations from the active `METADATA_CSV_PATH`, `AUDIO_ROOT_PATH`, allowlist, and run id. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
 - The official `pytest` path now runs inside a dedicated Compose service against image-bundled repo contents, so the full suite no longer depends on host-installed Python tooling or bind-mounted workspace permissions.
 - The shared `artifacts/` claim-check mount is configured for concurrent ingestion/processing access in Compose, which keeps the healthy Week 5 processing smoke path from tripping over artifact-read permissions.
-- Full end-to-end analytics through `writer` and dashboards still needs later phases.
+- The bounded broker-backed path into TimescaleDB now exists through `writer`; dashboard completion and broader replay hardening still need later phases.

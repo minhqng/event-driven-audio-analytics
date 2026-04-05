@@ -116,6 +116,27 @@ This smoke flow verifies all of the following:
 - Structured processing logs expose `trace_id`, `run_id`, `track_id`, `segment_idx`, and `silent_flag` for current-run success paths.
 - The default wrapper is portable against committed fixtures, while the same wrapper can be reused with local FMA-small overrides to observe a bounded multi-segment burst.
 
+## Processing To Writer Smoke Flow
+
+```sh
+bash ./scripts/smoke/check-processing-writer-flow.sh
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
+```
+
+This smoke flow verifies all of the following:
+
+- `writer` passes `preflight` before the bounded run starts.
+- `processing` and `writer` both stay up as long-lived Compose consumers while `ingestion` feeds Kafka one-shot.
+- TimescaleDB receives current-run `track_metadata`, `audio_features`, and the processing-owned `system.metrics` emitted on Kafka.
+- TimescaleDB also receives the writer-owned direct metrics `write_ms` and `rows_upserted`, while healthy runs keep `write_failures=0`.
+- `run_checkpoints` advances for the writer topics exercised by the current run.
+- Structured writer logs expose current-run `trace_id` context on healthy persistence paths.
+
+The smoke flow proves healthy-path persistence into TimescaleDB, not broader replay/restart hardening under real producer traffic.
+
 ## Legacy PowerShell Wrappers
 
 ```powershell
@@ -124,8 +145,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-compose.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-imports.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\observe-topic.ps1 audio.metadata 5
 ```
 
 Do not claim full correctness from these checks alone.
-They validate the bootstrap, the bounded Week 4 ingestion runtime path, the bounded Week 5 processing runtime path, and the first writer persistence path only.
+They validate the bootstrap, the bounded Week 4 ingestion runtime path, the bounded Week 5 processing runtime path, the fake-event writer path, and the bounded Week 6 processing-to-writer persistence path only.

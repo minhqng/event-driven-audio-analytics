@@ -148,6 +148,7 @@ services:
       dockerfile: services/writer/Dockerfile
     environment:
       SERVICE_NAME: writer
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
       POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
       POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
@@ -155,11 +156,31 @@ services:
       POSTGRES_HOST: timescaledb
       POSTGRES_PORT: "5432"
       RUN_ID: "${RUN_ID:-demo-run}"
+      WRITER_CONSUMER_GROUP: "${WRITER_CONSUMER_GROUP:-event-driven-audio-analytics-writer}"
+      WRITER_AUTO_OFFSET_RESET: "${WRITER_AUTO_OFFSET_RESET:-earliest}"
+      WRITER_POLL_TIMEOUT_S: "${WRITER_POLL_TIMEOUT_S:-1.0}"
+      WRITER_SESSION_TIMEOUT_MS: "${WRITER_SESSION_TIMEOUT_MS:-45000}"
+      WRITER_MAX_POLL_INTERVAL_MS: "${WRITER_MAX_POLL_INTERVAL_MS:-300000}"
+      WRITER_CONSUMER_RETRY_BACKOFF_MS: "${WRITER_CONSUMER_RETRY_BACKOFF_MS:-250}"
+      WRITER_CONSUMER_RETRY_BACKOFF_MAX_MS: "${WRITER_CONSUMER_RETRY_BACKOFF_MAX_MS:-5000}"
+      WRITER_DB_POOL_MIN_SIZE: "${WRITER_DB_POOL_MIN_SIZE:-1}"
+      WRITER_DB_POOL_MAX_SIZE: "${WRITER_DB_POOL_MAX_SIZE:-4}"
+      WRITER_DB_POOL_TIMEOUT_S: "${WRITER_DB_POOL_TIMEOUT_S:-30.0}"
     depends_on:
       kafka:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "event_driven_audio_analytics.writer.app", "preflight"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   pytest:
     build:
@@ -167,3 +188,15 @@ services:
       dockerfile: services/pytest/Dockerfile
     environment:
       PYTHONPATH: /app/src
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-kafka:${KAFKA_INTERNAL_PORT:-29092}}"
+      POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
+      POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"
+      POSTGRES_HOST: timescaledb
+      POSTGRES_PORT: "5432"
+      ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
+      RUN_ID: "${RUN_ID:-demo-run}"
+      METADATA_CSV_PATH: "${METADATA_CSV_PATH:-/app/tests/fixtures/audio/smoke_tracks.csv}"
+      AUDIO_ROOT_PATH: "${AUDIO_ROOT_PATH:-/app/tests/fixtures/audio/fma_small}"
+      TRACK_ID_ALLOWLIST: "${TRACK_ID_ALLOWLIST:-2,666}"
+      INGESTION_MAX_TRACKS: "${INGESTION_MAX_TRACKS:-2}"

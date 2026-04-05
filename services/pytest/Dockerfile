@@ -11,6 +11,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md /app/
 COPY src /app/src
+COPY references /app/references
 
 RUN pip install --no-cache-dir \
       --index-url "${PYTORCH_CPU_INDEX_URL}" \

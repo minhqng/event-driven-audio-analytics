@@ -91,7 +91,11 @@ Require-Topic "system.metrics"
 Require-Topic "audio.dlq"
 
 Write-Host "Starting writer after topic bootstrap..."
-docker compose up --build -d writer
+docker compose build writer
+Assert-LastExitCode "docker compose build writer"
+docker compose run --rm --no-deps writer preflight
+Assert-LastExitCode "docker compose run writer preflight"
+docker compose up -d --no-deps writer
 Assert-LastExitCode "docker compose up writer"
 Start-Sleep -Seconds 5
 

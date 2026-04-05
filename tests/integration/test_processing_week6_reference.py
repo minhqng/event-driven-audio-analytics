@@ -12,9 +12,15 @@ import pytest
 import torch
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "references" / "legacy-fma-pipeline" / "fma-small-audio-pipeline-main"))
+LEGACY_REFERENCE_ROOT = (
+    REPO_ROOT / "references" / "legacy-fma-pipeline" / "fma-small-audio-pipeline-main"
+)
 
-from src.features.audio_transforms import AudioTransform as LegacyAudioTransform
+if not LEGACY_REFERENCE_ROOT.exists():
+    pytestmark = pytest.mark.skip(reason="legacy reference checkout is not available in this workspace")
+else:
+    sys.path.insert(0, str(LEGACY_REFERENCE_ROOT))
+    from src.features.audio_transforms import AudioTransform as LegacyAudioTransform
 
 from event_driven_audio_analytics.ingestion.modules.audio_validator import (
     VALIDATION_STATUS_VALIDATED,

@@ -11,13 +11,25 @@ class OffsetCommitDecision:
 
     commit_allowed: bool
     reason: str
+    failure_class: str | None = None
 
 
 def build_commit_decision(rows_written: int, checkpoints_ready: bool) -> OffsetCommitDecision:
     """Commit offsets only when persistence and checkpoints both succeed."""
 
     if not checkpoints_ready:
-        return OffsetCommitDecision(commit_allowed=False, reason="checkpoint update not complete")
+        return OffsetCommitDecision(
+            commit_allowed=False,
+            reason="checkpoint update not complete",
+            failure_class="checkpoint_failed",
+        )
     if rows_written <= 0:
-        return OffsetCommitDecision(commit_allowed=False, reason="invalid persistence result")
-    return OffsetCommitDecision(commit_allowed=True, reason="persistence and checkpoints complete")
+        return OffsetCommitDecision(
+            commit_allowed=False,
+            reason="invalid persistence result",
+            failure_class="invalid_persistence_result",
+        )
+    return OffsetCommitDecision(
+        commit_allowed=True,
+        reason="persistence and checkpoints complete",
+    )
