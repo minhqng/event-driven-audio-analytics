@@ -8,6 +8,7 @@ This document records the Week 7 dashboard meaning for the file-provisioned Graf
 - The canonical dashboards are:
   - `infra/grafana/dashboards/audio_quality.json`
   - `infra/grafana/dashboards/system_health.json`
+- The provisioned dashboards keep their broader historical default window; the bounded intermediate-demo screenshots are captured with explicit `from=now-6h&to=now` URL parameters instead of changing the global default.
 - The canonical query surface is:
   - `audio_features`
   - `track_metadata`
@@ -15,6 +16,16 @@ This document records the Week 7 dashboard meaning for the file-provisioned Graf
   - `vw_dashboard_metric_events`
   - `vw_dashboard_run_validation`
   - `vw_dashboard_run_summary`
+
+## Presentation Map
+
+| Category | Canonical panel |
+| --- | --- |
+| Audio quality | `Segment RMS Over Time`, `Silent Segment Ratio By Run`, `Run Quality Summary Table` |
+| Reliability | `Silent Segment Ratio By Run`, `Persisted Segment Count By Run`, `Validation Outcomes By Run`, `Track Validation Error Rate By Run` |
+| Throughput | `Persisted Segment Count By Run`, `Persisted Segment Throughput` |
+| Latency | `Processing Latency Over Time`, `Writer DB Latency By Topic`, `Claim-Check Artifact Write Latency` |
+| Operational health | `Validation Outcomes By Run`, `Persisted Segment Throughput`, `Writer DB Latency By Topic`, `Track Validation Error Rate By Run`, `Operational Summary Table` |
 
 ## Shared Metric Convention
 
@@ -49,7 +60,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
 
 ## Audio Quality Dashboard
 
-### RMS Over Time
+### Segment RMS Over Time
 
 - Query source: `audio_features`
 - Query meaning: average persisted `rms` per time bucket and `run_id`
@@ -59,7 +70,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - audio quality
   - operational health
 
-### Silent Ratio By Run
+### Silent Segment Ratio By Run
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: latest `silent_ratio` snapshot per run, with fallback to persisted `audio_features` summary
@@ -69,7 +80,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - audio quality
   - reliability
 
-### Segment Counts By Run
+### Persisted Segment Count By Run
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: persisted `audio_features` rows per run
@@ -89,7 +100,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - reliability
   - operational health
 
-### Run Quality Summary
+### Run Quality Summary Table
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: compact run-level table combining counts, silent ratio, RMS, and validation failures
@@ -102,7 +113,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
 
 ## System Health Dashboard
 
-### Throughput
+### Persisted Segment Throughput
 
 - Query source: `audio_features`
 - Query meaning: persisted feature-row count per time bucket and run
@@ -112,7 +123,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - throughput
   - operational health
 
-### Processing Latency
+### Processing Latency Over Time
 
 - Query source: `vw_dashboard_metric_events`
 - Query meaning: average `processing_ms` per time bucket and run
@@ -122,7 +133,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - latency
   - operational health
 
-### DB Write Latency
+### Writer DB Latency By Topic
 
 - Query source: `vw_dashboard_metric_events`
 - Query meaning: average writer `write_ms` grouped by destination topic
@@ -133,7 +144,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - reliability
   - operational health
 
-### Artifact Write Latency
+### Claim-Check Artifact Write Latency
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: run-level `artifact_write_ms` snapshot from ingestion
@@ -144,7 +155,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - throughput
   - operational health
 
-### Error Rate By Run
+### Track Validation Error Rate By Run
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: `validation_failures / tracks_total`
@@ -154,7 +165,7 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - reliability
   - operational health
 
-### Operational Summary
+### Operational Summary Table
 
 - Query source: `vw_dashboard_run_summary`
 - Query meaning: run-level table for total errors, error rate, latency, and artifact-write cost
@@ -188,6 +199,7 @@ The Week 7 evidence script writes demo artifacts under `artifacts/demo/week7/`.
 - `grafana-api.json`
 - `audio_quality.png`
 - `system_health.png`
+- `demo-artifact-notes.md`
 
 These artifacts are demo outputs, not canonical source-of-truth documents.
 The canonical dashboard configuration remains the file-provisioned Grafana JSON and YAML under `infra/grafana/`.

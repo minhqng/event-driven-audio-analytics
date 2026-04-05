@@ -137,7 +137,7 @@ This smoke flow verifies all of the following:
 
 The smoke flow proves healthy-path persistence into TimescaleDB, not broader replay/restart hardening under real producer traffic.
 
-## Week 7 Dashboard Evidence
+## Week 7.5 Intermediate Demo Evidence
 
 ```sh
 bash ./scripts/demo/generate-week7-dashboard-evidence.sh
@@ -147,7 +147,7 @@ bash ./scripts/demo/generate-week7-dashboard-evidence.sh
 powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
 ```
 
-This Week 7 path verifies all of the following:
+This Week 7.5 path verifies all of the following:
 
 - `docker compose config` remains valid before the demo run starts.
 - Grafana starts with the file-provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards already loaded.
@@ -161,8 +161,9 @@ This Week 7 path verifies all of the following:
   - the energetic run has a higher average RMS than the silent-oriented run
   - the validation-failure run has `validation_status=silent`, zero persisted segments, and non-zero error rate
 - Screenshot artifacts are captured under `artifacts/demo/week7/`.
+- `artifacts/demo/week7/demo-artifact-notes.md` is generated alongside the screenshots so presentation notes stay aligned with the current dashboard panels.
 
-This path is the authoritative Week 7 dashboard/demo check.
+This path is the authoritative Week 7.5 intermediate-demo check.
 It does not replace broader replay/restart hardening or benchmark-scale validation.
 
 ## Legacy PowerShell Wrappers

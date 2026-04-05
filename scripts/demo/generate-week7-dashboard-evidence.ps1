@@ -72,12 +72,44 @@ function Capture-DashboardScreenshot {
         "--headless=new" `
         "--disable-gpu" `
         "--hide-scrollbars" `
-        "--window-size=1600,1400" `
+        "--window-size=1600,1250" `
         "--run-all-compositor-stages-before-draw" `
         "--virtual-time-budget=15000" `
         "--screenshot=$OutputPath" `
         $Url | Out-Null
     Assert-LastExitCode "Capturing screenshot for $Url"
+}
+
+function Write-DemoArtifactNotes {
+    param(
+        [string]$OutputPath
+    )
+
+    @'
+# Week 7.5 Demo Artifact Notes
+
+## Audio Quality Dashboard
+
+- `audio_quality.png` captures the `Audio Quality` dashboard with the recent-demo `now-6h` time window.
+- `Segment RMS Over Time` proves the high-energy run stays closer to `0 dB` than the silent-oriented run.
+- `Silent Segment Ratio By Run` proves the silent-oriented run contains silent segments while the high-energy run does not.
+- `Persisted Segment Count By Run` proves validated runs reached `audio_features` persistence and the validation-failure run did not.
+- `Validation Outcomes By Run` proves the validation-failure case is an ingestion-side `silent` rejection, not a hidden downstream failure.
+- `Run Quality Summary Table` is the compact reporting table for slide/report handoff.
+
+## System Health Dashboard
+
+- `system_health.png` captures the `System Health` dashboard with the same recent-demo time window.
+- `Persisted Segment Throughput` proves the bounded demo produced real sink-side throughput.
+- `Processing Latency Over Time` and `Writer DB Latency By Topic` prove processing and persistence latency stayed observable on real data.
+- `Claim-Check Artifact Write Latency` proves the claim-check boundary has measurable artifact-write cost.
+- `Track Validation Error Rate By Run` and `Operational Summary Table` prove the validation-failure run is visible as an operational signal instead of disappearing silently.
+
+## Supporting Files
+
+- `dashboard-demo-summary.json` is the authoritative machine-readable verification output from `verify_dashboard_demo`.
+- `grafana-api.json` proves the dashboards were auto-loaded through Grafana provisioning rather than click-ops.
+'@ | Set-Content -LiteralPath $OutputPath -Encoding utf8
 }
 
 function Invoke-DemoRun {
@@ -192,14 +224,16 @@ $browserPath = Get-BrowserExecutable
 Write-Host "Capturing Grafana screenshots with $browserPath..."
 Capture-DashboardScreenshot `
     -BrowserPath $browserPath `
-    -Url "http://localhost:$grafanaPort/d/audio-quality/audio-quality?kiosk" `
+    -Url "http://localhost:$grafanaPort/d/audio-quality/audio-quality?from=now-6h&to=now&kiosk" `
     -OutputPath (Join-Path $evidenceRootHost "audio_quality.png")
 Capture-DashboardScreenshot `
     -BrowserPath $browserPath `
-    -Url "http://localhost:$grafanaPort/d/system-health/system-health?kiosk" `
+    -Url "http://localhost:$grafanaPort/d/system-health/system-health?from=now-6h&to=now&kiosk" `
     -OutputPath (Join-Path $evidenceRootHost "system_health.png")
+Write-DemoArtifactNotes -OutputPath (Join-Path $evidenceRootHost "demo-artifact-notes.md")
 
 Write-Host "Week 7 dashboard evidence is ready."
 Write-Host "Summary: $evidenceRootHost\dashboard-demo-summary.json"
 Write-Host "Grafana API snapshot: $evidenceRootHost\grafana-api.json"
 Write-Host "Screenshots: $evidenceRootHost\audio_quality.png and $evidenceRootHost\system_health.png"
+Write-Host "Artifact notes: $evidenceRootHost\demo-artifact-notes.md"

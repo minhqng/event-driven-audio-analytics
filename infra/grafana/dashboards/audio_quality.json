@@ -102,7 +102,7 @@
           "refId": "A"
         }
       ],
-      "title": "RMS Over Time",
+      "title": "Segment RMS Over Time",
       "type": "timeseries"
     },
     {
@@ -177,7 +177,7 @@
           "refId": "A"
         }
       ],
-      "title": "Silent Ratio By Run",
+      "title": "Silent Segment Ratio By Run",
       "type": "barchart"
     },
     {
@@ -243,7 +243,7 @@
           "refId": "A"
         }
       ],
-      "title": "Segment Counts By Run",
+      "title": "Persisted Segment Count By Run",
       "type": "barchart"
     },
     {
@@ -367,7 +367,7 @@
           "refId": "A"
         }
       ],
-      "title": "Run Quality Summary",
+      "title": "Run Quality Summary Table",
       "type": "table"
     }
   ],
@@ -390,6 +390,6 @@
   "timezone": "browser",
   "title": "Audio Quality",
   "uid": "audio-quality",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

@@ -9,6 +9,9 @@ Operational backlog based on the current scaffold and the attached project plans
 3. Document restart/replay outcomes now that Week 7 dashboard semantics are locked.
 4. Prepare the later-phase 100-track dry run / benchmark evidence on top of the current Week 7 dashboard baseline.
 
+Week 7.5 note:
+- The bounded intermediate-demo polish path is now documented in `docs/runbooks/intermediate-demo.md` and remains intentionally narrower than Week 8 hardening/benchmark work.
+
 ## Dependency Ordering
 
 1. Keep the locked v1 contract stable under future runtime work.
@@ -47,7 +50,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
   Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable. The real broker-backed Week 6 smoke now also proves healthy-path checkpoint advancement and writer-owned internal metrics under current-run producer traffic; broader real producer-traffic replay still needs proof.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
-  Current status: Week 7 is green. Grafana now auto-loads the provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards, `vw_dashboard_*` views keep the panel SQL stable, and `scripts/demo/generate-week7-dashboard-evidence.ps1` verifies the three deterministic demo runs plus screenshot capture under `artifacts/demo/week7/`.
+  Current status: Week 7 is green. Grafana now auto-loads the provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards, `vw_dashboard_*` views keep the panel SQL stable, and `scripts/demo/generate-week7-dashboard-evidence.ps1` verifies the three deterministic demo runs plus screenshot capture under `artifacts/demo/week7/`. Week 7.5 now adds the dedicated intermediate-demo runbook, clearer dashboard naming, and generated screenshot notes without expanding into Week 8 hardening scope.
 - Gate 7: Restart/replay scenarios keep correctness within declared tolerance.
 - Gate 8: A 100-track dry run or equivalent demo scenario completes with evidence artifacts.
 

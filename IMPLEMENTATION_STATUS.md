@@ -58,6 +58,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Week 7 now adds `vw_dashboard_metric_events`, `vw_dashboard_run_total_metrics`, `vw_dashboard_run_validation`, and `vw_dashboard_run_summary` as the canonical Grafana query surface over the persisted observability data.
 - `Fact`: Week 7 now centralizes the shared metric-label convention in `shared/metric_labels.py`, keeping `scope`, `topic`, `status`, and optional `failure_class` stable across ingestion, processing, writer, and Grafana queries.
 - `Fact`: The Week 7 demo/evidence path now stages deterministic synthetic demo inputs, runs `week7-high-energy`, `week7-silent-oriented`, and `week7-validation-failure` through the live Compose stack, verifies the resulting TimescaleDB summaries, and captures Grafana screenshots under `artifacts/demo/week7/`.
+- `Fact`: Week 7.5 now polishes the intermediate-demo path with a dedicated runbook, clearer dashboard panel titles, a recent default Grafana time window for live readability, and generated artifact notes that explain what each screenshot proves.
 - `Fact`: The official containerized `pytest` path is green again after the writer/runtime changes in the current workspace, with `148 passed, 5 skipped, 10 subtests passed`; the 5 skips are the legacy-reference parity tests when the optional `references/legacy-fma-pipeline/` checkout is absent.
 - `Fact`: The Week 3 ingestion smoke path now has both shell and PowerShell host wrappers, so the bounded broker-backed smoke run remains runnable from the repo's supported Windows host orchestration path.
 - `Fact`: Week 3 smoke validation now covers committed synthetic fixtures plus a local real-FMA sample run for tracks `2` and `666`, with observed segment counts `19` and `20` matching the documented legacy-reference counts.
@@ -104,7 +105,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Fact`: writer idempotency and checkpoint mechanics now exist on both the fixture-driven smoke path and the bounded broker-backed `processing -> writer -> TimescaleDB` path. `Inference`: broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Fact`: the real broker-backed persistence path into TimescaleDB now exists, including writer-owned internal metrics and checkpoint evidence. `Fact`: Week 7 now completes the real Grafana path with file-provisioned datasource/dashboard loading, stable SQL views, real queries, and captured dashboard evidence. |
 | Week 7 / Phase 7 | Hardening / restart / benchmark prep | `Inference`: not implemented. |
-| Week 8 / Phase 8 | Freeze / polish / demo readiness | `Inference`: not implemented. |
+| Week 8 / Phase 8 | Freeze / polish / demo readiness | `Inference`: not implemented. `Fact`: the current repo now has a bounded Week 7.5 intermediate-demo polish layer only; broader Week 8 hardening and benchmark work remain deferred. |
 | Weeks 9-10 | Extended-plan benchmark and freeze split | `Conflict`: present only in one planning document; no repo evidence yet. |
 
 ## Current Conflicts And Drift

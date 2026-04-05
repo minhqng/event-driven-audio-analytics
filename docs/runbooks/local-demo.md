@@ -9,21 +9,33 @@
 ## Demo Steps
 
 1. Review `docs/architecture/system-overview.md`.
-2. Start the local scaffold with:
+2. For the Week 7.5 intermediate demo, use the single-command evidence path:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
+   ```
+
+   ```sh
+   bash ./scripts/demo/generate-week7-dashboard-evidence.sh
+   ```
+
+   See `docs/runbooks/intermediate-demo.md` for the recommended talk track, panel meaning, and generated artifact files.
+
+3. If you want to start the local scaffold without running the bounded demo inputs yet, use:
 
    ```sh
    bash ./run-demo.sh
    ```
 
-3. If you want to bootstrap topics without starting the full demo helper, use:
+4. If you want to bootstrap topics without starting the full demo helper, use:
 
    ```sh
    sh ./infra/kafka/create-topics.sh
    ```
 
-4. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
-5. Open Grafana on `http://localhost:3000`.
-6. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest against the currently configured input selection, and prints observed topic samples, use:
+5. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
+6. Open Grafana on `http://localhost:3000`.
+7. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest against the currently configured input selection, and prints observed topic samples, use:
 
    ```sh
    bash ./scripts/smoke/check-ingestion-flow.sh
@@ -33,7 +45,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
    ```
 
-7. For a Week 5 processing broker smoke run that starts `processing`, feeds Kafka from a one-shot `ingestion` run, verifies exact current-run `audio.features` plus processing-owned `system.metrics`, and prints observed topic samples, use:
+8. For a Week 5 processing broker smoke run that starts `processing`, feeds Kafka from a one-shot `ingestion` run, verifies exact current-run `audio.features` plus processing-owned `system.metrics`, and prints observed topic samples, use:
 
    ```sh
    bash ./scripts/smoke/check-processing-flow.sh
@@ -43,7 +55,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
    ```
 
-8. For a Week 6 broker smoke run that starts both `processing` and `writer`, feeds Kafka from a one-shot `ingestion` run, and verifies current-run persistence in TimescaleDB, use:
+9. For a Week 6 broker smoke run that starts both `processing` and `writer`, feeds Kafka from a one-shot `ingestion` run, and verifies current-run persistence in TimescaleDB, use:
 
    ```sh
    bash ./scripts/smoke/check-processing-writer-flow.sh
@@ -53,7 +65,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
    ```
 
-9. For the Week 7 dashboard evidence path that auto-loads the provisioned dashboards, runs three deterministic demo cases, verifies dashboard-facing TimescaleDB data, and captures screenshots, use:
+10. For the Week 7.5 dashboard evidence path that auto-loads the provisioned dashboards, runs three deterministic demo cases, verifies dashboard-facing TimescaleDB data, captures screenshots, and writes demo artifact notes, use:
 
    ```sh
    bash ./scripts/demo/generate-week7-dashboard-evidence.sh
@@ -66,6 +78,7 @@
 ## Notes
 
 - The default Grafana stack now auto-loads the file-provisioned dashboards backed by real TimescaleDB queries.
+- The intermediate-demo evidence script leaves the stack running after verification so you can open Grafana immediately for the live walkthrough.
 - `ingestion` is now containerized for a bounded Compose replay path, performs a startup preflight/readiness gate, and no longer just prints scaffold steps.
 - `processing` is now containerized as a long-lived Kafka consumer, performs a startup preflight/readiness gate, and no longer stays at placeholder-only runtime behavior.
 - The ingestion smoke wrappers respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
