@@ -93,6 +93,7 @@ This smoke flow verifies all of the following:
 - The run manifest exists under `/artifacts/runs/<run_id>/manifests/segments.parquet` and matches the published `audio.segment.ready` artifact URIs plus checksums.
 - Structured ingestion logs expose `trace_id`, `run_id`, and `track_id` for current-run success and reject paths when those paths are present in the selected input set.
 - Override `RUN_ID` if needed; the shell and PowerShell wrappers now clean artifacts and validate logs for the current run, not only `demo-run`.
+- The default smoke fixtures live under `tests/fixtures/audio/smoke_fma_small/`; reserve `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/` for a local non-committed full FMA-small pack.
 
 ## Processing Broker Smoke Flow
 
@@ -114,7 +115,7 @@ This smoke flow verifies all of the following:
 - `system.metrics` stays keyed by `service_name=processing`, with per-segment `processing_ms` labels and `silent_ratio` `run_total` snapshots.
 - Healthy smoke runs do not emit `feature_errors`.
 - Structured processing logs expose `trace_id`, `run_id`, `track_id`, `segment_idx`, and `silent_flag` for current-run success paths.
-- The default wrapper is portable against committed fixtures, while the same wrapper can be reused with local FMA-small overrides to observe a bounded multi-segment burst.
+- The default wrapper is portable against committed fixtures, while `scripts/demo/run-repo-local-fma-burst.*` targets the repo-local `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/` layout for a bounded multi-segment burst.
 
 ## Processing To Writer Smoke Flow
 
@@ -165,6 +166,25 @@ This Week 7.5 path verifies all of the following:
 
 This path is the authoritative Week 7.5 intermediate-demo check.
 It does not replace broader replay/restart hardening or benchmark-scale validation.
+
+## Repo-Local FMA-small Burst
+
+Place the non-committed FMA-small pack at:
+
+- `tests/fixtures/audio/tracks.csv`
+- `tests/fixtures/audio/fma_small/...`
+
+Then run:
+
+```sh
+bash ./scripts/demo/run-repo-local-fma-burst.sh
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-repo-local-fma-burst.ps1
+```
+
+This helper expects the stack to already be up through `run-demo.*`, keeps the repo-local path stable across machines, and defaults to a bounded `100`-track burst unless `INGESTION_MAX_TRACKS` is overridden.
 
 ## Legacy PowerShell Wrappers
 

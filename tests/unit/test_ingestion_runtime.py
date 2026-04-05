@@ -20,6 +20,8 @@ from event_driven_audio_analytics.shared.settings import BaseServiceSettings
 
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "audio"
+SMOKE_METADATA_CSV = FIXTURES_DIR / "smoke_tracks.csv"
+SMOKE_AUDIO_ROOT = FIXTURES_DIR / "smoke_fma_small"
 
 
 class RecordingProducer:
@@ -87,8 +89,8 @@ def test_readiness_succeeds_when_kafka_topics_and_paths_are_ready(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -108,8 +110,8 @@ def test_readiness_fails_when_required_topic_is_missing(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -150,7 +152,7 @@ def test_readiness_fails_when_audio_root_is_missing(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
+        metadata_csv = SMOKE_METADATA_CSV
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -173,8 +175,8 @@ def test_readiness_fails_when_artifacts_root_is_not_writable(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -209,8 +211,8 @@ def test_readiness_creates_run_scoped_artifact_directories_when_missing(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -239,8 +241,8 @@ def test_readiness_fails_when_run_scoped_artifact_target_is_blocked_by_file(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -265,8 +267,8 @@ def test_readiness_fails_when_track_segment_target_is_blocked_by_file(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -291,8 +293,8 @@ def test_readiness_ignores_allowlisted_track_ids_not_selected_by_metadata_load(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -326,8 +328,8 @@ def test_readiness_fails_when_run_scoped_write_probe_fails(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -359,8 +361,8 @@ def test_readiness_fails_when_manifest_target_is_directory(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -384,8 +386,8 @@ def test_readiness_fails_when_manifest_target_is_not_writable(
     with tempfile.TemporaryDirectory() as tmp_dir:
         artifacts_root = Path(tmp_dir) / "artifacts"
         artifacts_root.mkdir()
-        metadata_csv = FIXTURES_DIR / "smoke_tracks.csv"
-        audio_root = FIXTURES_DIR / "fma_small"
+        metadata_csv = SMOKE_METADATA_CSV
+        audio_root = SMOKE_AUDIO_ROOT
 
         monkeypatch.setattr(
             "event_driven_audio_analytics.ingestion.modules.runtime._list_kafka_topics",
@@ -453,7 +455,7 @@ def test_json_formatter_emits_trace_run_and_track_context() -> None:
 def test_reject_path_log_records_include_validation_status(caplog: pytest.LogCaptureFixture) -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         pipeline = IngestionPipeline(
-            settings=_ingestion_settings(tmp_dir, FIXTURES_DIR / "smoke_tracks.csv", FIXTURES_DIR / "fma_small")
+            settings=_ingestion_settings(tmp_dir, SMOKE_METADATA_CSV, SMOKE_AUDIO_ROOT)
         )
         producer = RecordingProducer()
         caplog.set_level(logging.WARNING, logger="ingestion")
@@ -492,7 +494,7 @@ def test_unrecoverable_runtime_failure_logs_reserved_dlq_message_and_reraises(
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         pipeline = ExplodingPipeline(
-            settings=_ingestion_settings(tmp_dir, FIXTURES_DIR / "smoke_tracks.csv", FIXTURES_DIR / "fma_small")
+            settings=_ingestion_settings(tmp_dir, SMOKE_METADATA_CSV, SMOKE_AUDIO_ROOT)
         )
         caplog.set_level(logging.ERROR, logger="ingestion")
 
@@ -529,7 +531,7 @@ def test_final_runtime_failure_logs_reserved_dlq_message_and_reraises(
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         pipeline = IngestionPipeline(
-            settings=_ingestion_settings(tmp_dir, FIXTURES_DIR / "smoke_tracks.csv", FIXTURES_DIR / "fma_small")
+            settings=_ingestion_settings(tmp_dir, SMOKE_METADATA_CSV, SMOKE_AUDIO_ROOT)
         )
         caplog.set_level(logging.ERROR, logger="ingestion")
 

@@ -36,6 +36,11 @@ This is the recommended single-command demo path because it:
 - proves Grafana auto-loaded the dashboards through provisioning
 - captures screenshots plus short artifact notes under `artifacts/demo/week7/`
 
+For a supplemental bounded real-data burst with a repo-local full FMA-small copy, keep the primary Week 7.5 evidence path above as the presentation baseline and use `scripts/demo/run-repo-local-fma-burst.*` only after placing:
+
+- `tests/fixtures/audio/tracks.csv`
+- `tests/fixtures/audio/fma_small/...`
+
 ## Expected Outcome
 
 After the command finishes successfully:

@@ -3,7 +3,8 @@
   "generated_on": "2026-04-02",
   "notes": [
     "Committed fixtures are deterministic synthetic audio generated locally for Week 1 testing.",
-    "External FMA-small reference tracks are listed for local parity work but are not committed to this repo."
+    "Committed smoke-layout mirrors live under tests/fixtures/audio/smoke_fma_small/ so repo-local full FMA-small copies can use tests/fixtures/audio/fma_small/ without overwriting tracked files.",
+    "Repo-local FMA-small tracks are listed for local parity work but are not committed to this repo."
   ],
   "committed_fixtures": [
     {
@@ -59,7 +60,7 @@
       "expected_behavior": "PyAV/FFmpeg open should fail."
     }
   ],
-  "external_fma_reference_pack": [
+  "repo_local_fma_reference_pack": [
     {
       "status": "not_committed_by_design",
       "genre": "Electronic",
@@ -129,7 +130,7 @@
     {
       "type": "real_fma_audio_binary",
       "status": "not_committed_by_design",
-      "reason": "Repo guidance and upstream FMA packaging discourage redistributing raw FMA audio in this PoC repo."
+      "reason": "Repo guidance and upstream FMA packaging discourage redistributing raw FMA audio in this PoC repo. Place local copies under tests/fixtures/audio/tracks.csv and tests/fixtures/audio/fma_small/."
     }
   ]
 }

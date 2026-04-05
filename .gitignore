@@ -17,3 +17,6 @@ artifacts/shared/*
 artifacts/demo/*
 artifacts/demo_inputs/*
 references/legacy-fma-pipeline/
+tests/fixtures/audio/tracks.csv
+tests/fixtures/audio/fma_small/**
+!tests/fixtures/audio/fma_small/.gitkeep

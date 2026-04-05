@@ -11,10 +11,11 @@ This directory contains the Week 1 Member B audio fixture setup.
 ## Fixture Layers
 
 1. Committed synthetic fixtures
-2. External FMA-small reference pack
+2. Committed smoke-layout mirrors
+3. Repo-local full FMA-small pack
 
 The committed synthetic fixtures are safe to version in this repo.
-The external FMA pack is described in `fixture_manifest.json` but intentionally not committed.
+The repo-local full FMA pack is described in `fixture_manifest.json` but intentionally not committed.
 
 ## Committed Synthetic Fixtures
 
@@ -28,17 +29,23 @@ The external FMA pack is described in `fixture_manifest.json` but intentionally 
 ## Compose Smoke Mirrors
 
 - `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Week 3 Compose smoke path and now includes `track.duration` so reject-path metadata events stay contract-valid.
-- `fma_small/000/000002.mp3` mirrors the valid synthetic fixture under canonical FMA naming.
-- `fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
+- `smoke_fma_small/000/000002.mp3` mirrors the valid synthetic fixture under canonical FMA naming.
+- `smoke_fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
 - These are still synthetic or intentionally corrupt repo fixtures, not redistributed FMA audio.
 
-## External FMA-small Reference Pack
+## Repo-Local Full FMA-small Pack
 
-Use the one-track-per-genre pack listed in `fixture_manifest.json` for local parity checks.
+To run the bounded live FMA-small path on any machine, place the dataset under these repo-local paths:
 
-- It is reference-only and not committed here.
-- Canonical path rule remains `data/raw/fma_small/<folder>/<track_id>.mp3`.
-- The recommended Week 1 pack is intentionally small: 8 tracks, one per top-level FMA-small genre.
+- `tests/fixtures/audio/tracks.csv`
+- `tests/fixtures/audio/fma_small/<folder>/<track_id>.mp3`
+
+Notes:
+
+- This full pack is intentionally not committed.
+- `.gitignore` excludes the repo-local `tracks.csv` plus `fma_small/` contents so cross-machine local copies do not dirty git.
+- The committed smoke mirrors live under `smoke_fma_small/` specifically so the full FMA pack can occupy `fma_small/` without overwriting tracked files.
+- Use `scripts/demo/run-repo-local-fma-burst.ps1` or `scripts/demo/run-repo-local-fma-burst.sh` after `run-demo.*` to publish a bounded repo-local burst into the live stack.
 
 ## Naming Convention
 
@@ -47,7 +54,7 @@ Use the one-track-per-genre pack listed in `fixture_manifest.json` for local par
   - `silent_*`
   - `short_*`
   - `corrupt_*`
-- External FMA references are identified by stable `track_id` and canonical FMA relative path, not by copied binaries.
+- Repo-local FMA references are identified by stable `track_id` and canonical FMA relative path, not by copied binaries.
 
 ## Regeneration Notes
 

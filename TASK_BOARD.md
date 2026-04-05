@@ -11,6 +11,7 @@ Operational backlog based on the current scaffold and the attached project plans
 
 Week 7.5 note:
 - The bounded intermediate-demo polish path is now documented in `docs/runbooks/intermediate-demo.md` and remains intentionally narrower than Week 8 hardening/benchmark work.
+- Repo-local full FMA-small copies now belong under `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/`, while committed smoke mirrors live under `tests/fixtures/audio/smoke_fma_small/`.
 
 ## Dependency Ordering
 

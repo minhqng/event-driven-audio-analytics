@@ -2,10 +2,13 @@
 set -eu
 
 echo "Starting event-driven-audio-analytics demo stack..."
-docker compose up --build -d kafka timescaledb grafana processing writer
+docker compose up --build -d kafka timescaledb grafana
 
 echo "Creating Kafka topics..."
 sh ./infra/kafka/create-topics.sh
+
+echo "Starting processing and writer services..."
+docker compose up -d --no-deps processing writer
 
 echo "Demo bootstrap completed."
 echo "Grafana: http://localhost:${GRAFANA_PORT:-3000}"
@@ -14,6 +17,7 @@ echo "Kafka bootstrap (host): localhost:${KAFKA_BROKER_PORT:-9092}"
 echo "Kafka bootstrap (containers): ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}"
 echo "Grafana auto-loads the file-provisioned TimescaleDB datasource and the Week 7 dashboards."
 echo "Run 'bash ./scripts/demo/generate-week7-dashboard-evidence.sh' for the recommended Week 7.5 intermediate-demo path."
+echo "Run 'bash ./scripts/demo/run-repo-local-fma-burst.sh' after placing 'tests/fixtures/audio/tracks.csv' and 'tests/fixtures/audio/fma_small/...' for a bounded repo-local FMA-small burst."
 echo "See './docs/runbooks/intermediate-demo.md' for the live demo sequence and panel interpretation."
 echo "Run 'bash ./scripts/smoke/check-ingestion-flow.sh' for the Week 4 broker-backed ingestion smoke path."
 echo "Run 'bash ./scripts/smoke/check-processing-flow.sh' for the Week 5 broker-backed processing smoke path."

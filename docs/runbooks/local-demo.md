@@ -27,10 +27,18 @@
    bash ./run-demo.sh
    ```
 
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\run-demo.ps1
+   ```
+
 4. If you want to bootstrap topics without starting the full demo helper, use:
 
    ```sh
    sh ./infra/kafka/create-topics.sh
+   ```
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\infra\kafka\create-topics.ps1
    ```
 
 5. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
@@ -75,6 +83,27 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
    ```
 
+11. For a bounded repo-local FMA-small burst after the stack is already running, place the dataset at:
+
+   - `tests/fixtures/audio/tracks.csv`
+   - `tests/fixtures/audio/fma_small/...`
+
+   Then use:
+
+   ```sh
+   bash ./scripts/demo/run-repo-local-fma-burst.sh
+   ```
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-repo-local-fma-burst.ps1
+   ```
+
+   Defaults:
+
+   - `RUN_ID=fma-small-live`
+   - `INGESTION_MAX_TRACKS=100`
+   - `TRACK_ID_ALLOWLIST` unset or empty, so the repo-local metadata selection is not forced back to `2,666`
+
 ## Notes
 
 - The default Grafana stack now auto-loads the file-provisioned dashboards backed by real TimescaleDB queries.
@@ -84,6 +113,6 @@
 - The ingestion smoke wrappers respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The processing smoke wrappers also respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The application code itself executes inside Linux containers; the host only runs Docker Compose helpers.
-- The default ingestion smoke path uses committed synthetic fixtures mounted read-only into the container, and the Python verifier derives expected outputs from the active metadata/audio inputs. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` to point at a local FMA-small pack when needed.
-- The default processing smoke path uses the same committed synthetic fixtures, while the same wrapper can be reused with local FMA-small overrides to observe a bounded multi-segment burst through the consumer.
+- The default ingestion smoke path uses committed synthetic fixtures mounted read-only into the container from `smoke_tracks.csv` plus `smoke_fma_small/`, and the Python verifier derives expected outputs from the active metadata/audio inputs.
+- The default processing smoke path uses the same committed synthetic fixtures, while the repo-local FMA helper uses `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/` for bounded real-data bursts.
 - `writer` is now part of both the bounded broker-backed smoke path and the Week 7 dashboard evidence path into TimescaleDB.
