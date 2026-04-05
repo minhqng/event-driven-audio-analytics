@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from event_driven_audio_analytics.shared.metric_labels import run_total_metric_labels
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 
 
@@ -43,7 +44,7 @@ class IngestionRunMetrics:
                 service_name=service_name,
                 metric_name="tracks_total",
                 metric_value=float(self.tracks_total),
-                labels_json={"scope": "run_total"},
+                labels_json=run_total_metric_labels(),
                 unit="count",
             ),
             SystemMetricsPayload(
@@ -52,7 +53,7 @@ class IngestionRunMetrics:
                 service_name=service_name,
                 metric_name="segments_total",
                 metric_value=float(self.segments_total),
-                labels_json={"scope": "run_total"},
+                labels_json=run_total_metric_labels(),
                 unit="count",
             ),
             SystemMetricsPayload(
@@ -61,7 +62,7 @@ class IngestionRunMetrics:
                 service_name=service_name,
                 metric_name="validation_failures",
                 metric_value=float(self.validation_failures),
-                labels_json={"scope": "run_total"},
+                labels_json=run_total_metric_labels(),
                 unit="count",
             ),
             SystemMetricsPayload(
@@ -70,7 +71,7 @@ class IngestionRunMetrics:
                 service_name=service_name,
                 metric_name="artifact_write_ms",
                 metric_value=round(self.artifact_write_ms, 3),
-                labels_json={"scope": "run_total"},
+                labels_json=run_total_metric_labels(),
                 unit="ms",
             ),
         ]

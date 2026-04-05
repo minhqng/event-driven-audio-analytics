@@ -5,9 +5,9 @@ Operational backlog based on the current scaffold and the attached project plans
 ## Immediate Next Tasks
 
 1. Hard-verify replay and checkpoint behavior now that real producer traffic reaches writer.
-2. Replace placeholder dashboard panels with queries backed by persisted data.
-3. Add broader real producer-traffic replay evidence on top of the healthy-path writer smoke and the current fixture-driven writer checks.
-4. Document restart/replay outcomes and dashboard semantics once those paths are exercised.
+2. Add broader real producer-traffic replay evidence on top of the healthy-path writer smoke and the current fixture-driven writer checks.
+3. Document restart/replay outcomes now that Week 7 dashboard semantics are locked.
+4. Prepare the later-phase 100-track dry run / benchmark evidence on top of the current Week 7 dashboard baseline.
 
 ## Dependency Ordering
 
@@ -15,9 +15,8 @@ Operational backlog based on the current scaffold and the attached project plans
    Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
 2. Keep the per-service image extras and official containerized `pytest` path green while extending runtime evidence.
 3. Real writer replay hardening under real producer traffic.
-4. Real Grafana dashboards.
-5. Restart/replay hardening.
-6. Benchmark/demo/freeze.
+4. Restart/replay hardening.
+5. Benchmark/demo/freeze.
 
 ## Member B Can Do Independently
 
@@ -48,6 +47,7 @@ Operational backlog based on the current scaffold and the attached project plans
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
   Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable. The real broker-backed Week 6 smoke now also proves healthy-path checkpoint advancement and writer-owned internal metrics under current-run producer traffic; broader real producer-traffic replay still needs proof.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
+  Current status: Week 7 is green. Grafana now auto-loads the provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards, `vw_dashboard_*` views keep the panel SQL stable, and `scripts/demo/generate-week7-dashboard-evidence.ps1` verifies the three deterministic demo runs plus screenshot capture under `artifacts/demo/week7/`.
 - Gate 7: Restart/replay scenarios keep correctness within declared tolerance.
 - Gate 8: A 100-track dry run or equivalent demo scenario completes with evidence artifacts.
 
@@ -73,7 +73,7 @@ Operational backlog based on the current scaffold and the attached project plans
 
 ### Session 5
 
-- Replace placeholder dashboards with real queries and validate panel meaning.
+- Extend the now-real dashboards only if replay/restart evidence requires additional panels or run-summary fields.
 
 ### Session 6
 

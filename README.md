@@ -39,14 +39,15 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1`.
 7. If you want a broker-backed Week 6 persistence smoke run from `ingestion` through `processing` into `writer` and TimescaleDB, use `bash ./scripts/smoke/check-processing-writer-flow.sh`.
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1`.
-8. If you want the official repo test path without relying on host-installed `pytest`, use `bash ./scripts/smoke/check-pytest.sh`.
+8. If you want the full Week 7 dashboard evidence path, use `powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1`.
+9. If you want the official repo test path without relying on host-installed `pytest`, use `bash ./scripts/smoke/check-pytest.sh`.
    On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1`.
 
 ## Runtime Notes
 
 - All application code executes inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
-- The scaffold only validates local bootstrapping and contract shape; it does not claim end-to-end analytics execution yet.
+- The default demo stack now auto-loads the provisioned TimescaleDB datasource and the `Audio Quality` / `System Health` dashboards from files.
 - Service images now install per-service Python extras, so `ingestion` and `writer` smoke builds no longer resolve the `torch` / `torchaudio` layer that belongs to the processing DSP path.
 - The `processing` and `pytest` images pin CPU-only PyTorch wheels during Docker builds, which avoids pulling CUDA packages into the PoC smoke/test path.
 - `ingestion` now runs a bounded Week 4 replay path in Compose: it performs a startup preflight, reads configured sample metadata, writes claim-check artifacts plus the run manifest under `artifacts/`, publishes `audio.metadata`, `audio.segment.ready`, and run-level `system.metrics`, then exits cleanly.
@@ -58,4 +59,5 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`, and the Python verifier derives its exact expectations from the active `METADATA_CSV_PATH`, `AUDIO_ROOT_PATH`, allowlist, and run id. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
 - The official `pytest` path now runs inside a dedicated Compose service against image-bundled repo contents, so the full suite no longer depends on host-installed Python tooling or bind-mounted workspace permissions.
 - The shared `artifacts/` claim-check mount is configured for concurrent ingestion/processing access in Compose, which keeps the healthy Week 5 processing smoke path from tripping over artifact-read permissions.
-- The bounded broker-backed path into TimescaleDB now exists through `writer`; dashboard completion and broader replay hardening still need later phases.
+- The bounded broker-backed path into TimescaleDB now feeds real Grafana dashboards through the file-provisioned Week 7 views and dashboard JSON.
+- `docs/architecture/dashboard-interpretation.md` is the canonical explanation of what each panel proves.

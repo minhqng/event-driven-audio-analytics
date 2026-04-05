@@ -109,6 +109,7 @@
 - `Fact`: The current Week 5 `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
 - `Fact`: The current Week 5 `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
 - `Fact`: The current Week 6 `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
+- `Fact`: Week 7 normalizes the dashboard-facing metric labels to `scope`, `topic`, `status`, and optional `failure_class`, and `vw_dashboard_metric_events` is the canonical SQL normalization layer for Grafana queries.
 
 ## Idempotency Rules
 

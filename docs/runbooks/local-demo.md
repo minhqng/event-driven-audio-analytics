@@ -53,15 +53,24 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
    ```
 
+9. For the Week 7 dashboard evidence path that auto-loads the provisioned dashboards, runs three deterministic demo cases, verifies dashboard-facing TimescaleDB data, and captures screenshots, use:
+
+   ```sh
+   bash ./scripts/demo/generate-week7-dashboard-evidence.sh
+   ```
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
+   ```
+
 ## Notes
 
-- The scaffold now implements bounded DSP and persistence behavior through `writer`, but dashboards remain later-phase work.
+- The default Grafana stack now auto-loads the file-provisioned dashboards backed by real TimescaleDB queries.
 - `ingestion` is now containerized for a bounded Compose replay path, performs a startup preflight/readiness gate, and no longer just prints scaffold steps.
 - `processing` is now containerized as a long-lived Kafka consumer, performs a startup preflight/readiness gate, and no longer stays at placeholder-only runtime behavior.
 - The ingestion smoke wrappers respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The processing smoke wrappers also respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The application code itself executes inside Linux containers; the host only runs Docker Compose helpers.
-- Dashboard JSON and datasource provisioning are placeholders that must load cleanly, but they do not imply real analytics queries exist yet.
 - The default ingestion smoke path uses committed synthetic fixtures mounted read-only into the container, and the Python verifier derives expected outputs from the active metadata/audio inputs. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` to point at a local FMA-small pack when needed.
 - The default processing smoke path uses the same committed synthetic fixtures, while the same wrapper can be reused with local FMA-small overrides to observe a bounded multi-segment burst through the consumer.
-- `writer` is now part of the bounded broker-backed smoke path into TimescaleDB; replay/restart hardening and dashboard-backed validation remain follow-up work.
+- `writer` is now part of both the bounded broker-backed smoke path and the Week 7 dashboard evidence path into TimescaleDB.

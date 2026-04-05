@@ -14,4 +14,6 @@ artifacts/runs/*
 !artifacts/runs/.gitkeep
 artifacts/shared/*
 !artifacts/shared/.gitkeep
+artifacts/demo/*
+artifacts/demo_inputs/*
 references/legacy-fma-pipeline/

@@ -8,6 +8,11 @@ import json
 from os import replace
 from pathlib import Path
 
+from event_driven_audio_analytics.shared.metric_labels import (
+    error_metric_labels,
+    run_total_metric_labels,
+    success_metric_labels,
+)
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.shared.storage import run_root
 
@@ -100,10 +105,7 @@ class ProcessingRunMetrics:
                 service_name=service_name,
                 metric_name="processing_ms",
                 metric_value=processing_ms,
-                labels_json={
-                    "topic": "audio.features",
-                    "status": "ok",
-                },
+                labels_json=success_metric_labels(topic="audio.features"),
                 unit="ms",
             ),
             SystemMetricsPayload(
@@ -112,7 +114,7 @@ class ProcessingRunMetrics:
                 service_name=service_name,
                 metric_name="silent_ratio",
                 metric_value=self.silent_ratio,
-                labels_json={"scope": "run_total"},
+                labels_json=run_total_metric_labels(),
                 unit="ratio",
             ),
         )
@@ -132,11 +134,10 @@ class ProcessingRunMetrics:
             service_name=service_name,
             metric_name="feature_errors",
             metric_value=1.0,
-            labels_json={
-                "topic": "audio.segment.ready",
-                "status": "error",
-                "failure_class": failure_class,
-            },
+            labels_json=error_metric_labels(
+                topic="audio.segment.ready",
+                failure_class=failure_class,
+            ),
             unit="count",
         )
 
