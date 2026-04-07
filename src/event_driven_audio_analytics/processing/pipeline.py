@@ -46,6 +46,7 @@ from event_driven_audio_analytics.shared.kafka import (
     deserialize_envelope,
 )
 from event_driven_audio_analytics.shared.logging import ServiceLoggerAdapter, get_service_logger
+from event_driven_audio_analytics.shared.shutdown import install_shutdown_event
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import (
@@ -629,9 +630,10 @@ class ProcessingPipeline:
             retry_backoff_max_ms=self.settings.producer_retry_backoff_max_ms,
             delivery_timeout_ms=self.settings.producer_delivery_timeout_ms,
         )
+        stop_requested, restore_handlers = install_shutdown_event()
 
         try:
-            while True:
+            while not stop_requested.is_set():
                 try:
                     record = poll_record(consumer, timeout_s=self.settings.poll_timeout_s)
                 except Exception:
@@ -697,7 +699,9 @@ class ProcessingPipeline:
                     result.processing_ms,
                     tuple(int(dimension) for dimension in result.mel.shape),
                 )
+            service_logger.info("Processing shutdown requested. Closing Kafka consumer and producer.")
         finally:
+            restore_handlers()
             producer.flush()
             consumer.close()
 

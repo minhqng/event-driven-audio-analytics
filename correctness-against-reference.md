@@ -21,9 +21,8 @@ Legacy/reference basis:
 Out of scope for this pass:
 
 - writer SQL changes
-- dashboard validation
 - benchmark-scale runs
-- real writer persistence of live `audio.features` traffic
+- benchmark-scale replay/restart validation
 
 ## Week 6 Hardening Change
 
@@ -160,6 +159,14 @@ Current Week 6 judgment:
 - None of those absences are a blocker for the current PoC summary-first database path.
 - They are only future extension candidates and must not be added silently.
 
+## Week 8 Bounded Downstream Confirmation
+
+The Week 6 reference pass remains focused on audio/DSP semantics, but Week 8 now adds bounded downstream confirmation that the summary-first output survives the current end-to-end PoC path:
+
+- `Fact`: The bounded processing-to-writer smoke evidence is green on the committed smoke fixtures, proving current-run `audio.features` persistence into `audio_features` plus `system_metrics` and `run_checkpoints`.
+- `Fact`: The deterministic dashboard evidence path is green and proves the Grafana-facing SQL views can read real persisted summaries for the energetic, silent-oriented, and validation-failure runs.
+- `Inference`: this confirms the current summary-first `audio.features -> audio_features -> dashboard views` path is coherent on the bounded PoC demo path, but it is still not a benchmark-scale parity result.
+
 ## Summary Fields Versus External Artifacts
 
 Practical Week 6 storage boundary:
@@ -233,8 +240,8 @@ Partially verified:
 
 Not yet verified:
 
-- live writer persistence of these real `audio.features` runs into TimescaleDB
-- dashboard queries over the real Week 6 runs
+- benchmark-scale live writer persistence of larger local-reference runs into TimescaleDB
+- benchmark-scale dashboard behavior over larger local-reference runs
 - persisted `welford_snapshots` behavior
 - any benchmark-scale or restart/replay-hardening scenario beyond the current targeted checks
 

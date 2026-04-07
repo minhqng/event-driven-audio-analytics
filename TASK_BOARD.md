@@ -2,25 +2,46 @@
 
 Operational backlog based on the current scaffold and the attached project plans.
 
-## Immediate Next Tasks
+## Week 8 Status
 
-1. Hard-verify replay and checkpoint behavior now that real producer traffic reaches writer.
-2. Add broader real producer-traffic replay evidence on top of the healthy-path writer smoke and the current fixture-driven writer checks.
-3. Document restart/replay outcomes now that Week 7 dashboard semantics are locked.
-4. Prepare the later-phase 100-track dry run / benchmark evidence on top of the current Week 7 dashboard baseline.
+### Done
 
-Week 7.5 note:
-- The bounded intermediate-demo polish path is now documented in `docs/runbooks/intermediate-demo.md` and remains intentionally narrower than Week 8 hardening/benchmark work.
-- Repo-local full FMA-small copies now belong under `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/`, while committed smoke mirrors live under `tests/fixtures/audio/smoke_fma_small/`.
+- Bounded restart/replay hardening for the current Compose path.
+- Fail-fast startup evidence before Kafka topic bootstrap for `ingestion`, `processing`, and `writer`.
+- Graceful `SIGTERM` / `SIGINT` shutdown for the long-lived `processing` and `writer` consumers so Compose restart/replay is practical.
+- Combined Week 8 evidence wrapper under `scripts/demo/generate-week8-evidence.*`.
+- Final-facing runbook cleanup in `README.md`, `docs/runbooks/`, and `docs/architecture/dashboard-interpretation.md`.
+
+### Verified
+
+- `docker compose config`
+- the official containerized `pytest` path via `scripts/smoke/check-pytest.ps1` (`176 passed, 5 skipped`)
+- host-side targeted `pytest` coverage for the Week 8 follow-up guardrails in `tests/unit/test_restart_replay_smoke_verify.py` and `tests/unit/test_shutdown.py`
+
+### Partially Verified
+
+- Existing Week 6/7/8 smoke and demo wrappers remain the bounded evidence entrypoints, but `scripts/smoke/check-processing-writer-flow.*`, `scripts/smoke/check-restart-replay-flow.*`, `scripts/demo/generate-week7-dashboard-evidence.*`, and `scripts/demo/generate-week8-evidence.*` were not rerun in this follow-up patch set.
+- Same-`run_id` replay is verified on the committed bounded smoke fixtures, not on a larger local FMA burst.
+- Dashboard validity is verified on the deterministic Week 7 demo runs, not on benchmark-scale traffic.
+- Failure-path restart behavior is verified for missing-topic startup dependency failures; a real DLQ flow is still absent.
+
+### Deferred To Week 9/10
+
+- 100-track burst / benchmark evidence
+- broader benchmark-scale replay/restart behavior
+- real DLQ implementation and schema/model coverage
+- persisted `welford_snapshots`
+
+Week 7 dashboard note:
+- The deterministic dashboard evidence remains under `artifacts/demo/week7/`.
+- The final Week 8 handoff anchor is `artifacts/demo/week8/evidence-index.md`.
 
 ## Dependency Ordering
 
 1. Keep the locked v1 contract stable under future runtime work.
    Current writer persistence now stores canonical `audio.metadata.duration_s` and optional `system.metrics.unit`; keep those fields stable unless A/B re-scope the contract.
 2. Keep the per-service image extras and official containerized `pytest` path green while extending runtime evidence.
-3. Real writer replay hardening under real producer traffic.
-4. Restart/replay hardening.
-5. Benchmark/demo/freeze.
+3. Benchmark/demo/freeze beyond the current bounded Week 8 evidence.
 
 ## Member B Can Do Independently
 
@@ -49,11 +70,13 @@ Week 7.5 note:
 - Gate 4: `audio.features` publishes with correct shape/summary semantics and checksummed artifact loading.
   Current status: Member B Week 5 unit coverage now proves claim-check artifact loading, checksum gating, RMS summary emission, inherited silence decisions, exact `(1,128,300)` log-mel enforcement, vector Welford updates, and canonical `audio.features` envelopes on tone, silent, short-clip, and ingestion-produced artifacts. Member B Week 6 reference validation now also checks the real processing path against the legacy transform on local FMA tracks `2`, `140`, `148`, `666`, and `1482`, with exact segment counts, exact `silent_flag` decisions, tolerance-level RMS/log-mel parity, and a documented summary-first `audio.features` mapping with no active `feature_uri` in v1. Member A Week 5 runtime work now adds a long-lived `processing` consumer with `preflight`, bounded artifact retry, structured logs, `processing_ms` plus `silent_ratio` publication, replay-stable `silent_ratio` recovery under `/artifacts/runs/<run_id>/state/processing_metrics.json`, and non-commit exit behavior on terminal failures without poison-record auto-restart loops. The bounded broker-backed `ingestion -> Kafka -> processing` smoke path is green on a clean `RUN_ID` without healthy-path `feature_errors`, and the bounded Week 6 broker-backed `ingestion -> processing -> writer -> TimescaleDB` smoke path now proves that current-run `audio.features` and `system.metrics` reach persistence.
 - Gate 5: Replay of the same `run_id` does not inflate persisted feature rows.
-  Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable. The real broker-backed Week 6 smoke now also proves healthy-path checkpoint advancement and writer-owned internal metrics under current-run producer traffic; broader real producer-traffic replay still needs proof.
+  Current status: fake `audio.features` rows and `scope=run_total` `system.metrics` rows now have replay-safe shared identities plus replay-safe sink behavior on the current writer path, including chunk-aware duplicate repair plus `ts` refresh for `run_total` snapshots, and the writer smoke now proves that repair on a live Timescale hypertable. The bounded Week 8 restart/replay smoke now also proves same-`run_id` replay after restarting `processing` and `writer`, including stable `track_metadata` / `audio_features`, replay-stable `silent_ratio`, checkpoint advancement, and stable processing recovery state on the committed smoke fixtures.
 - Gate 6: At least 2 Grafana dashboards auto-load and show real data.
   Current status: Week 7 is green. Grafana now auto-loads the provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards, `vw_dashboard_*` views keep the panel SQL stable, and `scripts/demo/generate-week7-dashboard-evidence.ps1` verifies the three deterministic demo runs plus screenshot capture under `artifacts/demo/week7/`. Week 7.5 now adds the dedicated intermediate-demo runbook, clearer dashboard naming, and generated screenshot notes without expanding into Week 8 hardening scope.
 - Gate 7: Restart/replay scenarios keep correctness within declared tolerance.
+  Current status: bounded Week 8 restart/replay evidence is in place. The dedicated restart/replay smoke path proves missing-topic fail-fast preflights, healthy post-bootstrap preflights, same-`run_id` replay after restarting `processing` and `writer`, checkpoint advancement, replay-stable `track_metadata` / `audio_features`, replay-stable `silent_ratio`, and stable processing recovery state under `artifacts/runs/<run_id>/state/processing_metrics.json`.
 - Gate 8: A 100-track dry run or equivalent demo scenario completes with evidence artifacts.
+  Current status: partially verified only. The deterministic dashboard demo and final Week 8 evidence bundle are green, but the repo-local 100-track burst remains intentionally deferred.
 
 ## Recommended Sequence For Future Codex Sessions
 
@@ -81,15 +104,15 @@ Week 7.5 note:
 
 ### Session 6
 
-- Run restart/replay/hardening scenarios and document pass/fail outcomes.
+- Reserve for benchmark-scale evidence or the repo-local 100-track burst only if needed for later reporting.
 
 ### Session 7
 
-- Run benchmark/demo prep, freeze contracts, and polish docs/evidence.
+- Reserve for final report packaging, screenshots, or unresolved A/B sync items.
 
 ### Session 8
 
-- Reserve for integration cleanup, report evidence, or unresolved A/B sync items.
+- Reserve for only those deferred items that still fit the locked PoC scope.
 
 ## Items That Should Not Be Started Yet
 

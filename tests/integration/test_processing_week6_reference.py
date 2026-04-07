@@ -20,7 +20,15 @@ if not LEGACY_REFERENCE_ROOT.exists():
     pytestmark = pytest.mark.skip(reason="legacy reference checkout is not available in this workspace")
 else:
     sys.path.insert(0, str(LEGACY_REFERENCE_ROOT))
-    from src.features.audio_transforms import AudioTransform as LegacyAudioTransform
+    try:
+        from src.features.audio_transforms import AudioTransform as LegacyAudioTransform
+    except ModuleNotFoundError as exc:
+        pytestmark = pytest.mark.skip(
+            reason=(
+                "legacy reference dependencies are not available in this workspace "
+                f"(missing {exc.name})."
+            )
+        )
 
 from event_driven_audio_analytics.ingestion.modules.audio_validator import (
     VALIDATION_STATUS_VALIDATED,

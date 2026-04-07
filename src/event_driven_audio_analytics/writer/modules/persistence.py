@@ -13,7 +13,7 @@ from event_driven_audio_analytics.shared.models.audio_features import AudioFeatu
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from .upsert_features import persist_audio_features
-from .upsert_metadata import persist_track_metadata
+from .upsert_metadata import TRACK_METADATA_UPSERT, persist_track_metadata
 from .write_metrics import persist_system_metrics
 
 WriterPayloadModel: TypeAlias = (

@@ -115,20 +115,20 @@ Wait-ForQuery "SELECT COUNT(*) FROM track_metadata WHERE run_id = 'demo-run' AND
 Wait-ForQuery "SELECT COUNT(*) FROM audio_features WHERE run_id = 'demo-run' AND track_id = 2 AND segment_idx = 0;" "1"
 
 Write-Host "Seeding duplicate run_total system.metrics rows across multiple Timescale chunks..."
-Invoke-Sql "DELETE FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{`"scope`":`"run_total`"}'::jsonb;"
+Invoke-Sql "DELETE FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = jsonb_build_object('scope', 'run_total');"
 Invoke-Sql "DELETE FROM run_checkpoints WHERE consumer_group = 'event-driven-audio-analytics-writer' AND topic_name = 'system.metrics';"
-Invoke-Sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2024-01-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 1.0, '{`"scope`":`"run_total`"}'::jsonb, 'count');"
-Invoke-Sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2025-02-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 2.0, '{`"scope`":`"run_total`"}'::jsonb, 'count');"
+Invoke-Sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2024-01-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 1.0, jsonb_build_object('scope', 'run_total'), 'count');"
+Invoke-Sql "INSERT INTO system_metrics (ts, run_id, service_name, metric_name, metric_value, labels_json, unit) VALUES ('2025-02-01T00:00:00Z', 'demo-run', 'ingestion', 'tracks_total', 2.0, jsonb_build_object('scope', 'run_total'), 'count');"
 
-Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{`"scope`":`"run_total`"}'::jsonb;" "2"
-Wait-ForQuery "SELECT CASE WHEN COUNT(DISTINCT tableoid) >= 2 THEN 'ok' ELSE 'not-ok' END FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{`"scope`":`"run_total`"}'::jsonb;" "ok"
+Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = jsonb_build_object('scope', 'run_total');" "2"
+Wait-ForQuery "SELECT CASE WHEN COUNT(DISTINCT tableoid) >= 2 THEN 'ok' ELSE 'not-ok' END FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = jsonb_build_object('scope', 'run_total');" "ok"
 
 Write-Host "Publishing run_total system.metrics fixture to trigger duplicate repair..."
 docker compose run --rm --entrypoint python writer -m event_driven_audio_analytics.smoke.publish_fake_events --only-run-total-metric
 Assert-LastExitCode "Publishing run_total system.metrics"
 
-Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{`"scope`":`"run_total`"}'::jsonb;" "1"
-Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = '{`"scope`":`"run_total`"}'::jsonb AND metric_value = 5.0 AND unit = 'count' AND to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD""T""HH24:MI:SS""Z""') = '2026-04-03T00:00:00Z';" "1"
+Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = jsonb_build_object('scope', 'run_total');" "1"
+Wait-ForQuery "SELECT COUNT(*) FROM system_metrics WHERE run_id = 'demo-run' AND service_name = 'ingestion' AND metric_name = 'tracks_total' AND labels_json = jsonb_build_object('scope', 'run_total') AND metric_value = 5.0 AND unit = 'count' AND ts = '2026-04-03T00:00:00Z'::timestamptz;" "1"
 Wait-ForQuery "SELECT COUNT(*) FROM run_checkpoints WHERE consumer_group = 'event-driven-audio-analytics-writer' AND topic_name = 'system.metrics';" "1"
 
 Write-Host "Writer smoke flow passed."

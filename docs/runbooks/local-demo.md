@@ -9,7 +9,19 @@
 ## Demo Steps
 
 1. Review `docs/architecture/system-overview.md`.
-2. For the Week 7.5 intermediate demo, use the single-command evidence path:
+2. For the bounded Week 8 final demo, use the single-command evidence path:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week8-evidence.ps1
+   ```
+
+   ```sh
+   bash ./scripts/demo/generate-week8-evidence.sh
+   ```
+
+   See `docs/runbooks/final-demo.md` for the recommended talk track, reliability notes, artifact layout, and honest limits.
+
+3. If you only want the dashboard-facing artifact path, use:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
@@ -19,9 +31,9 @@
    bash ./scripts/demo/generate-week7-dashboard-evidence.sh
    ```
 
-   See `docs/runbooks/intermediate-demo.md` for the recommended talk track, panel meaning, and generated artifact files.
+   See `docs/runbooks/intermediate-demo.md` for the dashboard-specific talk track, panel meaning, and generated artifact files.
 
-3. If you want to start the local scaffold without running the bounded demo inputs yet, use:
+4. If you want to start the local scaffold without running the bounded demo inputs yet, use:
 
    ```sh
    bash ./run-demo.sh
@@ -31,7 +43,7 @@
    powershell -ExecutionPolicy Bypass -File .\run-demo.ps1
    ```
 
-4. If you want to bootstrap topics without starting the full demo helper, use:
+5. If you want to bootstrap topics without starting the full demo helper, use:
 
    ```sh
    sh ./infra/kafka/create-topics.sh
@@ -41,9 +53,9 @@
    powershell -ExecutionPolicy Bypass -File .\infra\kafka\create-topics.ps1
    ```
 
-5. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
-6. Open Grafana on `http://localhost:3000`.
-7. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest against the currently configured input selection, and prints observed topic samples, use:
+6. Kafka is reachable as `localhost:9092` from the host and `kafka:29092` from other containers.
+7. Open Grafana on `http://localhost:3000`.
+8. For a Week 4 ingestion-only broker smoke run that exercises preflight, writes artifacts, verifies exact current-run messages plus the run manifest against the currently configured input selection, and prints observed topic samples, use:
 
    ```sh
    bash ./scripts/smoke/check-ingestion-flow.sh
@@ -53,7 +65,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1
    ```
 
-8. For a Week 5 processing broker smoke run that starts `processing`, feeds Kafka from a one-shot `ingestion` run, verifies exact current-run `audio.features` plus processing-owned `system.metrics`, and prints observed topic samples, use:
+9. For a Week 5 processing broker smoke run that starts `processing`, feeds Kafka from a one-shot `ingestion` run, verifies exact current-run `audio.features` plus processing-owned `system.metrics`, and prints observed topic samples, use:
 
    ```sh
    bash ./scripts/smoke/check-processing-flow.sh
@@ -63,7 +75,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
    ```
 
-9. For a Week 6 broker smoke run that starts both `processing` and `writer`, feeds Kafka from a one-shot `ingestion` run, and verifies current-run persistence in TimescaleDB, use:
+10. For a Week 6 broker smoke run that starts both `processing` and `writer`, feeds Kafka from a one-shot `ingestion` run, and verifies current-run persistence in TimescaleDB, use:
 
    ```sh
    bash ./scripts/smoke/check-processing-writer-flow.sh
@@ -73,7 +85,17 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
    ```
 
-10. For the Week 7.5 dashboard evidence path that auto-loads the provisioned dashboards, runs three deterministic demo cases, verifies dashboard-facing TimescaleDB data, captures screenshots, and writes demo artifact notes, use:
+11. For the Week 8 restart/replay reliability path that proves fail-fast preflights, service restarts, same-`run_id` replay, checkpoint advancement, and replay-stable run state, use:
+
+   ```sh
+   bash ./scripts/smoke/check-restart-replay-flow.sh
+   ```
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-restart-replay-flow.ps1
+   ```
+
+12. For the Week 7 dashboard evidence path that auto-loads the provisioned dashboards, runs three deterministic demo cases, verifies dashboard-facing TimescaleDB data, captures screenshots, and writes demo artifact notes, use:
 
    ```sh
    bash ./scripts/demo/generate-week7-dashboard-evidence.sh
@@ -83,7 +105,7 @@
    powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
    ```
 
-11. For a bounded repo-local FMA-small burst after the stack is already running, place the dataset at:
+13. For a bounded repo-local FMA-small burst after the stack is already running, place the dataset at:
 
    - `tests/fixtures/audio/tracks.csv`
    - `tests/fixtures/audio/fma_small/...`
@@ -107,9 +129,10 @@
 ## Notes
 
 - The default Grafana stack now auto-loads the file-provisioned dashboards backed by real TimescaleDB queries.
-- The intermediate-demo evidence script leaves the stack running after verification so you can open Grafana immediately for the live walkthrough.
+- The final Week 8 evidence script runs the restart/replay smoke first, then refreshes the dashboard evidence artifacts.
 - `ingestion` is now containerized for a bounded Compose replay path, performs a startup preflight/readiness gate, and no longer just prints scaffold steps.
 - `processing` is now containerized as a long-lived Kafka consumer, performs a startup preflight/readiness gate, and no longer stays at placeholder-only runtime behavior.
+- `processing` and `writer` now close their Kafka consumers gracefully on `SIGTERM` / `SIGINT`, which keeps the bounded restart/replay path practical under `docker compose restart`.
 - The ingestion smoke wrappers respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The processing smoke wrappers also respect `RUN_ID`; the default remains `demo-run` when `RUN_ID` is unset.
 - The application code itself executes inside Linux containers; the host only runs Docker Compose helpers.

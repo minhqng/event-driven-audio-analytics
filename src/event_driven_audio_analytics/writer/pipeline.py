@@ -17,6 +17,7 @@ from event_driven_audio_analytics.shared.db import (
 from event_driven_audio_analytics.shared.kafka import deserialize_envelope
 from event_driven_audio_analytics.shared.logging import ServiceLoggerAdapter, get_service_logger
 from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
+from event_driven_audio_analytics.shared.shutdown import install_shutdown_event
 
 from .config import WriterSettings
 from .modules.checkpoint_store import build_checkpoint_record, persist_checkpoint
@@ -162,6 +163,7 @@ class WriterPipeline:
             run_id=self.settings.base.run_id,
         )
         consumer = build_writer_consumer(self.settings)
+        stop_requested, restore_handlers = install_shutdown_event()
         pool: ConnectionPool | None = None
 
         try:
@@ -171,7 +173,7 @@ class WriterPipeline:
                 max_size=self.settings.db_pool_max_size,
                 timeout_s=self.settings.db_pool_timeout_s,
             )
-            while True:
+            while not stop_requested.is_set():
                 try:
                     record = poll_record(consumer, timeout_s=self.settings.poll_timeout_s)
                 except Exception:
@@ -248,7 +250,9 @@ class WriterPipeline:
                     outcome.rows_written,
                     outcome.write_ms,
                 )
+            service_logger.info("Writer shutdown requested. Closing Kafka consumer and database pool.")
         finally:
+            restore_handlers()
             if pool is not None:
                 close_database_pool(pool)
             consumer.close()

@@ -2,14 +2,14 @@
 
 ## Purpose
 
-This is the Week 7.5 intermediate-demo path for the current PoC:
+This is the dashboard-evidence leg of the final bounded Week 8 PoC demo:
 
 - `ingestion -> processing -> writer -> TimescaleDB -> Grafana`
 - one deterministic healthy energetic run
 - one deterministic silent-oriented run
 - one deterministic validation-failure run
 
-It is a bounded demo path, not Week 8 benchmark or restart/replay hardening work.
+It remains the dashboard-focused path only. For the full final-demo flow, including restart/replay reliability evidence, use `docs/runbooks/final-demo.md` and `scripts/demo/generate-week8-evidence.*`.
 
 ## Recommended Command
 
@@ -25,7 +25,7 @@ Bash on Linux:
 bash ./scripts/demo/generate-week7-dashboard-evidence.sh
 ```
 
-This is the recommended single-command demo path because it:
+This remains the recommended single-command dashboard path because it:
 
 - validates `docker compose config`
 - rebuilds the active service images used by the demo path
@@ -36,7 +36,7 @@ This is the recommended single-command demo path because it:
 - proves Grafana auto-loaded the dashboards through provisioning
 - captures screenshots plus short artifact notes under `artifacts/demo/week7/`
 
-For a supplemental bounded real-data burst with a repo-local full FMA-small copy, keep the primary Week 7.5 evidence path above as the presentation baseline and use `scripts/demo/run-repo-local-fma-burst.*` only after placing:
+For a supplemental bounded real-data burst with a repo-local full FMA-small copy, keep the primary dashboard evidence path above as the presentation baseline and use `scripts/demo/run-repo-local-fma-burst.*` only after placing:
 
 - `tests/fixtures/audio/tracks.csv`
 - `tests/fixtures/audio/fma_small/...`
@@ -92,10 +92,10 @@ After the command finishes successfully:
 | `week7-silent-oriented` | non-zero `silent_ratio`, lower average RMS than the energetic baseline, non-zero throughput, zero error rate |
 | `week7-validation-failure` | `validation_status=silent`, zero persisted segments, `error_rate=100%`, no downstream throughput |
 
-## Week 8 Items Still Deferred
+## Still Out Of Scope For This Dashboard Path
 
-- broader replay/restart hardening under real producer traffic
 - 100-track dry run and benchmark evidence
+- broader failure-path restart work beyond the bounded healthy replay path
 - larger performance-tuning work
 - broader observability expansion beyond the current dashboards
 - contract, schema, or architecture redesign

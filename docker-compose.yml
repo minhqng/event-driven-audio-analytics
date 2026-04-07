@@ -202,3 +202,5 @@ services:
       AUDIO_ROOT_PATH: "${AUDIO_ROOT_PATH:-/app/tests/fixtures/audio/smoke_fma_small}"
       TRACK_ID_ALLOWLIST: "${TRACK_ID_ALLOWLIST-2,666}"
       INGESTION_MAX_TRACKS: "${INGESTION_MAX_TRACKS:-2}"
+    volumes:
+      - ./artifacts:/app/artifacts:z

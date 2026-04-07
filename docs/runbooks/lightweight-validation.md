@@ -138,7 +138,32 @@ This smoke flow verifies all of the following:
 
 The smoke flow proves healthy-path persistence into TimescaleDB, not broader replay/restart hardening under real producer traffic.
 
-## Week 7.5 Intermediate Demo Evidence
+## Restart / Replay Smoke Flow
+
+```sh
+bash ./scripts/smoke/check-restart-replay-flow.sh
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-restart-replay-flow.ps1
+```
+
+This smoke flow verifies all of the following:
+
+- Kafka and TimescaleDB can start without topic bootstrap while service preflights fail clearly.
+- `ingestion`, `processing`, and `writer` all report explicit missing-topic startup failures before bootstrap.
+- The same services pass `preflight` after topic bootstrap on the same Compose stack.
+- A first bounded broker-backed run can persist `track_metadata`, `audio_features`, and `system_metrics`.
+- Restarting long-lived `processing` and `writer` with the same `RUN_ID` keeps `track_metadata`, `audio_features`, and replay-stable `silent_ratio` snapshots stable.
+- Append-only `processing_ms`, `write_ms`, and `rows_upserted` counts advance exactly once for the bounded rerun.
+- Writer checkpoint offsets advance for the exercised topics.
+- Processing restart-recovery state under `artifacts/runs/<run_id>/state/processing_metrics.json` keeps the same logical segment count and `silent_ratio`.
+- Evidence artifacts are written under `artifacts/demo/week8/`.
+
+This path is bounded to the committed smoke fixtures.
+It does not replace larger-run benchmark evidence or DLQ failure-path testing.
+
+## Week 7 Dashboard Evidence
 
 ```sh
 bash ./scripts/demo/generate-week7-dashboard-evidence.sh
@@ -148,7 +173,7 @@ bash ./scripts/demo/generate-week7-dashboard-evidence.sh
 powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
 ```
 
-This Week 7.5 path verifies all of the following:
+This dashboard-evidence path verifies all of the following:
 
 - `docker compose config` remains valid before the demo run starts.
 - Grafana starts with the file-provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards already loaded.
@@ -164,8 +189,27 @@ This Week 7.5 path verifies all of the following:
 - Screenshot artifacts are captured under `artifacts/demo/week7/`.
 - `artifacts/demo/week7/demo-artifact-notes.md` is generated alongside the screenshots so presentation notes stay aligned with the current dashboard panels.
 
-This path is the authoritative Week 7.5 intermediate-demo check.
-It does not replace broader replay/restart hardening or benchmark-scale validation.
+This path is the authoritative dashboard-facing evidence check.
+It does not replace replay/restart hardening or benchmark-scale validation.
+
+## Week 8 Final Evidence Bundle
+
+```sh
+bash ./scripts/demo/generate-week8-evidence.sh
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week8-evidence.ps1
+```
+
+This path runs the bounded Week 8 restart/replay smoke and the dashboard-evidence script sequentially, then writes `artifacts/demo/week8/evidence-index.md`.
+
+Use it as the final project handoff command when you need:
+
+- fail-fast startup evidence
+- bounded same-`run_id` restart/replay evidence
+- dashboard screenshots and Grafana provisioning evidence
+- one stable index that points to the relevant Week 8 and Week 7 artifact files
 
 ## Repo-Local FMA-small Burst
 

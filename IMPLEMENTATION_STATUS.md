@@ -59,7 +59,8 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Week 7 now centralizes the shared metric-label convention in `shared/metric_labels.py`, keeping `scope`, `topic`, `status`, and optional `failure_class` stable across ingestion, processing, writer, and Grafana queries.
 - `Fact`: The Week 7 demo/evidence path now stages deterministic synthetic demo inputs, runs `week7-high-energy`, `week7-silent-oriented`, and `week7-validation-failure` through the live Compose stack, verifies the resulting TimescaleDB summaries, and captures Grafana screenshots under `artifacts/demo/week7/`.
 - `Fact`: Week 7.5 now polishes the intermediate-demo path with a dedicated runbook, clearer dashboard panel titles, explicit recent-window Grafana URLs for live readability, generated artifact notes, and a repo-local FMA-small burst helper that targets `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/`.
-- `Fact`: The official containerized `pytest` path is green again after the writer/runtime changes in the current workspace, with `148 passed, 5 skipped, 10 subtests passed`; the 5 skips are the legacy-reference parity tests when the optional `references/legacy-fma-pipeline/` checkout is absent.
+- `Fact`: Week 8 now adds graceful `SIGTERM` / `SIGINT` shutdown handling for the long-lived `processing` and `writer` consumers, a bounded broker-backed restart/replay smoke path for the same `run_id`, explicit fail-fast preflight evidence before topic bootstrap, and a combined `generate-week8-evidence.*` handoff path that refreshes both reliability and dashboard artifacts.
+- `Fact`: The official containerized `pytest` path is green in the current workspace with `176 passed, 5 skipped`; the 5 skips are the optional Week 6 legacy-reference parity tests when the legacy checkout or its extra reference dependencies are unavailable.
 - `Fact`: The Week 3 ingestion smoke path now has both shell and PowerShell host wrappers, so the bounded broker-backed smoke run remains runnable from the repo's supported Windows host orchestration path.
 - `Fact`: Week 3 smoke validation now covers committed synthetic fixtures plus a local real-FMA sample run for tracks `2` and `666`, with observed segment counts `19` and `20` matching the documented legacy-reference counts.
 
@@ -68,9 +69,9 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: `ingestion` now implements the first real track-to-artifact path and is exercised under a live Kafka broker in Compose on a bounded committed smoke fixture set.
 - `Fact`: `processing` now has a real claim-check-to-`audio.features` path, and broker-backed evidence now reaches writer persistence in TimescaleDB on the bounded Week 6 smoke path.
 - `Fact`: The Compose `processing` service now stops on terminal record failures instead of auto-restarting, so unresolved poison records do not spin in an infinite replay loop while `audio.dlq` remains reserved.
-- `Inference`: `writer` runtime is now exercised by real ingestion/processing traffic on the bounded healthy path, but broader replay/restart evidence under real producer traffic and any DLQ behavior still remain later-phase work; `ingestion` likewise keeps `audio.dlq` log-only for unrecoverable failures in the current Week 4 runtime.
+- `Inference`: `writer` runtime is now exercised by real ingestion/processing traffic on both the bounded healthy path and the bounded same-`run_id` restart/replay path, but DLQ behavior and benchmark-scale replay evidence still remain later-phase work; `ingestion` likewise keeps `audio.dlq` log-only for unrecoverable failures in the current Week 4 runtime.
 - `Inference`: `welford_snapshots` storage exists, but the current Week 5 processing path keeps Welford state in memory only; persisted snapshot semantics remain unresolved.
-- `Inference`: Broader replay/restart evidence under repeated real producer traffic is still missing even though the Week 7 healthy-path dashboard demo is now real.
+- `Inference`: Benchmark-scale replay/restart evidence under repeated real producer traffic is still missing even though the bounded Week 8 same-`run_id` replay path is now real.
 
 ## What Is Documented As Implemented
 
@@ -79,10 +80,11 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: The current repo documents and exercises a fake-event writer path from Kafka to TimescaleDB, including checkpoint updates and idempotent feature replay.
 - `Fact`: The current repo can now execute the ingestion-owned Week 3 path over both committed bounded smoke fixtures and local real FMA-small sample input through artifact writing and canonical event emission, but it still does not claim full end-to-end audio analytics execution through processing, persistence, and dashboards.
 - `Fact`: The current repo can now execute the bounded broker-backed path from `audio.segment.ready` through `audio.features`, processing-owned `system.metrics`, writer persistence, TimescaleDB query views, and file-provisioned Grafana dashboards inside Compose.
+- `Fact`: The current repo can now also execute a bounded broker-backed restart/replay verification for the same `run_id`, including pre-bootstrap fail-fast evidence, service restart, checkpoint advancement, replay-stable `silent_ratio`, and replay-stable processing recovery state.
 
 ## What Is Planned But Not Yet Implemented
 
-- `Fact`: Restart/replay reliability scenarios under real producer traffic, a 100-track dry run, and benchmark-scale evidence beyond the current Week 7 demo artifacts.
+- `Fact`: A 100-track dry run, benchmark-scale evidence beyond the current bounded Week 8 artifacts, a real DLQ flow, and persisted `welford_snapshots`.
 
 ## What Is Explicitly Deferred
 
@@ -104,8 +106,8 @@ Status reconciled from the attached documents and the current repo scaffold.
 | Week 4 / Phase 4 | Processing / feature emission | `Fact`: processing now implements the Member B claim-check path from `audio.segment.ready` through checksum validation, RMS / silence gate / exact log-mel / vector Welford, and canonical `audio.features` publication, with unit coverage on tone, silent, and short-clip fixtures. |
 | Week 5 / Phase 5 | Writer idempotency and checkpoints | `Fact`: writer idempotency and checkpoint mechanics now exist on both the fixture-driven smoke path and the bounded broker-backed `processing -> writer -> TimescaleDB` path. `Inference`: broader replay hardening under real producer traffic is still pending. |
 | Week 6 / Phase 6 | Dashboards / observability | `Fact`: the real broker-backed persistence path into TimescaleDB now exists, including writer-owned internal metrics and checkpoint evidence. `Fact`: Week 7 now completes the real Grafana path with file-provisioned datasource/dashboard loading, stable SQL views, real queries, and captured dashboard evidence. |
-| Week 7 / Phase 7 | Hardening / restart / benchmark prep | `Inference`: not implemented. |
-| Week 8 / Phase 8 | Freeze / polish / demo readiness | `Inference`: not implemented. `Fact`: the current repo now has a bounded Week 7.5 intermediate-demo polish layer only; broader Week 8 hardening and benchmark work remain deferred. |
+| Week 7 / Phase 7 | Hardening / restart / benchmark prep | `Fact`: bounded restart/replay hardening is now implemented. `Fact`: the repo now proves missing-topic fail-fast preflights, same-`run_id` replay after restarting `processing` and `writer`, checkpoint advancement, and replay-stable processing recovery state on the committed smoke fixture path. `Inference`: benchmark prep beyond the bounded PoC path remains later work. |
+| Week 8 / Phase 8 | Freeze / polish / demo readiness | `Fact`: implemented within the locked PoC scope. `Fact`: README/runbooks now point to a final Week 8 evidence path, dashboard interpretation remains aligned with the real Grafana panels, and `IMPLEMENTATION_STATUS.md` plus `TASK_BOARD.md` now distinguish done/verified/partial/deferred status for final reporting. |
 | Weeks 9-10 | Extended-plan benchmark and freeze split | `Conflict`: present only in one planning document; no repo evidence yet. |
 
 ## Current Conflicts And Drift
@@ -126,6 +128,7 @@ Status reconciled from the attached documents and the current repo scaffold.
 - `Fact`: Week 3 and Week 5 reuse-critical audio/data dependencies are now declared in `pyproject.toml`, including the `torch` / `torchaudio` stack required for log-mel parity.
 - `Fact`: Writer correctness now depends on keeping natural-key/idempotency/checkpoint semantics stable as real ingestion and processing are implemented; run-level `system.metrics` now rely on a shared snapshot identity plus sink-side timestamp refresh rule.
 - `Fact`: Broader replay/restart work now depends on keeping the Week 7 dashboard query surface and metric-label convention stable while producer traffic grows.
+- `Fact`: The bounded Week 8 replay smoke now depends on the same long-lived Kafka consumer configuration used by the Compose services, including clean shutdown under `docker compose restart`.
 - `Inference`: The processing smoke path and the containerized `pytest` runner remain the heaviest Docker builds because they intentionally carry the DSP stack, but they now stay on CPU-only PyTorch wheels while the lighter ingestion and writer images avoid that layer entirely.
 
 ## Items Requiring Member A/B Synchronization

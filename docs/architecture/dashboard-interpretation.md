@@ -201,5 +201,15 @@ The Week 7 evidence script writes demo artifacts under `artifacts/demo/week7/`.
 - `system_health.png`
 - `demo-artifact-notes.md`
 
+The final Week 8 evidence wrapper keeps those dashboard artifacts in place and adds reliability artifacts under `artifacts/demo/week8/`:
+
+- `restart-replay-baseline.json`
+- `restart-replay-summary.json`
+- `preflight-fail-fast.txt`
+- `evidence-index.md`
+
+Those Week 8 files are not extra dashboard panels.
+They are the bounded reliability companion artifacts for the final PoC handoff.
+
 These artifacts are demo outputs, not canonical source-of-truth documents.
 The canonical dashboard configuration remains the file-provisioned Grafana JSON and YAML under `infra/grafana/`.
