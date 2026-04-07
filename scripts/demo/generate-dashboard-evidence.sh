@@ -96,9 +96,9 @@ invoke_demo_run() {
 }
 
 grafana_port="${GRAFANA_PORT:-3000}"
-demo_input_root_host="artifacts/demo_inputs/week7"
+demo_input_root_host="artifacts/demo_inputs/dashboard-demo"
 evidence_root_host="artifacts/demo/week7"
-demo_input_root_container="/app/artifacts/demo_inputs/week7"
+demo_input_root_container="/app/artifacts/demo_inputs/dashboard-demo"
 metadata_csv_container="$demo_input_root_container/metadata.csv"
 audio_root_container="$demo_input_root_container/fma_small"
 
@@ -118,7 +118,7 @@ docker compose build ingestion processing writer
 echo "Preparing deterministic dashboard demo inputs inside the ingestion image..."
 docker compose run --rm --no-deps --entrypoint python \
   ingestion \
-  -m event_driven_audio_analytics.smoke.prepare_week7_inputs \
+  -m event_driven_audio_analytics.smoke.prepare_dashboard_demo_inputs \
   --output-root "$demo_input_root_container"
 
 echo "Starting Kafka, TimescaleDB, and Grafana..."

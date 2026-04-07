@@ -132,10 +132,10 @@ function Invoke-DemoRun {
 }
 
 $grafanaPort = if ($env:GRAFANA_PORT) { $env:GRAFANA_PORT } else { "3000" }
-$demoInputRootHost = Join-Path $PWD "artifacts\demo_inputs\week7"
+$demoInputRootHost = Join-Path $PWD "artifacts\demo_inputs\dashboard-demo"
 $evidenceRootHost = Join-Path $PWD "artifacts\demo\week7"
 $demoRunsHost = Join-Path $PWD "artifacts\runs"
-$demoInputRootContainer = "/app/artifacts/demo_inputs/week7"
+$demoInputRootContainer = "/app/artifacts/demo_inputs/dashboard-demo"
 $metadataCsvContainer = "$demoInputRootContainer/metadata.csv"
 $audioRootContainer = "$demoInputRootContainer/fma_small"
 
@@ -166,9 +166,9 @@ Assert-LastExitCode "docker compose build ingestion processing writer"
 Write-Host "Preparing deterministic dashboard demo inputs inside the ingestion image..."
 docker compose run --rm --no-deps --entrypoint python `
     ingestion `
-    -m event_driven_audio_analytics.smoke.prepare_week7_inputs `
+    -m event_driven_audio_analytics.smoke.prepare_dashboard_demo_inputs `
     --output-root $demoInputRootContainer
-Assert-LastExitCode "containerized prepare_week7_inputs"
+Assert-LastExitCode "containerized prepare_dashboard_demo_inputs"
 
 Write-Host "Starting Kafka, TimescaleDB, and Grafana..."
 docker compose up --build -d kafka timescaledb grafana
