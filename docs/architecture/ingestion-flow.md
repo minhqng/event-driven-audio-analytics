@@ -2,7 +2,7 @@
 
 ## Purpose
 
-- `Fact`: This document records the current Week 4-stable Member B ingestion baseline for reporting and handoff.
+- `Fact`: This document records the current repo-owned ingestion baseline for reporting and handoff.
 - `Fact`: Scope is limited to metadata ETL, validation, decode/resample, segmentation, artifact writing, checksum handling, manifest handling, and emission of `audio.metadata` plus `audio.segment.ready`.
 - `Fact`: It does not redefine the locked v1 event contract or any Member A-owned SQL, checkpoints, Kafka bootstrap, or dashboard wiring.
 
@@ -30,7 +30,7 @@
 - `Fact`: The normal batch run now retries the same readiness checks for a bounded startup window before failing.
 - `Fact`: The Compose `ingestion` service now exposes a healthcheck that runs the one-shot preflight probe.
 - `Fact`: Structured JSON logs now carry `trace_id`, `run_id`, and `track_id` when they are known.
-- `Fact`: Reject-path logs carry `validation_status` and stay metadata-only; they do not publish `audio.dlq` events in the current Week 4 runtime.
+- `Fact`: Reject-path logs carry `validation_status` and stay metadata-only; they do not publish `audio.dlq` events in the current runtime.
 - `Fact`: Unrecoverable post-selection runtime failures are logged explicitly with the current log-only `audio.dlq` fallback note and then fail the batch run non-zero.
 
 ## Checksum And Manifest Baseline
@@ -79,7 +79,7 @@
 - `Fact`: Current repo-owned tests now check that `AudioMetadataPayload` field names exactly match the writer `TRACK_METADATA_UPSERT` column set.
 - `Fact`: Reject paths such as `missing_file` and `probe_failed` stay contract-valid because ingestion now requires positive metadata-side `track.duration` for the selected subset.
 
-## Representative Week 4 Checks
+## Representative Validation Checks
 
 | Sample | Observed outcome | Notes |
 | --- | --- | --- |
@@ -87,9 +87,9 @@
 | `silent_mono_32k.wav` | `silent`, metadata only | No manifest or segment events |
 | `short_tone_mono_32k.wav` | `too_short`, metadata only | Duration stays below the `1.0 s` minimum |
 | `corrupt_audio.mp3` | `probe_failed`, metadata only | File checksum exists, probe/open does not |
-| generated `1.00 s` tone | `no_segments`, metadata only | Explicit Week 4 edge-case reject |
+| generated `1.00 s` tone | `no_segments`, metadata only | Explicit edge-case reject |
 | generated `1.01 s` tone | validated, `1` segment | Smallest practical segment-producing clip in current checks |
-| generated `3.00 s` tone | validated, `2` segments | Inherited overlap + tail rule, not a new Week 4 convention |
+| generated `3.00 s` tone | validated, `2` segments | Inherited overlap + tail rule, not a new convention |
 | generated `4.49 s` tone | validated, `2` segments | Tail still pads because remaining audio stays above `1.0 s` |
 | generated `4.51 s` tone | validated, `3` segments | Crosses the next overlapped-window boundary |
 | generated `29.95 s` tone | validated, `19` segments | Matches existing legacy-reference tolerance note |
@@ -99,8 +99,8 @@
 
 - `Fact`: Path layout remains under `/artifacts/runs/<run_id>/...`, which stays aligned with the locked claim-check convention.
 - `Fact`: Segmentation semantics remain `mono / 32 kHz`, `3.0 s`, `1.5 s overlap`, and `remaining_tail > 1.0 s`.
-- `Fact`: Existing repo notes from Week 3 and `REUSE_MAP.md` still record legacy-reference segment counts of `19` for track `2` and `20` for track `666`.
-- `Inference`: The current duration-boundary matrix keeps the same tail-padding behavior that the inherited legacy segmentation algorithm implies; the Week 4 work hardened that behavior and documented it rather than changing it.
+- `Fact`: Existing repo notes and `REUSE_MAP.md` still record legacy-reference segment counts of `19` for track `2` and `20` for track `666`.
+- `Inference`: The current duration-boundary matrix keeps the same tail-padding behavior that the inherited legacy segmentation algorithm implies; the hardening work documented that behavior rather than changing it.
 
 ## Remaining A/B Sync Items
 

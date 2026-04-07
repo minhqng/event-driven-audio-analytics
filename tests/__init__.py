@@ -1,1 +1,1 @@
-"""Test package for the event-driven audio analytics scaffold."""
+"""Test package for event-driven-audio-analytics."""

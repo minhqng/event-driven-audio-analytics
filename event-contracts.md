@@ -9,7 +9,7 @@
   - `audio.features`
   - `system.metrics`
 - V1 is intentionally small. It exists to lock field names, traceability, replay-safety semantics, and claim-check boundaries before real ingestion and processing work expands.
-- V1 does not model `audio.dlq` beyond noting that the topic remains reserved and out of the core contract set for this Week 2 baseline.
+- V1 does not model `audio.dlq` beyond noting that the topic remains reserved and outside the core contract set.
 
 ## Canonical V1 Envelope
 
@@ -50,7 +50,7 @@ All v1 events on the 4 primary topics must use this envelope:
 
 ## Canonical Payload Decisions
 
-- V1 keeps the existing payload field names `genre`, `source_audio_uri`, and `labels_json` to avoid gratuitous churn against the current repo scaffolding. Renaming those would be a v2 contract change, not an ad hoc v1 tweak.
+- V1 keeps the existing payload field names `genre`, `source_audio_uri`, and `labels_json` to avoid gratuitous churn against the current repo naming. Renaming those would be a v2 contract change, not an ad hoc v1 tweak.
 - The 4 v1 payloads still repeat `run_id` inside `payload` for compatibility with the current writer-facing storage mapping.
 - The top-level `run_id` is canonical. When payload `run_id` is present, it must match the top-level `run_id` exactly.
 - Kafka remains small-event transport only. Large artifacts stay behind `artifact_uri` or other claim-check references.
@@ -228,7 +228,6 @@ Propagation expectations:
 
 ## Open Questions / A-B Sync Items
 
-- The v1 contract is now locked in docs, schemas, shared models, contract tests, the writer runtime, and the fixture-driven smoke path, but it still has not been exercised by real ingestion/processing traffic.
-- `audio.dlq` remains reserved but is not part of the 4-topic core v1 contract in this task.
-- The current writer schema/persistence now stores `audio.metadata.duration_s` and optional `system.metrics.unit`, but producer-side real traffic has not exercised those fields end to end yet.
+- The v1 contract is now locked in docs, schemas, shared models, contract tests, and the bounded runtime demo/smoke path.
+- `audio.dlq` remains reserved but is not part of the 4-topic core v1 contract.
 - The long-term dedup/persistence policy for `system.metrics` remains open beyond the currently locked `scope=run_total` snapshot rule.

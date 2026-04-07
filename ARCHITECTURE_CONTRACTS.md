@@ -103,13 +103,13 @@
 - `Fact`: Canonical v1 payload fields are `ts`, `run_id`, `service_name`, `metric_name`, and `metric_value`.
 - `Fact`: `labels_json` and `unit` are optional in v1.
 - `Fact`: Current writer schema/persistence now stores optional `unit` alongside `labels_json`.
-- `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current scaffold and SQL naming.
+- `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current SQL naming.
 - `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
 - `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
-- `Fact`: The current Week 5 `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
-- `Fact`: The current Week 5 `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
-- `Fact`: The current Week 6 `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
-- `Fact`: Week 7 normalizes the dashboard-facing metric labels to `scope`, `topic`, `status`, and optional `failure_class`, and `vw_dashboard_metric_events` is the canonical SQL normalization layer for Grafana queries.
+- `Fact`: The current `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
+- `Fact`: The current `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
+- `Fact`: The current `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
+- `Fact`: Dashboard-facing metric labels are normalized to `scope`, `topic`, `status`, and optional `failure_class`, and `vw_dashboard_metric_events` is the canonical SQL normalization layer for Grafana queries.
 
 ## Idempotency Rules
 
@@ -117,7 +117,7 @@
 - `Fact`: Writer persistence must be idempotent.
 - `Fact`: Replay of the same logical run must not silently duplicate feature rows.
 - `Fact`: Offset commit must happen only after successful persistence and checkpoint update.
-- `Fact`: The current Week 6 `writer` runtime exits on payload-write, checkpoint-write, or offset-commit failure so the service cannot continue and accidentally commit past a failed record.
+- `Fact`: The current `writer` runtime exits on payload-write, checkpoint-write, or offset-commit failure so the service cannot continue and accidentally commit past a failed record.
 - `Fact`: Producer idempotence and `acks=all` are part of the intended Kafka posture for the PoC.
 - `Fact`: Canonical v1 now defines `idempotency_key` in the shared contract layer.
 - `Fact`: Event-type-specific key composition is documented in `event-contracts.md`.

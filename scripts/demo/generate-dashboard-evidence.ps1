@@ -86,7 +86,7 @@ function Write-DemoArtifactNotes {
     )
 
     @'
-# Week 7.5 Demo Artifact Notes
+# Dashboard Demo Artifact Notes
 
 ## Audio Quality Dashboard
 
@@ -95,7 +95,7 @@ function Write-DemoArtifactNotes {
 - `Silent Segment Ratio By Run` proves the silent-oriented run contains silent segments while the high-energy run does not.
 - `Persisted Segment Count By Run` proves validated runs reached `audio_features` persistence and the validation-failure run did not.
 - `Validation Outcomes By Run` proves the validation-failure case is an ingestion-side `silent` rejection, not a hidden downstream failure.
-- `Run Quality Summary Table` is the compact reporting table for slide/report handoff.
+- `Run Quality Summary Table` is the compact reporting table for slide and report handoff.
 
 ## System Health Dashboard
 
@@ -147,7 +147,7 @@ Write-Host "Resetting local stack..."
 docker compose down --remove-orphans
 Assert-LastExitCode "docker compose down"
 
-Write-Host "Cleaning previous Week 7 evidence..."
+Write-Host "Cleaning previous dashboard evidence..."
 if (Test-Path $demoInputRootHost) {
     Remove-Item -LiteralPath $demoInputRootHost -Recurse -Force
 }
@@ -163,7 +163,7 @@ Write-Host "Building ingestion, processing, and writer images..."
 docker compose build ingestion processing writer
 Assert-LastExitCode "docker compose build ingestion processing writer"
 
-Write-Host "Preparing deterministic Week 7 demo inputs inside the ingestion image..."
+Write-Host "Preparing deterministic dashboard demo inputs inside the ingestion image..."
 docker compose run --rm --no-deps --entrypoint python `
     ingestion `
     -m event_driven_audio_analytics.smoke.prepare_week7_inputs `
@@ -204,7 +204,7 @@ Invoke-DemoRun `
     -MetadataCsvPath $metadataCsvContainer `
     -AudioRootPath $audioRootContainer
 
-Write-Host "Verifying Week 7 dashboard data in TimescaleDB..."
+Write-Host "Verifying dashboard data in TimescaleDB..."
 $verificationSummary = docker compose exec -T writer python -m event_driven_audio_analytics.smoke.verify_dashboard_demo
 Assert-LastExitCode "verify_dashboard_demo"
 $verificationSummary | Set-Content -LiteralPath (Join-Path $evidenceRootHost "dashboard-demo-summary.json") -Encoding utf8
@@ -232,7 +232,7 @@ Capture-DashboardScreenshot `
     -OutputPath (Join-Path $evidenceRootHost "system_health.png")
 Write-DemoArtifactNotes -OutputPath (Join-Path $evidenceRootHost "demo-artifact-notes.md")
 
-Write-Host "Week 7 dashboard evidence is ready."
+Write-Host "Dashboard demo evidence is ready."
 Write-Host "Summary: $evidenceRootHost\dashboard-demo-summary.json"
 Write-Host "Grafana API snapshot: $evidenceRootHost\grafana-api.json"
 Write-Host "Screenshots: $evidenceRootHost\audio_quality.png and $evidenceRootHost\system_health.png"

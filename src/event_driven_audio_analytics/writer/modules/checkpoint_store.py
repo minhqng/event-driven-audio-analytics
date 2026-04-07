@@ -1,4 +1,4 @@
-"""Checkpoint placeholders for resumable writer consumption."""
+"""Checkpoint persistence helpers for resumable writer consumption."""
 
 from __future__ import annotations
 

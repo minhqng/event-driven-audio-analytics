@@ -128,7 +128,7 @@ assert_expected_preflight_failure() {
 echo "Resetting local stack..."
 docker compose down --remove-orphans
 
-echo "Cleaning prior Week 8 replay evidence..."
+echo "Cleaning prior restart/replay evidence..."
 run_cleanup_host="$(resolve_run_cleanup_path "$effective_run_id")"
 rm -rf "$evidence_root_host" "$run_cleanup_host"
 mkdir -p "$evidence_root_host"

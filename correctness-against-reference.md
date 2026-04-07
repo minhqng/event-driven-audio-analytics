@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document records the first Week 6 Member B correctness pass for the current `processing` path against the legacy FMA-small pipeline semantics described in `REUSE_MAP.md`.
+This document records the final correctness position for the current `processing` path against the legacy FMA-small pipeline semantics described in `REUSE_MAP.md`.
 
 Compared path in this repo:
 
@@ -24,7 +24,7 @@ Out of scope for this pass:
 - benchmark-scale runs
 - benchmark-scale replay/restart validation
 
-## Week 6 Hardening Change
+## Resolved Semantic Drift
 
 One real semantic drift was found and fixed in `src/event_driven_audio_analytics/shared/audio.py`.
 
@@ -65,7 +65,7 @@ Observed legacy-aligned segment counts on the local reference pack:
 
 | Item | Status | Observation |
 | --- | --- | --- |
-| Mono / 32 kHz decode-resample semantics | Verified after Week 6 fix | Committed stereo fixture now matches the legacy downmix+resample path within `atol=1e-3`. |
+| Mono / 32 kHz decode-resample semantics | Verified after the downmix fix | Committed stereo fixture now matches the legacy downmix+resample path within `atol=1e-3`. |
 | Segment counts | Verified exactly | Current path matched legacy counts on all checked local FMA tracks: `19, 19, 19, 20, 19`. |
 | Log-mel shape | Verified exactly | Every checked segment stayed `(1,128,300)`. |
 | `silent_flag` | Verified exactly on checked data | `0` silent mismatches on the 1-track run and on the 5-track run. All checked reference tracks were non-silent in processing. |
@@ -125,7 +125,7 @@ Representative observation:
 
 ## `audio.features` To `audio_features` Mapping
 
-Direct payload-to-table mapping verified in Week 6:
+Direct payload-to-table mapping verified on the current repo path:
 
 | `audio.features` payload field | `audio_features` column | Status |
 | --- | --- | --- |
@@ -154,14 +154,14 @@ Fields that a downstream consumer might want but are currently absent from the l
 - explicit channel dimension for the log-mel shape
 - persisted Welford snapshot identity/value columns for processing-side statistical state
 
-Current Week 6 judgment:
+Current judgment:
 
 - None of those absences are a blocker for the current PoC summary-first database path.
 - They are only future extension candidates and must not be added silently.
 
-## Week 8 Bounded Downstream Confirmation
+## Bounded Downstream Confirmation
 
-The Week 6 reference pass remains focused on audio/DSP semantics, but Week 8 now adds bounded downstream confirmation that the summary-first output survives the current end-to-end PoC path:
+The reference pass remains focused on audio/DSP semantics, and the current bounded downstream verification confirms that the summary-first output survives the end-to-end PoC path:
 
 - `Fact`: The bounded processing-to-writer smoke evidence is green on the committed smoke fixtures, proving current-run `audio.features` persistence into `audio_features` plus `system_metrics` and `run_checkpoints`.
 - `Fact`: The deterministic dashboard evidence path is green and proves the Grafana-facing SQL views can read real persisted summaries for the energetic, silent-oriented, and validation-failure runs.
@@ -169,7 +169,7 @@ The Week 6 reference pass remains focused on audio/DSP semantics, but Week 8 now
 
 ## Summary Fields Versus External Artifacts
 
-Practical Week 6 storage boundary:
+Practical storage boundary:
 
 - Keep in DB summary: `ts`, `run_id`, `track_id`, `segment_idx`, `artifact_uri`, `checksum`, `manifest_uri`, `rms`, `silent_flag`, `mel_bins`, `mel_frames`, `processing_ms`
 - Keep outside DB: full `(1,128,300)` mel tensors, any per-bin feature arrays, embeddings, model inputs, or larger derived tensors
@@ -182,7 +182,7 @@ Rationale:
 
 ## `feature_uri` Decision
 
-Current Week 6 decision:
+Current decision:
 
 - `Fact`: `feature_uri` is absent from the locked v1 contract.
 - `Fact`: `feature_uri` is absent from the shared payload model.
@@ -206,8 +206,8 @@ Because `feature_uri` is not in v1 today, adding it later requires A/B synchroni
 Current state:
 
 - `Fact`: `processing` maintains vector-valued in-memory Welford state over mel-bin means.
-- `Fact`: Week 5/6 tests verify the update rule against manual expectations.
-- `Fact`: Week 6 reference runs show the current Welford summaries stay close to the legacy-reference mel-bin statistics.
+- `Fact`: Targeted tests verify the update rule against manual expectations.
+- `Fact`: Reference runs show the current Welford summaries stay close to the legacy-reference mel-bin statistics.
 
 What is still incomplete:
 
@@ -215,7 +215,7 @@ What is still incomplete:
 - `Conflict`: the current `processing` runtime does not write to that table.
 - `Inference`: Welford snapshotting is therefore partially implemented at the semantic level and missing at the persistence/integration level.
 
-Week 6 sufficiency judgment:
+Current sufficiency judgment:
 
 - Sufficient for current monitoring correctness validation: `Yes`
 - Sufficient for restart-stable persisted Welford monitoring: `No`
@@ -224,7 +224,7 @@ Week 6 sufficiency judgment:
 
 Verified:
 
-- mono 32 kHz decoding behavior after the Week 6 fix
+- mono 32 kHz decoding behavior after the downmix fix
 - exact segment counts on the checked local FMA tracks
 - exact log-mel shape `(1,128,300)`
 - exact `silent_flag` behavior on the checked runs

@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SQL_PATH = REPO_ROOT / "infra" / "sql" / "002_core_tables.sql"
 
 
-class WriterSchemaPlaceholderTests(unittest.TestCase):
+class WriterSchemaContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.sql = SQL_PATH.read_text(encoding="utf-8")
 

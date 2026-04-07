@@ -14,7 +14,7 @@ def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-class ContractPlaceholderTests(unittest.TestCase):
+class ContractFixtureTests(unittest.TestCase):
     def assert_fixture_matches_required_fields(self, schema_name: str, fixture_name: str) -> None:
         schema = load_json(SCHEMAS_DIR / schema_name)
         fixture = load_json(FIXTURES_DIR / fixture_name)

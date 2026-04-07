@@ -1,4 +1,4 @@
-"""Verify the Week 7 dashboard demo data after the Compose-backed demo runs."""
+"""Verify the dashboard demo data after the Compose-backed demo runs."""
 
 from __future__ import annotations
 
@@ -145,7 +145,7 @@ def _assert_dashboard_demo(
         - set(run_summaries)
     )
     if missing_runs:
-        raise RuntimeError(f"Week 7 demo is missing expected runs in vw_dashboard_run_summary: {missing_runs}.")
+        raise RuntimeError(f"Dashboard demo is missing expected runs in vw_dashboard_run_summary: {missing_runs}.")
 
     high_energy = run_summaries[HIGH_ENERGY_RUN_ID]
     silent_oriented = run_summaries[SILENT_ORIENTED_RUN_ID]

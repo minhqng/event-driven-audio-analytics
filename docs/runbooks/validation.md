@@ -1,7 +1,6 @@
-# Lightweight Validation
+# Validation Runbook
 
-Use lightweight checks that match the current bounded runtime baseline.
-Run them from the repository root.
+Use these checks to validate the repo at the same bounded maturity level claimed by the documentation. Run them from the repository root.
 
 ## Tree And Script Presence
 
@@ -35,10 +34,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
 bash ./scripts/smoke/check-pytest.sh tests/unit/test_processing_runtime.py -q
 ```
 
-Use the containerized `pytest` path as the authoritative repo test entrypoint.
-The current unit suite relies on `pytest` fixtures, parametrization, and `raises` assertions, so `unittest discover` is no longer a complete validation path.
-The `pytest` container now runs against image-bundled repo contents rather than a host bind mount, which avoids the permission-discovery drift that previously blocked full-suite collection on some SELinux-enabled hosts.
-Use the wrapper examples above when targeting a specific file as well, because they rebuild the `pytest` image before execution and keep the test run aligned with the current workspace.
+Use the containerized `pytest` path as the authoritative repo test entrypoint. The suite relies on `pytest` fixtures, parametrization, and `raises` assertions, so `unittest discover` is not a complete validation path here.
+
+The `pytest` container runs against image-bundled repo contents rather than a host bind mount, which avoids permission and discovery drift across machines. Use the wrappers above for targeted test files as well so the run stays aligned with the current workspace.
 
 ## Writer Smoke Flow
 
@@ -59,8 +57,7 @@ This smoke flow verifies all of the following:
 - `run_checkpoints` is updated for the exercised writer topics, including `system.metrics`.
 - Replaying the same fake feature event keeps the natural-key row count at `1`.
 
-The smoke flow does **not** prove Kafka offset ordering under failure.
-Keep that guarantee covered by unit tests around the writer pipeline and commit logic.
+The smoke flow does **not** prove Kafka offset ordering under failure. Keep that guarantee covered by the writer unit tests around pipeline and commit logic.
 
 ## Ingestion Broker Smoke Flow
 
@@ -115,7 +112,7 @@ This smoke flow verifies all of the following:
 - `system.metrics` stays keyed by `service_name=processing`, with per-segment `processing_ms` labels and `silent_ratio` `run_total` snapshots.
 - Healthy smoke runs do not emit `feature_errors`.
 - Structured processing logs expose `trace_id`, `run_id`, `track_id`, `segment_idx`, and `silent_flag` for current-run success paths.
-- The default wrapper is portable against committed fixtures, while `scripts/demo/run-repo-local-fma-burst.*` targets the repo-local `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/` layout for a bounded multi-segment burst.
+- The default wrapper is portable against committed fixtures, while `scripts/demo/run-local-fma-burst.*` targets the repo-local `tests/fixtures/audio/tracks.csv` plus `tests/fixtures/audio/fma_small/` layout for a bounded multi-segment burst.
 
 ## Processing To Writer Smoke Flow
 
@@ -160,17 +157,16 @@ This smoke flow verifies all of the following:
 - Processing restart-recovery state under `artifacts/runs/<run_id>/state/processing_metrics.json` keeps the same logical segment count and `silent_ratio`.
 - Evidence artifacts are written under `artifacts/demo/week8/`.
 
-This path is bounded to the committed smoke fixtures.
-It does not replace larger-run benchmark evidence or DLQ failure-path testing.
+This path is bounded to the committed smoke fixtures. It does not replace larger-run benchmark evidence or DLQ failure-path testing.
 
-## Week 7 Dashboard Evidence
+## Dashboard Demo Evidence
 
 ```sh
-bash ./scripts/demo/generate-week7-dashboard-evidence.sh
+bash ./scripts/demo/generate-dashboard-evidence.sh
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-dashboard-evidence.ps1
 ```
 
 This dashboard-evidence path verifies all of the following:
@@ -189,27 +185,26 @@ This dashboard-evidence path verifies all of the following:
 - Screenshot artifacts are captured under `artifacts/demo/week7/`.
 - `artifacts/demo/week7/demo-artifact-notes.md` is generated alongside the screenshots so presentation notes stay aligned with the current dashboard panels.
 
-This path is the authoritative dashboard-facing evidence check.
-It does not replace replay/restart hardening or benchmark-scale validation.
+This path is the authoritative dashboard-facing evidence check. It does not replace replay/restart hardening or benchmark-scale validation.
 
-## Week 8 Final Evidence Bundle
+## Final Demo Evidence Bundle
 
 ```sh
-bash ./scripts/demo/generate-week8-evidence.sh
+bash ./scripts/demo/generate-demo-evidence.sh
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week8-evidence.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-demo-evidence.ps1
 ```
 
-This path runs the bounded Week 8 restart/replay smoke and the dashboard-evidence script sequentially, then writes `artifacts/demo/week8/evidence-index.md`.
+This path runs the bounded restart/replay smoke and the dashboard evidence script sequentially, then writes `artifacts/demo/week8/evidence-index.md`.
 
 Use it as the final project handoff command when you need:
 
 - fail-fast startup evidence
 - bounded same-`run_id` restart/replay evidence
 - dashboard screenshots and Grafana provisioning evidence
-- one stable index that points to the relevant Week 8 and Week 7 artifact files
+- one stable index that points to the relevant reliability and dashboard artifact files
 
 ## Repo-Local FMA-small Burst
 
@@ -221,16 +216,16 @@ Place the non-committed FMA-small pack at:
 Then run:
 
 ```sh
-bash ./scripts/demo/run-repo-local-fma-burst.sh
+bash ./scripts/demo/run-local-fma-burst.sh
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-repo-local-fma-burst.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-local-fma-burst.ps1
 ```
 
 This helper expects the stack to already be up through `run-demo.*`, keeps the repo-local path stable across machines, and defaults to a bounded `100`-track burst unless `INGESTION_MAX_TRACKS` is overridden.
 
-## Legacy PowerShell Wrappers
+## PowerShell Wrapper Reference
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-tree.ps1
@@ -242,5 +237,4 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\observe-topic.ps1 audio.metadata 5
 ```
 
-Do not claim full correctness from these checks alone.
-They validate the bootstrap, the bounded Week 4 ingestion runtime path, the bounded Week 5 processing runtime path, the fake-event writer path, and the bounded Week 6 processing-to-writer persistence path only.
+Do not claim full correctness from these checks alone. They validate the bootstrap, the bounded ingestion runtime path, the bounded processing runtime path, the fake-event writer path, and the bounded processing-to-writer persistence path only.

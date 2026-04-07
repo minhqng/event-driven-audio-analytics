@@ -136,7 +136,7 @@ Write-Host "Resetting local stack..."
 docker compose down --remove-orphans
 Assert-LastExitCode "docker compose down"
 
-Write-Host "Cleaning prior Week 8 replay evidence..."
+Write-Host "Cleaning prior restart/replay evidence..."
 $runArtifactsPathHost = Resolve-RunCleanupPath -RunId $effectiveRunId
 if (Test-Path $evidenceRootHost) {
     Remove-Item -LiteralPath $evidenceRootHost -Recurse -Force

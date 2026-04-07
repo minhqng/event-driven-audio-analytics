@@ -78,7 +78,7 @@
 
 ## Major Risks
 
-- `Conflict`: The detailed plan's richer event contract does not match the repo's current placeholder schemas/models.
+- `Conflict`: The detailed plan's richer event contract remains broader than the repo's intentionally locked v1 contract.
 - `Conflict`: The detailed plan includes `audio.dlq`; the current repo topic/bootstrap scripts do not.
 - `Conflict`: The exact schedule is unresolved because docs say both 8 weeks and 10 weeks.
 - `Fact`: Late integration is explicitly called out as a project risk.
@@ -89,7 +89,7 @@
 
 ## Unknown Or Unresolved
 
-- `Unknown`: Final canonical envelope field names between target design and repo implementation.
+- `Unknown`: Any future envelope expansion beyond the locked v1 contract.
 - `Unknown`: Whether `audio.dlq` is mandatory in the first runnable milestone or remains planned-only.
 - `Unknown`: Final artifact extension choice for stored segments (`.wav` versus `.npy`); only the path shape is stable.
 - `Unknown`: Final retention and partition settings beyond the current PoC defaults.

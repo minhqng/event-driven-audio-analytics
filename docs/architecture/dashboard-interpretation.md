@@ -1,6 +1,6 @@
 # Dashboard Interpretation
 
-This document records the Week 7 dashboard meaning for the file-provisioned Grafana dashboards under `infra/grafana/dashboards/`.
+This document explains what the provisioned Grafana dashboards prove in the current PoC.
 
 ## Scope
 
@@ -8,8 +8,7 @@ This document records the Week 7 dashboard meaning for the file-provisioned Graf
 - The canonical dashboards are:
   - `infra/grafana/dashboards/audio_quality.json`
   - `infra/grafana/dashboards/system_health.json`
-- The provisioned dashboards keep their broader historical default window; the bounded intermediate-demo screenshots are captured with explicit `from=now-6h&to=now` URL parameters instead of changing the global default.
-- The canonical query surface is:
+- The canonical SQL query surface is:
   - `audio_features`
   - `track_metadata`
   - `system_metrics`
@@ -17,19 +16,9 @@ This document records the Week 7 dashboard meaning for the file-provisioned Graf
   - `vw_dashboard_run_validation`
   - `vw_dashboard_run_summary`
 
-## Presentation Map
-
-| Category | Canonical panel |
-| --- | --- |
-| Audio quality | `Segment RMS Over Time`, `Silent Segment Ratio By Run`, `Run Quality Summary Table` |
-| Reliability | `Silent Segment Ratio By Run`, `Persisted Segment Count By Run`, `Validation Outcomes By Run`, `Track Validation Error Rate By Run` |
-| Throughput | `Persisted Segment Count By Run`, `Persisted Segment Throughput` |
-| Latency | `Processing Latency Over Time`, `Writer DB Latency By Topic`, `Claim-Check Artifact Write Latency` |
-| Operational health | `Validation Outcomes By Run`, `Persisted Segment Throughput`, `Writer DB Latency By Topic`, `Track Validation Error Rate By Run`, `Operational Summary Table` |
-
 ## Shared Metric Convention
 
-The Week 7 dashboards rely on the existing `system.metrics` contract and a shared label convention implemented in `src/event_driven_audio_analytics/shared/metric_labels.py`.
+The dashboards rely on the existing `system.metrics` contract and the shared label convention implemented in `src/event_driven_audio_analytics/shared/metric_labels.py`.
 
 - Stable metric names:
   - `tracks_total`
@@ -43,14 +32,11 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
   - `rows_upserted`
   - `write_failures`
 - Stable labels:
-  - `scope=run_total` for replay-safe snapshot metrics.
-  - `scope=writer_record` for direct writer metrics keyed by Kafka record identity.
-  - `topic=<topic_name>` for append-only success or failure metrics tied to one topic.
-  - `status=ok|error` for append-only metrics.
-  - `failure_class=<reason>` only for error-path metrics.
-- Query normalization:
-  - `vw_dashboard_metric_events` turns `labels_json` into stable SQL columns such as `metric_scope`, `metric_status`, `topic_name`, and `failure_class`.
-  - Grafana panels query those normalized columns instead of repeating raw JSON extraction logic.
+  - `scope=run_total` for replay-safe snapshot metrics
+  - `scope=writer_record` for direct writer metrics keyed by Kafka record identity
+  - `topic=<topic_name>` for append-only success or failure metrics tied to one topic
+  - `status=ok|error` for append-only metrics
+  - `failure_class=<reason>` only for error-path metrics
 
 ## Service Metric Ownership
 
@@ -63,137 +49,82 @@ The Week 7 dashboards rely on the existing `system.metrics` contract and a share
 ### Segment RMS Over Time
 
 - Query source: `audio_features`
-- Query meaning: average persisted `rms` per time bucket and `run_id`
-- System property: segment energy level over time
+- Meaning: average persisted `rms` per time bucket and `run_id`
 - Why it matters: proves the pipeline preserves meaningful audio-energy differences after claim-check, processing, and persistence
-- Supports:
-  - audio quality
-  - operational health
 
 ### Silent Segment Ratio By Run
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: latest `silent_ratio` snapshot per run, with fallback to persisted `audio_features` summary
-- System property: proportion of segments classified as silent by processing
-- Why it matters: proves the silent-oriented run is distinguishable from the energetic baseline without requiring manual log inspection
-- Supports:
-  - audio quality
-  - reliability
+- Meaning: latest `silent_ratio` snapshot per run, with fallback to persisted `audio_features` summary
+- Why it matters: proves the silent-oriented run is distinguishable from the energetic baseline without manual log inspection
 
 ### Persisted Segment Count By Run
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: persisted `audio_features` rows per run
-- System property: how many segments survived ingestion, processing, and writer persistence
-- Why it matters: distinguishes healthy runs from validation-failure runs and exposes whether replayed demo inputs reached the sink
-- Supports:
-  - throughput
-  - reliability
+- Meaning: persisted `audio_features` rows per run
+- Why it matters: distinguishes healthy runs from validation-failure runs and exposes whether replayed inputs reached the sink
 
 ### Validation Outcomes By Run
 
 - Query source: `vw_dashboard_run_validation`
-- Query meaning: `track_metadata.validation_status` counts per run
-- System property: ingestion-side acceptance versus rejection outcomes
-- Why it matters: explains why `week7-validation-failure` has no downstream features while still being a successful demonstration of validation and observability
-- Supports:
-  - reliability
-  - operational health
+- Meaning: `track_metadata.validation_status` counts per run
+- Why it matters: shows that validation failures are ingestion outcomes, not hidden downstream breakage
 
 ### Run Quality Summary Table
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: compact run-level table combining counts, silent ratio, RMS, and validation failures
-- System property: one-row summary for report/demo use
-- Why it matters: provides the academic handoff table for the dashboard story without requiring click-ops or ad hoc SQL during the demo
-- Supports:
-  - audio quality
-  - reliability
-  - operational health
+- Meaning: run-level table combining counts, silent ratio, RMS, and validation failures
+- Why it matters: provides a compact academic handoff table for the demo and report
 
 ## System Health Dashboard
 
 ### Persisted Segment Throughput
 
 - Query source: `audio_features`
-- Query meaning: persisted feature-row count per time bucket and run
-- System property: how fast the pipeline converts validated segments into persisted summaries
-- Why it matters: provides the PoC throughput signal using real sink-side data instead of producer-side estimates
-- Supports:
-  - throughput
-  - operational health
+- Meaning: persisted feature-row count per time bucket and run
+- Why it matters: provides the throughput signal using real sink-side data
 
 ### Processing Latency Over Time
 
 - Query source: `vw_dashboard_metric_events`
-- Query meaning: average `processing_ms` per time bucket and run
-- System property: processing-service latency for claim-check load plus DSP work
-- Why it matters: shows whether the Week 5 processing stage stays bounded under the Week 7 demo runs
-- Supports:
-  - latency
-  - operational health
+- Meaning: average `processing_ms` per time bucket and run
+- Why it matters: shows whether claim-check load plus DSP work stayed bounded during the demo runs
 
 ### Writer DB Latency By Topic
 
 - Query source: `vw_dashboard_metric_events`
-- Query meaning: average writer `write_ms` grouped by destination topic
-- System property: sink-side latency inside the writer transaction path
-- Why it matters: proves that TimescaleDB persistence is observable and that write cost stays visible without external monitoring tooling
-- Supports:
-  - latency
-  - reliability
-  - operational health
+- Meaning: average writer `write_ms` grouped by destination topic
+- Why it matters: keeps TimescaleDB persistence cost visible without external monitoring tooling
 
 ### Claim-Check Artifact Write Latency
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: run-level `artifact_write_ms` snapshot from ingestion
-- System property: cost of writing claim-check segment artifacts before processing starts
-- Why it matters: proves the claim-check boundary has measurable overhead and lets the demo compare artifact-write cost across runs
-- Supports:
-  - latency
-  - throughput
-  - operational health
+- Meaning: run-level `artifact_write_ms` snapshot from ingestion
+- Why it matters: proves the claim-check boundary has measurable write overhead before processing starts
 
 ### Track Validation Error Rate By Run
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: `validation_failures / tracks_total`
-- System property: track-level validation failure rate for the bounded PoC run
-- Why it matters: gives the report/demo a defensible run-level error-rate panel without mixing track-scoped validation outcomes and segment-scoped runtime error counts
-- Supports:
-  - reliability
-  - operational health
+- Meaning: `validation_failures / tracks_total`
+- Why it matters: gives the demo a defensible run-level error-rate panel without mixing track-scoped validation and segment-scoped runtime failures
 
 ### Operational Summary Table
 
 - Query source: `vw_dashboard_run_summary`
-- Query meaning: run-level table for total errors, error rate, latency, and artifact-write cost
-- System property: compact observability summary
-- Why it matters: supports report/demo narration without extra SQL during the live demo
-- Supports:
-  - reliability
-  - throughput
-  - latency
-  - operational health
+- Meaning: run-level table for total errors, error rate, latency, and artifact-write cost
+- Why it matters: supports report and demo narration without ad hoc SQL
 
-## Demo Runs Used For Week 7
+## Demo Runs
 
-The deterministic Week 7 evidence run uses the shared `event_driven_audio_analytics.smoke.prepare_week7_inputs` helper through `scripts/demo/generate-week7-dashboard-evidence.ps1`.
+The deterministic dashboard evidence path uses three stable demo runs:
 
-- `week7-high-energy`
-  - Input shape: continuous energetic tone
-  - Expected signal: lower-magnitude negative RMS, `silent_ratio=0`, non-zero throughput
-- `week7-silent-oriented`
-  - Input shape: first segment silent, later segments energetic
-  - Expected signal: lower average RMS than the energetic baseline and non-zero `silent_ratio`
-- `week7-validation-failure`
-  - Input shape: fully silent track
-  - Expected signal: `validation_status=silent`, zero persisted segments, non-zero error rate
+- `week7-high-energy`: energetic baseline with `silent_ratio=0`
+- `week7-silent-oriented`: mixed run with non-zero `silent_ratio`
+- `week7-validation-failure`: ingestion-side `silent` rejection with zero persisted segments
 
 ## Evidence Artifacts
 
-The Week 7 evidence script writes demo artifacts under `artifacts/demo/week7/`.
+The dashboard evidence pack lives under `artifacts/demo/week7/`.
 
 - `dashboard-demo-summary.json`
 - `grafana-api.json`
@@ -201,15 +132,6 @@ The Week 7 evidence script writes demo artifacts under `artifacts/demo/week7/`.
 - `system_health.png`
 - `demo-artifact-notes.md`
 
-The final Week 8 evidence wrapper keeps those dashboard artifacts in place and adds reliability artifacts under `artifacts/demo/week8/`:
+The final demo wrapper keeps those dashboard artifacts in place and adds restart/replay evidence under `artifacts/demo/week8/`.
 
-- `restart-replay-baseline.json`
-- `restart-replay-summary.json`
-- `preflight-fail-fast.txt`
-- `evidence-index.md`
-
-Those Week 8 files are not extra dashboard panels.
-They are the bounded reliability companion artifacts for the final PoC handoff.
-
-These artifacts are demo outputs, not canonical source-of-truth documents.
-The canonical dashboard configuration remains the file-provisioned Grafana JSON and YAML under `infra/grafana/`.
+The `week7` and `week8` directory names are retained because they are the stable evidence pack names already used throughout the repo. They are artifact locations, not new delivery phases.

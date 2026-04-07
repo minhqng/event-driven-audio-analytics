@@ -1,6 +1,6 @@
 # Audio Fixtures
 
-This directory contains the Week 1 Member B audio fixture setup.
+This directory contains the committed audio fixtures and the repo-local dataset layout used by the PoC.
 
 ## Purpose
 
@@ -28,7 +28,7 @@ The repo-local full FMA pack is described in `fixture_manifest.json` but intenti
 
 ## Compose Smoke Mirrors
 
-- `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Week 3 Compose smoke path and now includes `track.duration` so reject-path metadata events stay contract-valid.
+- `smoke_tracks.csv` is a tiny 3-row-header metadata file for the Compose smoke path and now includes `track.duration` so reject-path metadata events stay contract-valid.
 - `smoke_fma_small/000/000002.mp3` mirrors the valid synthetic fixture under canonical FMA naming.
 - `smoke_fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
 - These are still synthetic or intentionally corrupt repo fixtures, not redistributed FMA audio.
@@ -45,7 +45,7 @@ Notes:
 - This full pack is intentionally not committed.
 - `.gitignore` excludes the repo-local `tracks.csv` plus `fma_small/` contents so cross-machine local copies do not dirty git.
 - The committed smoke mirrors live under `smoke_fma_small/` specifically so the full FMA pack can occupy `fma_small/` without overwriting tracked files.
-- Use `scripts/demo/run-repo-local-fma-burst.ps1` or `scripts/demo/run-repo-local-fma-burst.sh` after `run-demo.*` to publish a bounded repo-local burst into the live stack.
+- Use `scripts/demo/run-local-fma-burst.ps1` or `scripts/demo/run-local-fma-burst.sh` after `run-demo.*` to publish a bounded repo-local burst into the live stack.
 
 ## Naming Convention
 

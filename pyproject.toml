@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "event-driven-audio-analytics"
 version = "0.1.0"
-description = "Scaffold for an event-driven audio analytics PoC on FMA-small."
+description = "Event-driven audio analytics PoC on FMA-small."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }

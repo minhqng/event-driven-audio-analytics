@@ -1,1 +1,1 @@
-"""Integration-flavored scaffold checks."""
+"""Integration-flavored checks."""

@@ -2,26 +2,38 @@
 
 ## Purpose
 
-This repository scaffolds an event-driven real-time audio analytics PoC for FMA-small.
-It is designed for Docker Compose on a private-cloud-like local environment and keeps the implementation disciplined without overstating production readiness.
-    
+This repository implements a bounded event-driven audio analytics PoC for FMA-small. It is designed for Docker Compose in a private-cloud-like local environment and is intentionally honest about PoC limits rather than production completeness.
+
 ## Core Boundary
 
 - Kafka transports small events only.
-- Shared storage under `artifacts/` holds large artifacts and manifests.
+- Shared storage under `artifacts/` holds claim-check artifacts and manifests.
 - TimescaleDB stores analytical summaries and operational metrics.
 - Grafana reads from TimescaleDB and is provisioned entirely from files.
 
 ## Services
 
-- `ingestion`: loads metadata, validates audio, plans segmentation, writes artifacts, and publishes metadata and segment-ready events.
-- `processing`: consumes segment-ready events, performs startup preflight, retries bounded claim-check readiness failures, computes feature summaries, and publishes `audio.features` plus operational `system.metrics`.
-- `writer`: consumes metadata/features/metrics events and persists them with idempotent, checkpoint-aware behavior, including natural-key enforcement for `audio.features`.
+- `ingestion`: loads metadata, validates audio, decodes and resamples to mono 32 kHz, plans segments, writes claim-check artifacts, and publishes `audio.metadata` plus `audio.segment.ready`
+- `processing`: consumes `audio.segment.ready`, validates claim-check artifacts, computes RMS, silence decisions, log-mel summaries, Welford-style monitoring output, and publishes `audio.features` plus `system.metrics`
+- `writer`: consumes metadata, features, and metrics events; persists them transactionally; updates checkpoints; and commits offsets only after successful persistence
 
 ## Audio Semantics
 
-- Dataset: FMA-small.
-- Metadata filter: `subset=small`.
-- Normalization target: mono / 32 kHz.
-- Segmentation target: 3.0-second windows with 1.5-second overlap.
-- Downstream analytics placeholders: RMS, silence gating, log-mel summary shape, and Welford-style streaming statistics.
+- Dataset: FMA-small
+- Metadata filter: `subset=small`
+- Normalization target: mono / 32 kHz
+- Segmentation target: 3.0-second windows with 1.5-second overlap
+- Processing outputs: RMS, silence gating, log-mel summary shape `(1,128,300)`, and Welford-style statistics
+
+## Delivery Semantics
+
+- Claim-check keeps payload-heavy data out of Kafka.
+- Delivery is at-least-once.
+- Sink behavior is idempotent and checkpoint-aware.
+- Replay safety is verified on a bounded same-`run_id` restart/replay path.
+
+## Honest Limits
+
+- This repo does not claim production HA, multi-node Kafka, or exactly-once end to end.
+- `audio.dlq` is reserved but not yet a fully modeled runtime path.
+- `welford_snapshots` exists in SQL, but the current processing runtime does not persist that state yet.

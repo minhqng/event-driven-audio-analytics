@@ -1,4 +1,4 @@
-"""Event publication placeholders for the processing service."""
+"""Event publication helpers for the processing service."""
 
 from __future__ import annotations
 

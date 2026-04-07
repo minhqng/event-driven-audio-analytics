@@ -18,7 +18,7 @@ def run_root(artifacts_root: Path, run_id: str) -> Path:
 
 
 def segment_artifact_uri(artifacts_root: Path, run_id: str, track_id: int, segment_idx: int) -> str:
-    """Build a placeholder artifact URI for a segment."""
+    """Build the canonical artifact URI for a segment."""
 
     return _as_uri(
         run_root(artifacts_root, run_id) / "segments" / str(track_id) / f"{segment_idx}.wav"
@@ -26,6 +26,6 @@ def segment_artifact_uri(artifacts_root: Path, run_id: str, track_id: int, segme
 
 
 def manifest_uri(artifacts_root: Path, run_id: str) -> str:
-    """Build a placeholder manifest URI for a run."""
+    """Build the canonical manifest URI for a run."""
 
     return _as_uri(run_root(artifacts_root, run_id) / "manifests" / "segments.parquet")

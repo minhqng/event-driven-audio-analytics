@@ -1,4 +1,4 @@
-"""Offset-commit coordination placeholders for the writer service."""
+"""Offset-commit coordination helpers for the writer service."""
 
 from __future__ import annotations
 

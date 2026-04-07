@@ -1,4 +1,4 @@
-"""Compatibility wrapper for the Week 7 demo-input helper."""
+"""Compatibility wrapper for the dashboard demo-input helper."""
 
 from pathlib import Path
 import sys

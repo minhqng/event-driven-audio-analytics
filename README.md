@@ -1,23 +1,80 @@
 # event-driven-audio-analytics
 
-`event-driven-audio-analytics` is a clean standalone PoC for event-driven real-time audio analytics on FMA-small.
-It follows a claim-check architecture: Kafka moves small events, shared storage holds large artifacts, TimescaleDB stores analytical summaries and operational metrics, and Grafana is provisioned from files.
+`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, and Grafana presents the resulting observability story from file-provisioned dashboards.
+
+## What This Repository Demonstrates
+
+- Event-driven decoupling across `ingestion`, `processing`, and `writer`
+- Claim-check handling for audio segments and run manifests under `artifacts/`
+- At-least-once delivery with checkpoint-aware, idempotent persistence
+- Bounded restart/replay verification for the same `run_id`
+- Dashboard-backed observability over real persisted PoC data
 
 ## Scope
 
-- PoC only: Docker Compose, Kafka KRaft, TimescaleDB, Grafana, and three core services.
-- No raw waveform payloads on Kafka.
-- No Kubernetes, service mesh, or production-only abstractions.
-- No train/validation/test split logic or Hugging Face publishing in the runtime scaffold.
+- In scope: Docker Compose, Kafka KRaft, shared-volume claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style monitoring output, and bounded demo/evidence flows
+- Out of scope: Kubernetes, service mesh, HA/DR, multi-node Kafka, production object storage/IAM, model serving, full MLOps, and benchmark-scale claims beyond the documented bounded runs
+- Kafka remains small-event transport only. Raw waveform payloads and large tensors do not belong on the broker.
+
+## Recommended Reader Path
+
+1. Read `docs/README.md`.
+2. Read `docs/architecture/system-overview.md`.
+3. Run the final demo/evidence path from `docs/runbooks/demo.md`.
+4. Use `docs/runbooks/validation.md` when you need targeted smoke checks or the official containerized `pytest` path.
+5. Use `correctness-against-reference.md` and `docs/architecture/dashboard-interpretation.md` for the technical justification behind the demo outputs.
+
+## Recommended Commands
+
+Final demo and evidence bundle:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-demo-evidence.ps1
+```
+
+```sh
+bash ./scripts/demo/generate-demo-evidence.sh
+```
+
+Dashboard-only evidence:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-dashboard-evidence.ps1
+```
+
+```sh
+bash ./scripts/demo/generate-dashboard-evidence.sh
+```
+
+Bootstrap the stack without running demo inputs:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-demo.ps1
+```
+
+```sh
+bash ./run-demo.sh
+```
+
+Official repo test path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
+```
+
+```sh
+bash ./scripts/smoke/check-pytest.sh
+```
 
 ## Repository Layout
 
-- `src/event_driven_audio_analytics/`: one root Python package for ingestion, processing, writer, and shared code.
-- `services/`: container/runtime wrappers for each service.
-- `infra/`: Kafka bootstrap, TimescaleDB init SQL, and Grafana provisioning.
-- `schemas/`: versioned event-contract placeholders.
-- `docs/`: concise architecture, runbook, and source-material references.
-- `artifacts/`: bind-mounted claim-check storage boundary.
+- `src/event_driven_audio_analytics/`: repo-owned Python package for ingestion, processing, writer, and shared logic
+- `services/`: per-service container wrappers
+- `infra/`: Kafka topic bootstrap, TimescaleDB SQL, and Grafana provisioning
+- `schemas/`: JSON schemas aligned to the locked event contract v1
+- `docs/`: runbooks, architecture notes, archive material, and reader guidance
+- `tests/`: contract, unit, integration, smoke-verifier, and fixture coverage
+- `artifacts/`: shared claim-check boundary and demo evidence output root
 
 ## Core Topics
 
@@ -27,42 +84,13 @@ It follows a claim-check architecture: Kafka moves small events, shared storage 
 - `system.metrics`
 - `audio.dlq`
 
-## Quick Start
-
-1. Copy `.env.example` to `.env`.
-2. Review `docs/architecture/system-overview.md` and `docs/runbooks/final-demo.md`.
-3. Start the scaffold with `bash ./run-demo.sh`.
-4. If you only need Kafka topic bootstrap, run `sh ./infra/kafka/create-topics.sh`.
-5. If you want a broker-backed Week 4 ingestion smoke run for the currently configured input selection, use `bash ./scripts/smoke/check-ingestion-flow.sh`.
-   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps1`.
-6. If you want a broker-backed Week 5 processing smoke run for the currently configured input selection, use `bash ./scripts/smoke/check-processing-flow.sh`.
-   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1`.
-7. If you want a broker-backed Week 6 persistence smoke run from `ingestion` through `processing` into `writer` and TimescaleDB, use `bash ./scripts/smoke/check-processing-writer-flow.sh`.
-   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1`.
-8. If you want the bounded Week 8 restart/replay reliability path, use `bash ./scripts/smoke/check-restart-replay-flow.sh`.
-   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-restart-replay-flow.ps1`.
-9. If you want the final Week 8 evidence bundle, use `powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week8-evidence.ps1`.
-10. If you only want the dashboard screenshot/data evidence path, use `powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-week7-dashboard-evidence.ps1`.
-11. If you want the official repo test path without relying on host-installed `pytest`, use `bash ./scripts/smoke/check-pytest.sh`.
-   On Windows hosts, the equivalent is `powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1`.
+`audio.dlq` is reserved in bootstrap/constants but is not yet a fully modeled or exercised runtime path in this PoC.
 
 ## Runtime Notes
 
-- All application code executes inside Linux containers; the host only orchestrates Docker Compose.
+- All application code runs inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
-- The default demo stack now auto-loads the provisioned TimescaleDB datasource and the `Audio Quality` / `System Health` dashboards from files.
-- Service images now install per-service Python extras, so `ingestion` and `writer` smoke builds no longer resolve the `torch` / `torchaudio` layer that belongs to the processing DSP path.
-- The `processing` and `pytest` images pin CPU-only PyTorch wheels during Docker builds, which avoids pulling CUDA packages into the PoC smoke/test path.
-- `ingestion` now runs a bounded Week 4 replay path in Compose: it performs a startup preflight, reads configured sample metadata, writes claim-check artifacts plus the run manifest under `artifacts/`, publishes `audio.metadata`, `audio.segment.ready`, and run-level `system.metrics`, then exits cleanly.
-- `processing` now runs as a long-lived Compose service: it performs a startup preflight, consumes `audio.segment.ready`, retries bounded artifact-readiness failures, publishes `audio.features`, and emits `processing_ms`, `silent_ratio`, plus terminal `feature_errors` metrics on `system.metrics`.
-- `processing` also persists restart-recovery state under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
-- `processing` and `writer` now install graceful `SIGTERM` / `SIGINT` handlers, so Compose restarts close the Kafka consumers cleanly instead of waiting for the broker-side session timeout to expire.
-- When `processing` hits a terminal record failure, the container now stays stopped for inspection instead of auto-restarting into a poison-record replay loop while `audio.dlq` is still only reserved.
-- `writer` now runs as a long-lived Compose service: it performs a startup preflight, consumes `audio.metadata`, `audio.features`, and `system.metrics`, persists them through a psycopg pool, updates checkpoints inside the same DB transaction, commits offsets only after DB success, and writes direct-to-DB internal metrics `write_ms`, `rows_upserted`, and best-effort `write_failures`.
-- When `writer` hits a terminal record failure, the container likewise stays stopped for inspection instead of auto-restarting into a poison-record replay loop while `audio.dlq` is still only reserved.
-- The default Compose smoke path uses committed synthetic fixtures under `tests/fixtures/audio/`, and the Python verifier derives its exact expectations from the active `METADATA_CSV_PATH`, `AUDIO_ROOT_PATH`, allowlist, and run id. Override `METADATA_CSV_PATH` and `AUDIO_ROOT_PATH` when running against a local FMA-small pack.
-- The official `pytest` path now runs inside a dedicated Compose service against image-bundled repo contents, so the full suite no longer depends on host-installed Python tooling or bind-mounted workspace permissions.
-- The `pytest` service now also mounts the shared `artifacts/` tree so cross-service smoke verifiers can inspect restart/replay state and write Week 8 evidence files without broadening the runtime service images.
-- The shared `artifacts/` claim-check mount is configured for concurrent ingestion/processing access in Compose, which keeps the healthy Week 5 processing smoke path from tripping over artifact-read permissions.
-- The bounded broker-backed path into TimescaleDB now feeds real Grafana dashboards through the file-provisioned Week 7 views and dashboard JSON.
-- `docs/architecture/dashboard-interpretation.md` is the canonical explanation of what each panel proves.
+- The default stack auto-loads the provisioned `Audio Quality` and `System Health` dashboards from files.
+- `processing` and `writer` are long-lived consumers with graceful shutdown handling for bounded restart/replay checks.
+- The official `pytest` path runs in a dedicated Compose service against image-bundled repo contents.
+- Historical evidence directories under `artifacts/demo/week7/` and `artifacts/demo/week8/` are intentionally retained because they are the stable demo packs referenced throughout the repo.
