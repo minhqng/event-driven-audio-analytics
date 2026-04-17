@@ -9,6 +9,10 @@ This file is no longer a sprint board. It captures only the remaining work that 
 - Final reader path is in place through `README.md`, `docs/README.md`, and the runbooks under `docs/runbooks/`.
 - Final demo evidence command is `scripts/demo/generate-demo-evidence.*`.
 - Dashboard-only evidence command is `scripts/demo/generate-dashboard-evidence.*`.
+- A read-only `review` surface is now wired into the repo as the primary run/track/segment demo layer over existing persisted truth.
+- Demo bootstrap and evidence scripts now gate on review preflight plus `vw_review_tracks` readiness before declaring the stack usable.
+- PowerShell demo wrappers are aligned with the bash review-first evidence path.
+- Review media playback is now anchored to persisted `artifact_uri`, and review screenshot capture waits for a DOM-ready marker instead of trusting file existence alone.
 - Official repo test path is `scripts/smoke/check-pytest.*`.
 - Bounded restart/replay evidence exists and is documented.
 - Grafana dashboards are provisioned from files and backed by real TimescaleDB queries.
@@ -17,6 +21,7 @@ This file is no longer a sprint board. It captures only the remaining work that 
 ## Verified Entry Points
 
 - `docker compose config`
+- `run-demo.ps1` and `run-demo.sh`
 - `scripts/smoke/check-pytest.ps1` and `scripts/smoke/check-pytest.sh`
 - `docs/runbooks/demo.md`
 - `docs/runbooks/dashboard-demo.md`
@@ -39,7 +44,7 @@ These items should stay documented honestly rather than being hidden or polished
 ## If Future Work Is Requested
 
 1. Preserve Event Contract v1 unless an intentional coordinated version change is approved.
-2. Prefer extending evidence before adding new runtime surface area.
+2. Prefer thin read-only demo surfaces backed by current persisted truth before adding new backend semantics.
 3. Treat benchmark work, DLQ work, and persisted Welford work as the only meaningful follow-up items still inside the PoC narrative.
 4. Keep docs honest: separate verified bounded evidence from planned or deferred work.
 

@@ -10,12 +10,14 @@ This repository implements a bounded event-driven audio analytics PoC for FMA-sm
 - Shared storage under `artifacts/` holds claim-check artifacts and manifests.
 - TimescaleDB stores analytical summaries and operational metrics.
 - Grafana reads from TimescaleDB and is provisioned entirely from files.
+- The read-only `review` service also reads from TimescaleDB plus `artifacts/` and presents run, track, and segment inspection.
 
 ## Services
 
 - `ingestion`: loads metadata, validates audio, decodes and resamples to mono 32 kHz, plans segments, writes claim-check artifacts, and publishes `audio.metadata` plus `audio.segment.ready`
 - `processing`: consumes `audio.segment.ready`, validates claim-check artifacts, computes RMS, silence decisions, log-mel summaries, Welford-style monitoring output, and publishes `audio.features` plus `system.metrics`
 - `writer`: consumes metadata, features, and metrics events; persists them transactionally; updates checkpoints; and commits offsets only after successful persistence
+- `review`: serves a read-only run review console backed by persisted DB views and shared artifacts; it does not consume Kafka or write state
 
 ## Audio Semantics
 

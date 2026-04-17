@@ -184,6 +184,42 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  review:
+    build:
+      context: .
+      dockerfile: services/review/Dockerfile
+    ports:
+      - "${REVIEW_PORT:-8080}:8080"
+    environment:
+      SERVICE_NAME: review
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
+      POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
+      POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"
+      POSTGRES_HOST: timescaledb
+      POSTGRES_PORT: "5432"
+      REVIEW_HOST: "0.0.0.0"
+      REVIEW_PORT: "8080"
+      REVIEW_DEFAULT_LIMIT: "${REVIEW_DEFAULT_LIMIT:-8}"
+      REVIEW_MAX_LIMIT: "${REVIEW_MAX_LIMIT:-25}"
+      REVIEW_PINNED_RUN_IDS: "${REVIEW_PINNED_RUN_IDS:-week7-high-energy,week7-silent-oriented,week7-validation-failure}"
+    volumes:
+      - ./artifacts:/app/artifacts:z
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "event_driven_audio_analytics.review.app", "preflight"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   pytest:
     build:
       context: .

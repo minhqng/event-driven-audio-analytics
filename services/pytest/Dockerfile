@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir \
       --index-url "${PYTORCH_CPU_INDEX_URL}" \
       "torch==${TORCH_CPU_VERSION}" \
       "torchaudio==${TORCHAUDIO_CPU_VERSION}" \
-    && pip install --no-cache-dir ".[dev,ingestion,processing,writer]"
+    && pip install --no-cache-dir ".[dev,ingestion,processing,review,writer]"
 
 COPY infra /app/infra
 COPY schemas /app/schemas

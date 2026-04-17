@@ -28,16 +28,16 @@ Read this file first in every future thread.
 ## Architecture Summary
 
 - `Fact`: The project is framed around 4 core subsystems: Ingestion, Streaming, Processing, Visualization.
-- `Inference`: The current repo realizes those subsystems through 3 runtime services plus platform components.
+- `Inference`: The current repo realizes those subsystems through 3 data-plane runtime services, 1 read-only visualization service, and platform components.
 - `Fact`: `ingestion` owns metadata ETL, validation, decode/resample, segmentation planning, artifact writing, and publishing `audio.metadata` plus `audio.segment.ready`.
 - `Fact`: `streaming` is Kafka KRaft plus the claim-check boundary. It is a subsystem, not a standalone business-logic service.
 - `Fact`: `processing` consumes segment-ready events, loads claim-check artifacts, computes RMS, silence decisions, log-mel summaries, and Welford-style monitoring output, then publishes `audio.features` and `system.metrics`.
-- `Fact`: `visualization` is realized by `writer` plus TimescaleDB plus Grafana.
+- `Fact`: `visualization` is realized by `writer` plus TimescaleDB plus Grafana plus the read-only `review` service.
 - `Fact`: Kafka carries small events only. Large audio or feature payloads stay outside the broker.
 
 ## Scope Boundaries
 
-- `Fact`: In scope: Docker Compose, Kafka KRaft, shared-volume claim-check, TimescaleDB, Grafana, FMA-small replay, metadata ETL, audio validation, mono 32 kHz normalization, 3.0 s segmentation with 1.5 s overlap, RMS, silence gate, log-mel summary shape, Welford-style statistics, idempotent persistence, checkpoints, and run/demo docs.
+- `Fact`: In scope: Docker Compose, Kafka KRaft, shared-volume claim-check, TimescaleDB, Grafana, the read-only `review` surface, FMA-small replay, metadata ETL, audio validation, mono 32 kHz normalization, 3.0 s segmentation with 1.5 s overlap, RMS, silence gate, log-mel summary shape, Welford-style statistics, idempotent persistence, checkpoints, and run/demo docs.
 - `Fact`: Out of scope: Kubernetes, service mesh, HA/DR, multi-node Kafka, autoscaling, exactly-once end-to-end to an external DB, full schema-governance stack, production object storage/IAM, model serving, training pipelines, and full observability backends.
 - `Inference`: Arrow/Parquet is acceptable as an internal artifact or manifest format when useful, but it is not the runtime center of gravity for this PoC.
 
@@ -51,7 +51,7 @@ Read this file first in every future thread.
 - `Fact`: Docker Compose, networking, health checks, startup order.
 - `Fact`: Kafka KRaft, topic bootstrap, env/config, retry policy, DLQ wiring if enabled.
 - `Fact`: TimescaleDB schema, migrations, UPSERT/idempotent sink behavior, checkpoints.
-- `Fact`: Grafana provisioning, dashboards, benchmark/runbook/demo scripts.
+- `Fact`: Grafana provisioning, dashboards, the read-only `review` surface, benchmark/runbook/demo scripts.
 - `Fact`: Repo layout hygiene and backup/demo artifacts.
 
 ### Member A Must Not Change Alone
@@ -105,6 +105,7 @@ Read this file first in every future thread.
 - `Fact`: For audio logic changes, compare against the reused pipeline semantics: subset `small`, mono 32 kHz, 3.0 s windows, 1.5 s overlap, log-mel `(1,128,300)`, silence gate, Welford behavior.
 - `Fact`: For writer changes, verify natural keys, UPSERT semantics, checkpoint behavior, and replay safety.
 - `Fact`: For Grafana/metrics changes, verify file provisioning and that the backing SQL/data actually exists.
+- `Fact`: For `review` changes, verify DB-view provenance, artifact-path safety, metadata-only track handling, and that the UI remains read-only and non-authoritative.
 - `Fact`: Run only maturity-appropriate validation. Do not claim more confidence than the current tests justify.
 
 ## Handoff Discipline

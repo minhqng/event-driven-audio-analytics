@@ -23,15 +23,18 @@ This directory is the final handoff anchor for the bounded PoC evidence set.
 The dashboard-facing artifacts remain under `artifacts/demo/week7/` because that historical pack name is already stable across the repo:
 
 - `../week7/dashboard-demo-summary.json`
+- `../week7/review-api.json`
 - `../week7/grafana-api.json`
+- `../week7/run_review.png`
 - `../week7/audio_quality.png`
 - `../week7/system_health.png`
 - `../week7/demo-artifact-notes.md`
 
 ## Practical Reading Order
 
-- Use the restart/replay artifacts to explain startup gating and replay safety.
-- Use the dashboard artifacts to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
+- Use the review artifact pack first to explain the run, track, and segment story.
+- Use the restart/replay artifacts next to explain startup gating and replay safety.
+- Use the dashboard artifacts last to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
 - Treat this as bounded PoC evidence only; it is not benchmark-scale or production-readiness evidence.
 EOF
 }

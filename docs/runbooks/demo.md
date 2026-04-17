@@ -6,6 +6,7 @@ This is the primary presentation path for the finished PoC. It combines:
 
 - fail-fast startup evidence before Kafka topic bootstrap
 - healthy broker-backed `ingestion -> processing -> writer -> TimescaleDB`
+- a read-only run review surface over persisted truth
 - bounded same-`run_id` restart/replay verification
 - file-provisioned Grafana dashboards backed by persisted data
 - reproducible artifacts for report and demo handoff
@@ -35,7 +36,9 @@ This runs the restart/replay smoke path and the dashboard evidence path sequenti
 - `artifacts/demo/week8/preflight-fail-fast.txt`
 - `artifacts/demo/week8/evidence-index.md`
 - `artifacts/demo/week7/dashboard-demo-summary.json`
+- `artifacts/demo/week7/review-api.json`
 - `artifacts/demo/week7/grafana-api.json`
+- `artifacts/demo/week7/run_review.png`
 - `artifacts/demo/week7/audio_quality.png`
 - `artifacts/demo/week7/system_health.png`
 - `artifacts/demo/week7/demo-artifact-notes.md`
@@ -81,8 +84,9 @@ Use this when you want to inspect containers manually, run a specific smoke path
 1. Run the recommended command from the repo root.
 2. Open `artifacts/demo/week8/evidence-index.md`.
 3. Use the restart/replay artifacts first to explain startup gating and replay safety.
-4. Open Grafana or the saved screenshots next to explain persistence and dashboard interpretation.
-5. Use `docs/architecture/dashboard-interpretation.md` as the panel-by-panel talk track.
+4. Open the review console or the saved `run_review.png` screenshot next to explain run, track, and segment results.
+5. Open Grafana or the saved screenshots after that to explain persistence and dashboard interpretation.
+6. Use `docs/architecture/dashboard-interpretation.md` as the panel-by-panel talk track when you transition into Grafana.
 
 ## Honest Limits
 

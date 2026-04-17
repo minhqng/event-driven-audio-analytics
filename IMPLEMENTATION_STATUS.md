@@ -12,11 +12,12 @@ Final implementation summary for the current repository state.
 ## Final Repo State
 
 - `Fact`: The repository is a runnable PoC, not a production platform.
-- `Fact`: The runtime stack is Docker Compose, Kafka KRaft, shared claim-check storage, TimescaleDB, Grafana, and three core services: `ingestion`, `processing`, and `writer`.
+- `Fact`: The runtime stack is Docker Compose, Kafka KRaft, shared claim-check storage, TimescaleDB, Grafana, three core data-plane services (`ingestion`, `processing`, `writer`), and a read-only visualization service (`review`).
 - `Fact`: Event Contract v1 is locked in `event-contracts.md` and aligned across `schemas/`, shared models, fixtures, tests, and the current bounded runtime path.
 - `Fact`: The repo demonstrates claim-check, event-driven decoupling, idempotent sink behavior, checkpoint-aware offset handling, and dashboard-backed observability.
 - `Fact`: The repo includes a documented final demo path, a dashboard-only demo path, targeted smoke flows, and an official containerized `pytest` path.
-- `Fact`: The current official `pytest` baseline is `176 passed, 5 skipped`; the skipped tests are the optional legacy-reference parity checks when local reference inputs or extra reference dependencies are unavailable.
+- `Fact`: The last repo-wide verified `pytest` baseline before the review-console addition was `176 passed, 5 skipped`; the skipped tests were the optional legacy-reference parity checks when local reference inputs or extra reference dependencies were unavailable.
+- `Unknown`: A fresh repo-wide containerized `pytest` baseline after the review-console addition and demo-readiness hardening has not been rerun in this thread.
 
 ## What Is Fully Implemented
 
@@ -46,11 +47,25 @@ Final implementation summary for the current repository state.
 - `Fact`: Grafana datasource and dashboards are provisioned from files.
 - `Fact`: The canonical dashboard SQL surface is `vw_dashboard_metric_events`, `vw_dashboard_run_validation`, and `vw_dashboard_run_summary`.
 
+### Review Surface
+
+- `Inference`: The repo now includes a read-only `review` service that presents run, track, and segment inspection over existing TimescaleDB views plus claim-check artifacts.
+- `Fact`: The review API is explicitly non-authoritative: authoritative truth remains the persisted DB views plus artifact/state files under `artifacts/`.
+- `Fact`: The review service paginates list endpoints, treats metadata-only tracks as first-class outcomes, and exposes provenance for filesystem-backed or derived review fields.
+- `Inference`: The current review SQL surface adds `vw_review_tracks` for track-level summary reads.
+- `Fact`: The review smoke verifier now asserts the deterministic pinned run order and verifies both high-energy and silent-oriented WAV streaming.
+- `Fact`: Review-layer media playback now resolves from persisted `artifact_uri` values with artifacts-root boundary checks instead of trusting a reconstructed path convention.
+- `Fact`: The review UI escapes DB/FS-backed string fields before rendering and publishes a DOM-ready marker used by the evidence scripts.
+
 ### Validation, Correctness, And Evidence
 
 - `Fact`: The repo provides targeted smoke flows for ingestion, processing, processing-to-writer persistence, restart/replay, and fake-event writer verification.
 - `Fact`: The repo provides deterministic dashboard demo evidence under `artifacts/demo/week7/`.
 - `Fact`: The repo provides bounded restart/replay evidence under `artifacts/demo/week8/`.
+- `Inference`: The demo evidence path now includes review-surface API snapshots and a review-console screenshot under `artifacts/demo/week7/`.
+- `Fact`: The bootstrap and evidence scripts now gate on review readiness through review preflight plus `vw_review_tracks` selectability, not only on `/healthz`.
+- `Fact`: The PowerShell demo/evidence wrappers are now aligned with the bash review-first demo path.
+- `Fact`: The review screenshot capture now waits for a DOM-ready review marker tied to the pinned demo run and track before saving `run_review.png`.
 - `Fact`: `correctness-against-reference.md` records the current audio/DSP parity position against the legacy FMA-small pipeline.
 - `Fact`: `REUSE_MAP.md` records the legacy-pipeline reuse and refactor map.
 
@@ -59,6 +74,7 @@ Final implementation summary for the current repository state.
 - `Fact`: `README.md` now points to the final reader path and the final demo command.
 - `Fact`: `docs/README.md` is the documentation entrypoint.
 - `Fact`: `docs/runbooks/demo.md` is the primary demo runbook.
+- `Fact`: `docs/runbooks/review-demo.md` is the primary review-surface companion runbook.
 - `Fact`: `docs/runbooks/dashboard-demo.md` is the dashboard-only companion runbook.
 - `Fact`: `docs/runbooks/validation.md` is the validation and smoke-check runbook.
 - `Fact`: Historical bootstrap documentation has been moved out of the main reader path into `docs/archive/`.

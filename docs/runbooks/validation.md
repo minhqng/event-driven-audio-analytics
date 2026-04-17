@@ -172,6 +172,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-dashboard-evide
 This dashboard-evidence path verifies all of the following:
 
 - `docker compose config` remains valid before the demo run starts.
+- the read-only `review` service starts against the same TimescaleDB and `artifacts/` truth as the rest of the stack
 - Grafana starts with the file-provisioned TimescaleDB datasource plus the `Audio Quality` and `System Health` dashboards already loaded.
 - The bounded Compose-backed run populates TimescaleDB with real dashboard data, not placeholders.
 - The deterministic demo pack produces:
@@ -183,6 +184,7 @@ This dashboard-evidence path verifies all of the following:
   - the energetic run has a higher average RMS than the silent-oriented run
   - the validation-failure run has `validation_status=silent`, zero persisted segments, and non-zero error rate
 - Screenshot artifacts are captured under `artifacts/demo/week7/`.
+- The review API snapshot and review-console screenshot are captured under `artifacts/demo/week7/`.
 - `artifacts/demo/week7/demo-artifact-notes.md` is generated alongside the screenshots so presentation notes stay aligned with the current dashboard panels.
 
 This path is the authoritative dashboard-facing evidence check. It does not replace replay/restart hardening or benchmark-scale validation.

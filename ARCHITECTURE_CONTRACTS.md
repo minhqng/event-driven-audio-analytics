@@ -9,7 +9,7 @@
 ## Architecture Overview
 
 - `Fact`: The system is organized around 4 core subsystems: Ingestion, Streaming, Processing, Visualization.
-- `Inference`: The current repo realizes this as 3 runtime services plus platform components.
+- `Inference`: The current repo realizes this as 3 data-plane runtime services, 1 read-only visualization service, and platform components.
 - `Fact`: Platform components are Kafka KRaft, shared claim-check storage, TimescaleDB, and Grafana.
 - `Fact`: The PoC boundary is small-event transport on Kafka plus large-payload indirection through claim-check storage.
 
@@ -18,6 +18,7 @@
 - `Fact`: `ingestion` owns metadata loading, validation, decode/resample, segmentation planning, artifact writing, and publication of `audio.metadata` and `audio.segment.ready`.
 - `Fact`: `processing` owns artifact loading, checksum validation, RMS, silence gate, log-mel summary generation, Welford-style monitoring updates, and publication of `audio.features` plus `system.metrics`.
 - `Fact`: `writer` owns ingestion of metadata/features/metrics events, persistence into TimescaleDB, checkpoint updates, and offset commits only after persistence succeeds.
+- `Fact`: `review` is a read-only visualization service over TimescaleDB views plus `artifacts/`; it does not consume Kafka, publish events, or write repo-tracked runtime state.
 - `Fact`: Grafana is file-provisioned. Do not treat click-ops in the UI as the canonical configuration path.
 - `Fact`: The streaming subsystem owns ordering and replay semantics through Kafka topic keys, partitions, and consumer groups.
 
@@ -110,6 +111,7 @@
 - `Fact`: The current `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
 - `Fact`: The current `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
 - `Fact`: Dashboard-facing metric labels are normalized to `scope`, `topic`, `status`, and optional `failure_class`, and `vw_dashboard_metric_events` is the canonical SQL normalization layer for Grafana queries.
+- `Fact`: Review-facing run and track summaries are read from `vw_dashboard_run_summary`, `vw_dashboard_run_validation`, and `vw_review_tracks`; artifact presence and processing-state presence are read from the shared filesystem only for secondary runtime proof.
 
 ## Idempotency Rules
 

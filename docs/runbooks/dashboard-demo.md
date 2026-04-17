@@ -4,6 +4,7 @@
 
 This is the dashboard-only companion to the full demo runbook. It exercises:
 
+- the read-only `review` service as the primary run/track surface
 - `ingestion -> processing -> writer -> TimescaleDB -> Grafana`
 - one deterministic energetic run
 - one deterministic silent-oriented run
@@ -31,8 +32,10 @@ This command:
 - rebuilds the active demo images
 - prepares deterministic dashboard demo inputs
 - starts Kafka, TimescaleDB, Grafana, `processing`, and `writer`
+- starts the read-only `review` service
 - runs three one-shot `ingestion` cases
 - verifies the resulting TimescaleDB dashboard summaries
+- verifies the review API against the deterministic runs
 - proves Grafana auto-loaded the dashboards from provisioning
 - captures screenshots and notes under `artifacts/demo/week7/`
 
@@ -42,12 +45,15 @@ After the command finishes successfully:
 
 - `docker compose ps` shows healthy `kafka`, `timescaledb`, `grafana`, `processing`, and `writer` containers
 - Grafana is reachable at [http://localhost:3000](http://localhost:3000)
+- The read-only review surface is reachable at [http://localhost:8080](http://localhost:8080)
 - The dashboards are already present without click-ops:
   - [Audio Quality](http://localhost:3000/d/audio-quality/audio-quality?from=now-6h&to=now)
   - [System Health](http://localhost:3000/d/system-health/system-health?from=now-6h&to=now)
 - Generated artifacts exist under `artifacts/demo/week7/`:
   - `dashboard-demo-summary.json`
+  - `review-api.json`
   - `grafana-api.json`
+  - `run_review.png`
   - `audio_quality.png`
   - `system_health.png`
   - `demo-artifact-notes.md`
@@ -58,12 +64,13 @@ The `week7` directory name is retained because it is the stable dashboard eviden
 
 1. Run the recommended command from the repo root.
 2. Wait for `Dashboard demo evidence is ready.`
-3. Open `Audio Quality` first, then `System Health`.
+3. Open `http://localhost:8080/?demo=1` first.
 4. Walk through the three runs in this order:
    - `week7-high-energy`
    - `week7-silent-oriented`
    - `week7-validation-failure`
-5. Use the saved screenshots if live Grafana navigation is interrupted.
+5. Open `Audio Quality` next, then `System Health`.
+6. Use the saved screenshots if live review or Grafana navigation is interrupted.
 
 ## Panel Map
 

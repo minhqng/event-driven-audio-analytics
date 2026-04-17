@@ -12,6 +12,7 @@ Use this file as the entrypoint for the repo documentation.
 ## Demo And Validation
 
 - `docs/runbooks/demo.md`: full bounded demo path, including restart/replay evidence and dashboard artifacts
+- `docs/runbooks/review-demo.md`: primary live sequence for the read-only review surface
 - `docs/runbooks/dashboard-demo.md`: dashboard-only evidence path and live presentation flow
 - `docs/runbooks/validation.md`: targeted smoke scripts, containerized `pytest`, restart/replay validation, and repo-local FMA burst guidance
 

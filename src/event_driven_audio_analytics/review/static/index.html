@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Run Review Console</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body data-review-ready="false">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <p class="eyebrow">Read-only Review Surface</p>
+          <h1>Run Review Console</h1>
+          <p class="sidebar-copy">
+            Primary demo surface for bounded run, track, and segment inspection.
+            Authoritative truth remains TimescaleDB views and persisted artifacts.
+          </p>
+        </div>
+        <div class="mode-banner" id="mode-banner"></div>
+        <div class="panel">
+          <div class="panel-heading">
+            <h2>Runs</h2>
+            <span class="panel-meta" id="run-count">0 runs</span>
+          </div>
+          <div class="run-list" id="run-list"></div>
+          <div class="pager" id="run-pager"></div>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Non-authoritative Presentation Layer</p>
+            <h2 id="hero-title">Select a run</h2>
+            <p id="hero-copy">
+              This console summarizes persisted run outcomes first, then lets you
+              inspect metadata-only tracks and segment artifacts without opening Grafana.
+            </p>
+          </div>
+          <div class="truth-card">
+            <h3>Truth Layers</h3>
+            <div class="truth-row"><span class="badge badge-db">DB</span><span>TimescaleDB views and rows</span></div>
+            <div class="truth-row"><span class="badge badge-fs">FS</span><span>Shared claim-check artifacts and state files</span></div>
+            <div class="truth-row"><span class="badge badge-derived">Derived</span><span>UI-only states and status chips</span></div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="run-summary-panel">
+          <div class="panel-heading">
+            <h2>Run Summary</h2>
+            <span class="panel-meta" id="run-summary-source"></span>
+          </div>
+          <div class="summary-grid" id="run-summary-grid"></div>
+        </section>
+
+        <section class="layout-grid hidden" id="detail-grid">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Validation Outcomes</h2>
+            </div>
+            <div id="validation-outcomes"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Tracks</h2>
+              <span class="panel-meta" id="track-count">0 tracks</span>
+            </div>
+            <div id="track-table"></div>
+            <div class="pager" id="track-pager"></div>
+          </section>
+        </section>
+
+        <section class="panel hidden" id="track-detail-panel">
+          <div class="panel-heading">
+            <h2>Track Detail</h2>
+            <span class="panel-meta" id="track-detail-source"></span>
+          </div>
+          <div class="track-head" id="track-head"></div>
+          <div id="segment-table"></div>
+          <div class="pager" id="segment-pager"></div>
+        </section>
+
+        <section class="panel hidden" id="runtime-proof-panel">
+          <details>
+            <summary>
+              <span>Runtime Proof</span>
+              <span class="proof-note">Secondary UI. Use this to support questions, not to lead the demo.</span>
+            </summary>
+            <div id="runtime-proof"></div>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <template id="empty-state-template">
+      <div class="empty-state">
+        <h3>No data available</h3>
+        <p>This surface only reflects persisted run data and artifact paths that already exist.</p>
+      </div>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

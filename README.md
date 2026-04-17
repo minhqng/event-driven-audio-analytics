@@ -1,12 +1,13 @@
 # event-driven-audio-analytics
 
-`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, and Grafana presents the resulting observability story from file-provisioned dashboards.
+`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, and Grafana provides the supporting observability story from file-provisioned dashboards.
 
 ## What This Repository Demonstrates
 
 - Event-driven decoupling across `ingestion`, `processing`, and `writer`
 - Claim-check handling for audio segments and run manifests under `artifacts/`
 - At-least-once delivery with checkpoint-aware, idempotent persistence
+- A read-only review surface over persisted run, track, and segment outcomes
 - Bounded restart/replay verification for the same `run_id`
 - Dashboard-backed observability over real persisted PoC data
 
@@ -20,9 +21,10 @@
 
 1. Read `docs/README.md`.
 2. Read `docs/architecture/system-overview.md`.
-3. Run the final demo/evidence path from `docs/runbooks/demo.md`.
-4. Use `docs/runbooks/validation.md` when you need targeted smoke checks or the official containerized `pytest` path.
-5. Use `correctness-against-reference.md` and `docs/architecture/dashboard-interpretation.md` for the technical justification behind the demo outputs.
+3. Read `docs/runbooks/review-demo.md` for the primary live-demo surface.
+4. Run the final demo/evidence path from `docs/runbooks/demo.md`.
+5. Use `docs/runbooks/validation.md` when you need targeted smoke checks or the official containerized `pytest` path.
+6. Use `correctness-against-reference.md` and `docs/architecture/dashboard-interpretation.md` for the technical justification behind the demo outputs.
 
 ## Recommended Commands
 
@@ -91,6 +93,7 @@ bash ./scripts/smoke/check-pytest.sh
 - All application code runs inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
 - The default stack auto-loads the provisioned `Audio Quality` and `System Health` dashboards from files.
+- The default stack also exposes the read-only `review` service at `http://localhost:8080`.
 - `processing` and `writer` are long-lived consumers with graceful shutdown handling for bounded restart/replay checks.
 - The official `pytest` path runs in a dedicated Compose service against image-bundled repo contents.
 - Historical evidence directories under `artifacts/demo/week7/` and `artifacts/demo/week8/` are intentionally retained because they are the stable demo packs referenced throughout the repo.

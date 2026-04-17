@@ -33,6 +33,58 @@ function Wait-HttpReady {
     throw "Timed out waiting for HTTP readiness: $Uri"
 }
 
+function Wait-ReviewPreflight {
+    param(
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        docker compose exec -T review python -m event_driven_audio_analytics.review.app preflight 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for review preflight."
+}
+
+function Wait-ReviewViewReady {
+    param(
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $postgresUser = if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { "audio_analytics" }
+    $postgresDb = if ($env:POSTGRES_DB) { $env:POSTGRES_DB } else { "audio_analytics" }
+
+    while ((Get-Date) -lt $deadline) {
+        docker compose exec -T timescaledb `
+            psql -U $postgresUser -d $postgresDb `
+            -c "SELECT 1 FROM vw_review_tracks LIMIT 1;" 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for vw_review_tracks to become selectable."
+}
+
+function Assert-PinnedRunOrder {
+    param(
+        [string]$BaseUrl,
+        [string[]]$ExpectedRunIds
+    )
+
+    $runs = Invoke-RestMethod -Uri "$BaseUrl/api/runs?demo_mode=true&limit=10" -TimeoutSec 15
+    $actualRunIds = @($runs.items | Select-Object -First $ExpectedRunIds.Count | ForEach-Object { $_.run_id })
+    if (($actualRunIds -join ",") -ne ($ExpectedRunIds -join ",")) {
+        throw "Pinned demo order mismatch. Expected '$($ExpectedRunIds -join ",")' but got '$($actualRunIds -join ",")'."
+    }
+}
+
 function Get-BrowserExecutable {
     $candidates = @(
         "msedge.exe",
@@ -58,7 +110,7 @@ function Get-BrowserExecutable {
         return $chromePath
     }
 
-    throw "No supported headless browser executable was found for Grafana screenshots."
+    throw "No supported headless browser executable was found for review/Grafana screenshots."
 }
 
 function Capture-DashboardScreenshot {
@@ -80,13 +132,59 @@ function Capture-DashboardScreenshot {
     Assert-LastExitCode "Capturing screenshot for $Url"
 }
 
+function Get-PageDom {
+    param(
+        [string]$BrowserPath,
+        [string]$Url
+    )
+
+    & $BrowserPath `
+        "--headless=new" `
+        "--disable-gpu" `
+        "--hide-scrollbars" `
+        "--window-size=1600,1250" `
+        "--run-all-compositor-stages-before-draw" `
+        "--virtual-time-budget=15000" `
+        "--dump-dom" `
+        $Url 2>$null | Out-String
+}
+
+function Wait-ReviewDomReady {
+    param(
+        [string]$BrowserPath,
+        [string]$Url,
+        [string]$ExpectedRunId,
+        [string]$ExpectedTrackId,
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $dom = Get-PageDom -BrowserPath $BrowserPath -Url $Url
+        if ($dom.Contains('data-review-ready="true"') `
+            -and $dom.Contains("data-selected-run-id=""$ExpectedRunId""") `
+            -and $dom.Contains("data-selected-track-id=""$ExpectedTrackId""")) {
+            return
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for review DOM readiness: $Url"
+}
+
 function Write-DemoArtifactNotes {
     param(
         [string]$OutputPath
     )
 
     @'
-# Dashboard Demo Artifact Notes
+# Demo Artifact Notes
+
+## Run Review Console
+
+- `run_review.png` captures the read-only `Run Review Console` in demo mode, pinned to `week7-high-energy`.
+- The review console is the primary demo surface: it shows run state, validation outcomes, track summaries, segment artifacts, and secondary runtime proof without forcing the audience into Grafana first.
+- `review-api.json` is the authoritative machine-readable verification output from `verify_review_api`.
 
 ## Audio Quality Dashboard
 
@@ -109,6 +207,7 @@ function Write-DemoArtifactNotes {
 
 - `dashboard-demo-summary.json` is the authoritative machine-readable verification output from `verify_dashboard_demo`.
 - `grafana-api.json` proves the dashboards were auto-loaded through Grafana provisioning rather than click-ops.
+- `review-api.json` proves the new review surface is reachable and exposes the deterministic demo runs with track/segment detail.
 '@ | Set-Content -LiteralPath $OutputPath -Encoding utf8
 }
 
@@ -132,6 +231,7 @@ function Invoke-DemoRun {
 }
 
 $grafanaPort = if ($env:GRAFANA_PORT) { $env:GRAFANA_PORT } else { "3000" }
+$reviewPort = if ($env:REVIEW_PORT) { $env:REVIEW_PORT } else { "8080" }
 $demoInputRootHost = Join-Path $PWD "artifacts\demo_inputs\dashboard-demo"
 $evidenceRootHost = Join-Path $PWD "artifacts\demo\week7"
 $demoRunsHost = Join-Path $PWD "artifacts\runs"
@@ -159,9 +259,9 @@ Get-ChildItem -Path $demoRunsHost -Directory -ErrorAction SilentlyContinue `
     | Remove-Item -Recurse -Force
 New-Item -ItemType Directory -Path $evidenceRootHost -Force | Out-Null
 
-Write-Host "Building ingestion, processing, and writer images..."
-docker compose build ingestion processing writer
-Assert-LastExitCode "docker compose build ingestion processing writer"
+Write-Host "Building ingestion, processing, writer, and review images..."
+docker compose build ingestion processing writer review
+Assert-LastExitCode "docker compose build ingestion processing writer review"
 
 Write-Host "Preparing deterministic dashboard demo inputs inside the ingestion image..."
 docker compose run --rm --no-deps --entrypoint python `
@@ -176,13 +276,20 @@ Assert-LastExitCode "docker compose up kafka timescaledb grafana"
 
 Write-Host "Bootstrapping Kafka topics..."
 & (Resolve-Path ".\infra\kafka\create-topics.ps1")
+Assert-LastExitCode "create-topics.ps1"
 
-Write-Host "Starting processing and writer services..."
-docker compose up -d --no-deps processing writer
-Assert-LastExitCode "docker compose up processing writer"
+Write-Host "Starting processing, writer, and review services..."
+docker compose up -d --no-deps processing writer review
+Assert-LastExitCode "docker compose up processing writer review"
 
 Write-Host "Waiting for Grafana..."
 Wait-HttpReady -Uri "http://localhost:$grafanaPort/api/health" -TimeoutSeconds 90
+Write-Host "Waiting for the review console..."
+Wait-HttpReady -Uri "http://localhost:$reviewPort/healthz" -TimeoutSeconds 90
+Write-Host "Running review preflight..."
+Wait-ReviewPreflight -TimeoutSeconds 90
+Write-Host "Checking vw_review_tracks..."
+Wait-ReviewViewReady -TimeoutSeconds 60
 
 Invoke-DemoRun `
     -RunId "week7-high-energy" `
@@ -209,6 +316,16 @@ $verificationSummary = docker compose exec -T writer python -m event_driven_audi
 Assert-LastExitCode "verify_dashboard_demo"
 $verificationSummary | Set-Content -LiteralPath (Join-Path $evidenceRootHost "dashboard-demo-summary.json") -Encoding utf8
 
+Write-Host "Verifying the review API..."
+$reviewApi = docker compose exec -T review python -m event_driven_audio_analytics.smoke.verify_review_api --base-url "http://127.0.0.1:8080"
+Assert-LastExitCode "verify_review_api"
+$reviewApi | Set-Content -LiteralPath (Join-Path $evidenceRootHost "review-api.json") -Encoding utf8
+
+Write-Host "Verifying pinned demo ordering..."
+Assert-PinnedRunOrder `
+    -BaseUrl "http://localhost:$reviewPort" `
+    -ExpectedRunIds @("week7-high-energy", "week7-silent-oriented", "week7-validation-failure")
+
 Write-Host "Checking provisioned dashboards through the Grafana API..."
 $grafanaSearch = Invoke-RestMethod -Uri "http://localhost:$grafanaPort/api/search?query=Quality" -TimeoutSec 15
 $audioDashboard = Invoke-RestMethod -Uri "http://localhost:$grafanaPort/api/dashboards/uid/audio-quality" -TimeoutSec 15
@@ -221,7 +338,18 @@ $systemDashboard = Invoke-RestMethod -Uri "http://localhost:$grafanaPort/api/das
 } | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $evidenceRootHost "grafana-api.json") -Encoding utf8
 
 $browserPath = Get-BrowserExecutable
-Write-Host "Capturing Grafana screenshots with $browserPath..."
+Write-Host "Capturing review and Grafana screenshots with $browserPath..."
+$reviewUrl = "http://localhost:$reviewPort/?demo=1&run_id=week7-high-energy&track_id=910001"
+Wait-ReviewDomReady `
+    -BrowserPath $browserPath `
+    -Url $reviewUrl `
+    -ExpectedRunId "week7-high-energy" `
+    -ExpectedTrackId "910001" `
+    -TimeoutSeconds 90
+Capture-DashboardScreenshot `
+    -BrowserPath $browserPath `
+    -Url $reviewUrl `
+    -OutputPath (Join-Path $evidenceRootHost "run_review.png")
 Capture-DashboardScreenshot `
     -BrowserPath $browserPath `
     -Url "http://localhost:$grafanaPort/d/audio-quality/audio-quality?from=now-6h&to=now&kiosk" `
@@ -232,8 +360,23 @@ Capture-DashboardScreenshot `
     -OutputPath (Join-Path $evidenceRootHost "system_health.png")
 Write-DemoArtifactNotes -OutputPath (Join-Path $evidenceRootHost "demo-artifact-notes.md")
 
+foreach ($path in @(
+    (Join-Path $evidenceRootHost "dashboard-demo-summary.json"),
+    (Join-Path $evidenceRootHost "review-api.json"),
+    (Join-Path $evidenceRootHost "grafana-api.json"),
+    (Join-Path $evidenceRootHost "run_review.png"),
+    (Join-Path $evidenceRootHost "audio_quality.png"),
+    (Join-Path $evidenceRootHost "system_health.png"),
+    (Join-Path $evidenceRootHost "demo-artifact-notes.md")
+)) {
+    if (-not (Test-Path $path)) {
+        throw "Expected file missing: $path"
+    }
+}
+
 Write-Host "Dashboard demo evidence is ready."
 Write-Host "Summary: $evidenceRootHost\dashboard-demo-summary.json"
+Write-Host "Review API snapshot: $evidenceRootHost\review-api.json"
 Write-Host "Grafana API snapshot: $evidenceRootHost\grafana-api.json"
-Write-Host "Screenshots: $evidenceRootHost\audio_quality.png and $evidenceRootHost\system_health.png"
+Write-Host "Screenshots: $evidenceRootHost\run_review.png, $evidenceRootHost\audio_quality.png, and $evidenceRootHost\system_health.png"
 Write-Host "Artifact notes: $evidenceRootHost\demo-artifact-notes.md"
