@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+import math
 from pathlib import Path
 import sys
 import unittest
@@ -95,6 +97,24 @@ class WriterPersistenceTests(unittest.TestCase):
             unit="count",
         )
 
+    def build_processing_record_error_payload(self) -> SystemMetricsPayload:
+        return SystemMetricsPayload(
+            ts="2026-04-02T00:00:12Z",
+            run_id="demo-run",
+            service_name="processing",
+            metric_name="feature_errors",
+            metric_value=1.0,
+            labels_json={
+                "scope": "processing_record",
+                "topic": "audio.segment.ready",
+                "status": "error",
+                "failure_class": "artifact_not_ready",
+                "partition": 0,
+                "offset": 99,
+            },
+            unit="count",
+        )
+
     def test_audio_features_inserts_when_natural_key_is_missing(self) -> None:
         cursor = FakeCursor(fetch_results=[[]])
 
@@ -142,6 +162,20 @@ class WriterPersistenceTests(unittest.TestCase):
                     "segment_idx": 0,
                 },
             )
+
+    def test_coerce_payload_model_rejects_non_finite_feature_numbers(self) -> None:
+        payload = asdict(self.build_features_payload())
+        payload["rms"] = math.nan
+
+        with self.assertRaises(WriterPayloadValidationError):
+            coerce_payload_model("audio.features", payload)
+
+    def test_coerce_payload_model_rejects_non_finite_metric_labels(self) -> None:
+        payload = asdict(self.build_system_metrics_payload())
+        payload["labels_json"]["bad_value"] = math.inf
+
+        with self.assertRaises(WriterPayloadValidationError):
+            coerce_payload_model("system.metrics", payload)
 
     def test_track_metadata_persists_duration_s(self) -> None:
         cursor = FakeCursor()
@@ -227,6 +261,18 @@ class WriterPersistenceTests(unittest.TestCase):
         )
 
         rows_written = persist_system_metrics(cursor, payload)
+
+        self.assertEqual(rows_written, 1)
+        self.assertEqual(len(cursor.executed), 4)
+        self.assertIn("pg_advisory_xact_lock", cursor.executed[0][0])
+        self.assertIn("SELECT", cursor.executed[1][0])
+        self.assertIn("DELETE FROM system_metrics", cursor.executed[2][0])
+        self.assertIn("INSERT INTO system_metrics", cursor.executed[3][0])
+
+    def test_processing_record_error_metrics_rewrite_existing_logical_row(self) -> None:
+        cursor = FakeCursor(fetch_results=[[(16432, "(0,7)")]])
+
+        rows_written = persist_system_metrics(cursor, self.build_processing_record_error_payload())
 
         self.assertEqual(rows_written, 1)
         self.assertEqual(len(cursor.executed), 4)

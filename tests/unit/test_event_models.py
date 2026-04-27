@@ -9,6 +9,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from event_driven_audio_analytics.shared.kafka import deserialize_envelope, serialize_envelope
+from event_driven_audio_analytics.shared.metric_labels import error_metric_labels
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.envelope import build_envelope, build_idempotency_key
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
@@ -160,6 +161,31 @@ class EventModelTests(unittest.TestCase):
             f"system.metrics:v1:demo-run:ingestion:tracks_total:run_total:{labels_digest}",
         )
         self.assertEqual(first_key, second_key)
+
+    def test_processing_record_error_metrics_use_replay_safe_identity(self) -> None:
+        labels = error_metric_labels(
+            topic="audio.segment.ready", failure_class="artifact_not_ready", partition=0, offset=99
+        )
+        metric_kwargs = {
+            "run_id": "demo-run",
+            "service_name": "processing",
+            "metric_name": "feature_errors",
+            "metric_value": 1.0,
+            "labels_json": labels,
+            "unit": "count",
+        }
+        first_payload = SystemMetricsPayload(ts="2026-04-03T00:00:00Z", **metric_kwargs)
+        second_payload = SystemMetricsPayload(ts="2026-04-03T00:01:00Z", **metric_kwargs)
+        labels_digest = sha256(
+            json.dumps(labels, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        ).hexdigest()[:16]
+        first_key = build_idempotency_key("system.metrics", first_payload)
+
+        self.assertEqual(first_key, build_idempotency_key("system.metrics", second_payload))
+        self.assertEqual(
+            first_key,
+            f"system.metrics:v1:demo-run:processing:feature_errors:processing_record:{labels_digest}",
+        )
 
 
 if __name__ == "__main__":

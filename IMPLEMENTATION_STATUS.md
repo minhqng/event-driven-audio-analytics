@@ -14,8 +14,10 @@ Final implementation summary for the current repository state.
 - `Fact`: The repository is a runnable PoC, not a production platform.
 - `Fact`: The runtime stack is Docker Compose, Kafka KRaft, shared claim-check storage, TimescaleDB, Grafana, three core data-plane services (`ingestion`, `processing`, `writer`), and a read-only visualization service (`review`).
 - `Fact`: Event Contract v1 is locked in `event-contracts.md` and aligned across `schemas/`, shared models, fixtures, tests, and the current bounded runtime path.
+- `Fact`: Runtime contract validation now rejects unsafe `run_id` values, artifact path escapes, non-finite payload numbers, and non-standard JSON constants.
 - `Fact`: The repo demonstrates claim-check, event-driven decoupling, idempotent sink behavior, checkpoint-aware offset handling, and dashboard-backed observability.
 - `Fact`: The repo includes a documented final demo path, a dashboard-only demo path, targeted smoke flows, and an official containerized `pytest` path.
+- `Fact`: Python dependency ranges in `pyproject.toml` are pinned to exact versions for reproducible container installs.
 - `Fact`: The last repo-wide verified `pytest` baseline before the review-console addition was `176 passed, 5 skipped`; the skipped tests were the optional legacy-reference parity checks when local reference inputs or extra reference dependencies were unavailable.
 - `Unknown`: A fresh repo-wide containerized `pytest` baseline after the review-console addition and demo-readiness hardening has not been rerun in this thread.
 
@@ -34,8 +36,10 @@ Final implementation summary for the current repository state.
 ### Processing
 
 - `Fact`: `processing` consumes `audio.segment.ready`, loads claim-check artifacts, validates checksums, computes RMS, silence decisions, log-mel summaries, and Welford-style monitoring output, and publishes `audio.features` plus `system.metrics`.
+- `Fact`: `processing` resolves consumed `artifact_uri` values under the configured artifacts root and rejects references that escape that boundary before opening files.
 - `Fact`: The log-mel summary shape remains locked to `(1,128,300)`.
 - `Fact`: `processing` persists replay-stable run state for `silent_ratio` under `/artifacts/runs/<run_id>/state/processing_metrics.json`.
+- `Fact`: `processing` emits terminal `feature_errors` with `labels_json.scope=processing_record` plus Kafka partition and offset, so replay of the same failed input record rewrites one logical metric row.
 - `Fact`: `processing` is a long-lived Kafka consumer with startup preflight, bounded retry for recoverable artifact-readiness failures, structured logging, and graceful shutdown handling.
 
 ### Writer, Persistence, And Observability
@@ -43,7 +47,8 @@ Final implementation summary for the current repository state.
 - `Fact`: `writer` consumes canonical `audio.metadata`, `audio.features`, and `system.metrics` envelopes.
 - `Fact`: `writer` persists rows transactionally into `track_metadata`, `audio_features`, `system_metrics`, and `run_checkpoints`.
 - `Fact`: Offset commits happen only after successful persistence and checkpoint update.
-- `Fact`: Replay-safe `system.metrics` snapshots with `labels_json.scope=run_total` are upserted with duplicate repair on the current Timescale path.
+- `Fact`: Replay-safe `system.metrics` with `labels_json.scope` values `run_total`, `processing_record`, and `writer_record` are rewritten with duplicate repair on the current Timescale path.
+- `Fact`: Writer payload coercion now applies shared topic-contract validation before dataclass construction.
 - `Fact`: Grafana datasource and dashboards are provisioned from files.
 - `Fact`: The canonical dashboard SQL surface is `vw_dashboard_metric_events`, `vw_dashboard_run_validation`, and `vw_dashboard_run_summary`.
 
@@ -68,6 +73,7 @@ Final implementation summary for the current repository state.
 - `Fact`: The review screenshot capture now waits for a DOM-ready review marker tied to the pinned demo run and track before saving `run_review.png`.
 - `Fact`: `correctness-against-reference.md` records the current audio/DSP parity position against the legacy FMA-small pipeline.
 - `Fact`: `REUSE_MAP.md` records the legacy-pipeline reuse and refactor map.
+- `Fact`: On 2026-04-27, a targeted containerized `pytest` run for the contract/path/metric hardening slice passed `60 passed`.
 
 ## Verified Reader And Demo Path
 

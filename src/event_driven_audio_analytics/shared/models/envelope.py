@@ -9,6 +9,8 @@ import json
 from typing import Generic, TypeVar
 
 from event_driven_audio_analytics.shared.ids import generate_event_id
+from event_driven_audio_analytics.shared.models.payload_validation import validate_payload_contract
+from event_driven_audio_analytics.shared.storage import validate_run_id
 
 
 PayloadT = TypeVar("PayloadT")
@@ -144,6 +146,7 @@ def validate_envelope_dict(
         raise ValueError("Envelope event_type does not match Kafka topic.")
 
     run_id = _require_envelope_string(envelope, "run_id")
+    validate_run_id(run_id)
     trace_id = _require_envelope_string(envelope, "trace_id")
     if not trace_id.startswith(f"run/{run_id}/"):
         raise ValueError("Envelope trace_id must be scoped to the top-level run_id.")
@@ -168,6 +171,7 @@ def validate_envelope_dict(
         raise ValueError("Envelope payload must expose a non-empty run_id.")
     if payload_run_id != run_id:
         raise ValueError("Envelope run_id must match payload run_id.")
+    validate_payload_contract(event_type, payload)
 
     expected_idempotency_key = build_idempotency_key(
         event_type=event_type,
@@ -185,6 +189,7 @@ def build_trace_id(payload: PayloadT | dict[str, object], source_service: str) -
 
     payload_data = _payload_to_dict(payload)
     run_id = _require_string(payload_data, "run_id")
+    validate_run_id(run_id)
     track_id = payload_data.get("track_id")
     if isinstance(track_id, int) and not isinstance(track_id, bool):
         return f"run/{run_id}/track/{track_id}"
@@ -205,6 +210,7 @@ def build_idempotency_key(
 
     payload_data = _payload_to_dict(payload)
     run_id = _require_string(payload_data, "run_id")
+    validate_run_id(run_id)
 
     if event_type == "audio.metadata":
         track_id = _require_integer(payload_data, "track_id")
@@ -220,10 +226,15 @@ def build_idempotency_key(
         metric_name = _require_string(payload_data, "metric_name")
         labels = payload_data.get("labels_json", {})
         labels_digest = _labels_digest(labels)
-        if isinstance(labels, dict) and labels.get("scope") == "run_total":
+        if isinstance(labels, dict) and labels.get("scope") in {
+            "run_total",
+            "processing_record",
+            "writer_record",
+        }:
+            scope = str(labels["scope"])
             return (
                 f"{event_type}:{event_version}:{run_id}:{service_name}:"
-                f"{metric_name}:run_total:{labels_digest}"
+                f"{metric_name}:{scope}:{labels_digest}"
             )
 
         ts = _require_string(payload_data, "ts")
@@ -278,6 +289,8 @@ def build_envelope(
 
     payload_data = _payload_to_dict(payload)
     run_id = _require_string(payload_data, "run_id")
+    validate_run_id(run_id)
+    validate_payload_contract(event_type, payload_data)
     envelope_trace_id = trace_id or build_trace_id(payload_data, source_service=source_service)
     if not isinstance(envelope_trace_id, str) or not envelope_trace_id:
         raise ValueError("Envelope trace_id override must be a non-empty string.")

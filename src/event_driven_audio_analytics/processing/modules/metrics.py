@@ -125,6 +125,8 @@ class ProcessingRunMetrics:
         run_id: str,
         service_name: str,
         failure_class: str,
+        partition: int | None = None,
+        offset: int | None = None,
     ) -> SystemMetricsPayload:
         """Build the per-failure processing metric."""
 
@@ -137,6 +139,8 @@ class ProcessingRunMetrics:
             labels_json=error_metric_labels(
                 topic="audio.segment.ready",
                 failure_class=failure_class,
+                partition=partition,
+                offset=offset,
             ),
             unit="count",
         )

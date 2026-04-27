@@ -532,7 +532,11 @@ def test_processing_run_emits_feature_errors_and_keeps_offset_uncommitted_on_ter
         and message["value"]["payload"]["metric_name"] == "feature_errors"
     ]
     assert len(error_metrics) == 1
-    assert error_metrics[0]["value"]["payload"]["labels_json"]["failure_class"] == "artifact_not_ready"
+    labels = error_metrics[0]["value"]["payload"]["labels_json"]
+    assert labels["failure_class"] == "artifact_not_ready"
+    assert labels["scope"] == "processing_record"
+    assert labels["partition"] == 0
+    assert labels["offset"] == 99
 
 
 def test_json_formatter_includes_processing_runtime_context_fields() -> None:

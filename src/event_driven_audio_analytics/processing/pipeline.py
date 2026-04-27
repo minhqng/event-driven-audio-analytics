@@ -322,6 +322,8 @@ class ProcessingPipeline:
         *,
         run_id: str,
         failure_class: str,
+        partition: int | None = None,
+        offset: int | None = None,
     ) -> SystemMetricsPayload:
         """Build the canonical terminal-failure metric."""
 
@@ -329,6 +331,8 @@ class ProcessingPipeline:
             run_id=run_id,
             service_name=self.settings.base.service_name,
             failure_class=failure_class,
+            partition=partition,
+            offset=offset,
         )
 
     def _persist_run_metrics(
@@ -351,6 +355,8 @@ class ProcessingPipeline:
         failure_context: FailureContext,
         failure_class: str,
         logger: ServiceLoggerAdapter,
+        partition: int | None = None,
+        offset: int | None = None,
     ) -> None:
         """Attempt to publish the canonical terminal-failure metric."""
 
@@ -362,6 +368,8 @@ class ProcessingPipeline:
                 self._build_failure_metric_payload(
                     run_id=failure_run_id,
                     failure_class=failure_class,
+                    partition=partition,
+                    offset=offset,
                 ),
                 trace_id=failure_trace_id,
                 delivery_timeout_s=self._processing_delivery_timeout_s(),
@@ -443,6 +451,7 @@ class ProcessingPipeline:
             artifact = load_segment_artifact(
                 payload.artifact_uri,
                 payload.checksum,
+                artifacts_root=self.settings.base.artifacts_root,
                 expected_sample_rate_hz=self.settings.target_sample_rate_hz,
             )
             self._validate_loaded_artifact(payload, artifact)
@@ -671,6 +680,8 @@ class ProcessingPipeline:
                         failure_context=failure_context,
                         failure_class=decision.failure_class,
                         logger=failure_logger,
+                        partition=record.partition,
+                        offset=record.offset,
                     )
                     failure_logger.exception(
                         "Processing failed for the current record. "

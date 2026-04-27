@@ -88,6 +88,18 @@ class EventContractValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "run_id"):
             validate_envelope_dict(envelope, expected_event_type="audio.metadata")
 
+    def test_unsafe_run_id_fails_schema_validation(self) -> None:
+        validator = load_validator("audio.metadata.v1.json")
+
+        for run_id in ("../demo", "demo run"):
+            with self.subTest(run_id=run_id):
+                envelope = load_json(FIXTURES_DIR / "audio.metadata.valid.json")
+                envelope["run_id"] = run_id
+                envelope["payload"]["run_id"] = run_id
+
+                with self.assertRaises(ValidationError):
+                    validator.validate(envelope)
+
     def test_missing_required_top_level_fields_fail_semantic_validation(self) -> None:
         required_fields = (
             "event_id",
@@ -111,6 +123,35 @@ class EventContractValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "idempotency_key"):
             validate_envelope_dict(envelope, expected_event_type="audio.features")
+
+    def test_non_finite_feature_payload_fails_runtime_validation(self) -> None:
+        envelope = load_json(FIXTURES_DIR / "audio.features.valid.json")
+        envelope["payload"]["rms"] = float("nan")
+
+        with self.assertRaisesRegex(ValueError, "finite"):
+            validate_envelope_dict(envelope, expected_event_type="audio.features")
+
+    def test_deserialize_rejects_non_json_numeric_constants(self) -> None:
+        raw_message = (
+            '{"event_id":"e","event_type":"audio.features","event_version":"v1",'
+            '"trace_id":"run/demo-run/track/2","run_id":"demo-run",'
+            '"produced_at":"2026-04-02T00:00:00Z","source_service":"processing",'
+            '"idempotency_key":"audio.features:v1:demo-run:2:0",'
+            '"payload":{"ts":"2026-04-02T00:00:00Z","run_id":"demo-run",'
+            '"track_id":2,"segment_idx":0,"artifact_uri":"/app/artifacts/runs/demo-run/segments/2/0.wav",'
+            '"checksum":"x","rms":NaN,"silent_flag":false,"mel_bins":128,'
+            '"mel_frames":300,"processing_ms":1.0}}'
+        )
+
+        with self.assertRaisesRegex(ValueError, "non-JSON numeric constant"):
+            deserialize_envelope(raw_message)
+
+    def test_serialize_rejects_non_finite_numbers(self) -> None:
+        envelope = load_json(FIXTURES_DIR / "audio.features.valid.json")
+        envelope["payload"]["rms"] = float("inf")
+
+        with self.assertRaises(ValueError):
+            serialize_envelope(envelope)
 
 
 if __name__ == "__main__":

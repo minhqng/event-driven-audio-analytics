@@ -4,20 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from event_driven_audio_analytics.shared.storage import validate_run_id as validate_run_id
+
 
 def isoformat_or_none(value: datetime | None) -> str | None:
     if value is None:
         return None
     return value.isoformat().replace("+00:00", "Z")
-
-
-def validate_run_id(run_id: str) -> str:
-    normalized = run_id.strip()
-    if normalized == "":
-        raise ValueError("run_id must not be empty or whitespace.")
-    if normalized in {".", ".."} or any(character in normalized for character in ("/", "\\", ":")):
-        raise ValueError("run_id must be a single relative path segment.")
-    return normalized
 
 
 def normalize_limit(

@@ -215,14 +215,17 @@ def serialize_envelope(envelope: EventEnvelope[object] | dict[str, object]) -> b
     else:
         message = envelope
 
-    return json.dumps(message, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return json.dumps(message, allow_nan=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
 
 
 def deserialize_envelope(payload: bytes | str) -> dict[str, object]:
     """Decode a Kafka value into an envelope dictionary."""
 
+    def reject_non_json_constant(value: str) -> None:
+        raise ValueError(f"Kafka message contains non-JSON numeric constant: {value}.")
+
     raw_payload = payload.decode("utf-8") if isinstance(payload, bytes) else payload
-    message = json.loads(raw_payload)
+    message = json.loads(raw_payload, parse_constant=reject_non_json_constant)
     if not isinstance(message, dict):
         raise ValueError("Kafka message must decode to an object envelope.")
     return message

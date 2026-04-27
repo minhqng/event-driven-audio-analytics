@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+import shutil
 import wave
 
 import numpy as np
@@ -181,6 +182,27 @@ def _write_tone_wav(
         handle.writeframes(pcm.tobytes())
 
 
+def _copy_fixture_under_artifacts_root(
+    artifacts_root: Path,
+    fixture_name: str,
+    *,
+    run_id: str,
+    track_id: int,
+    segment_idx: int,
+) -> Path:
+    artifact_path = (
+        artifacts_root
+        / "runs"
+        / run_id
+        / "segments"
+        / str(track_id)
+        / f"{segment_idx}.wav"
+    )
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(FIXTURES_DIR / fixture_name, artifact_path)
+    return artifact_path
+
+
 def _segment_ready_payload_for_artifact(
     artifact_path: Path,
     *,
@@ -239,6 +261,7 @@ def test_segment_loader_reads_claim_check_artifact_and_validates_checksum(tmp_pa
     artifact = load_segment_artifact(
         artifact_path.as_posix(),
         sha256_file(artifact_path),
+        artifacts_root=tmp_path,
         expected_sample_rate_hz=32000,
     )
 
@@ -256,6 +279,22 @@ def test_segment_loader_rejects_checksum_mismatch(tmp_path: Path) -> None:
         load_segment_artifact(
             artifact_path.as_posix(),
             "sha256:not-the-real-digest",
+            artifacts_root=tmp_path,
+            expected_sample_rate_hz=32000,
+        )
+
+
+def test_segment_loader_rejects_artifact_uri_outside_artifacts_root(tmp_path: Path) -> None:
+    artifacts_root = tmp_path / "artifacts"
+    artifacts_root.mkdir()
+    outside_artifact = tmp_path / "outside.wav"
+    _write_tone_wav(outside_artifact, duration_s=3.0)
+
+    with pytest.raises(ValueError, match="artifacts_root"):
+        load_segment_artifact(
+            outside_artifact.as_posix(),
+            sha256_file(outside_artifact),
+            artifacts_root=artifacts_root,
             expected_sample_rate_hz=32000,
         )
 
@@ -267,6 +306,7 @@ def test_rms_summary_matches_expected_dbfs_for_tone_fixture(tmp_path: Path) -> N
     artifact = load_segment_artifact(
         artifact_path.as_posix(),
         sha256_file(artifact_path),
+        artifacts_root=tmp_path,
         expected_sample_rate_hz=32000,
     )
     summary = summarize_rms(artifact.waveform)
@@ -346,7 +386,13 @@ def test_processing_pipeline_emits_audio_features_from_claim_check_artifact(tmp_
 
 
 def test_processing_pipeline_marks_silent_fixture_and_clamps_transport_rms(tmp_path: Path) -> None:
-    artifact_path = FIXTURES_DIR / "silent_mono_32k.wav"
+    artifact_path = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "silent_mono_32k.wav",
+        run_id="demo-run",
+        track_id=77,
+        segment_idx=0,
+    )
     payload = _segment_ready_payload_for_artifact(
         artifact_path,
         track_id=77,
@@ -374,7 +420,13 @@ def test_processing_pipeline_marks_silent_fixture_and_clamps_transport_rms(tmp_p
 
 
 def test_silent_ratio_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
-    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    silent_artifact = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "silent_mono_32k.wav",
+        run_id="demo-run",
+        track_id=77,
+        segment_idx=0,
+    )
     tone_artifact = tmp_path / "tone.wav"
     _write_tone_wav(tone_artifact, duration_s=3.0)
     pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
@@ -419,7 +471,13 @@ def test_silent_ratio_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
 
 
 def test_silent_ratio_recovers_from_persisted_run_state_after_restart(tmp_path: Path) -> None:
-    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    silent_artifact = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "silent_mono_32k.wav",
+        run_id="demo-run",
+        track_id=77,
+        segment_idx=0,
+    )
     tone_artifact = tmp_path / "tone.wav"
     _write_tone_wav(tone_artifact, duration_s=3.0)
     first_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
@@ -458,7 +516,13 @@ def test_silent_ratio_recovers_from_persisted_run_state_after_restart(tmp_path: 
 
 
 def test_replayed_segment_keeps_silent_ratio_stable_after_restart(tmp_path: Path) -> None:
-    silent_artifact = FIXTURES_DIR / "silent_mono_32k.wav"
+    silent_artifact = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "silent_mono_32k.wav",
+        run_id="demo-run",
+        track_id=77,
+        segment_idx=0,
+    )
     first_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
     replay_pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
     producer = RecordingProducer()
@@ -538,7 +602,13 @@ def test_welford_state_stays_scoped_to_each_run_id(tmp_path: Path) -> None:
 
 
 def test_short_clip_fixture_keeps_exact_mel_shape(tmp_path: Path) -> None:
-    artifact_path = FIXTURES_DIR / "short_tone_mono_32k.wav"
+    artifact_path = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "short_tone_mono_32k.wav",
+        run_id="demo-run",
+        track_id=88,
+        segment_idx=0,
+    )
     payload = _segment_ready_payload_for_artifact(
         artifact_path,
         track_id=88,
@@ -561,7 +631,13 @@ def test_short_clip_fixture_keeps_exact_mel_shape(tmp_path: Path) -> None:
 def test_welford_updates_match_manual_per_bin_statistics(tmp_path: Path) -> None:
     tone_artifact = tmp_path / "tone.wav"
     _write_tone_wav(tone_artifact, duration_s=3.0, amplitude=0.15, frequency_hz=523.25)
-    short_artifact = FIXTURES_DIR / "short_tone_mono_32k.wav"
+    short_artifact = _copy_fixture_under_artifacts_root(
+        tmp_path,
+        "short_tone_mono_32k.wav",
+        run_id="demo-run",
+        track_id=101,
+        segment_idx=0,
+    )
     pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
     producer = RecordingProducer()
 

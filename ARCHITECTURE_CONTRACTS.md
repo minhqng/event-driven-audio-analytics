@@ -36,6 +36,8 @@
 - `Fact`: Large audio or feature payloads must not be transported directly on Kafka as the normal path.
 - `Fact`: Shared storage under `artifacts/` is the current PoC claim-check boundary.
 - `Fact`: Artifact path shape is stable under `/artifacts/runs/<run_id>/...`.
+- `Fact`: Runtime storage helpers now reject `run_id` values that are empty, path traversal tokens, whitespace-bearing, or contain path separators or drive separators.
+- `Fact`: Processing resolves `artifact_uri` values against the configured artifacts root and rejects references that escape that root before opening files.
 - `Fact`: A run-level manifest belongs under `/artifacts/runs/<run_id>/manifests/segments.parquet`.
 - `Fact`: Processing-owned replay-stable runtime state for `silent_ratio` currently lives under `/artifacts/runs/<run_id>/state/processing_metrics.json`.
 - `Fact`: Optional feature artifacts may live under `/artifacts/runs/<run_id>/features/<track_id>/<segment_idx>.*`.
@@ -61,6 +63,7 @@
 
 - `Fact`: The shared contract layer, writer runtime, and fake-event smoke path now use the canonical v1 envelope names.
 - `Fact`: Shared semantic validation now enforces `run_id` consistency between the top-level envelope and payload.
+- `Fact`: Shared runtime validation now rejects non-finite payload numbers and non-standard JSON constants such as `NaN` and `Infinity`.
 - `Fact`: Contract-definition drift is resolved for the current fixture-driven runtime path, and broker-backed smoke runs now exercise the canonical v1 envelope through `ingestion`, `processing`, and `writer` on `audio.metadata`, `audio.segment.ready`, `audio.features`, and `system.metrics`.
 
 ## Topic Naming And Ownership
@@ -105,10 +108,10 @@
 - `Fact`: `labels_json` and `unit` are optional in v1.
 - `Fact`: Current writer schema/persistence now stores optional `unit` alongside `labels_json`.
 - `Inference`: V1 keeps the current repo field name `labels_json` to stay aligned with the current SQL naming.
-- `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope=run_total` metrics as replay-safe snapshots keyed by `(run_id, service_name, metric_name, labels_json)`.
-- `Fact`: Under the writer advisory lock, historical duplicate `scope=run_total` rows are repaired down to one logical row before the snapshot row is rewritten from the latest payload, and `ts` is refreshed from that latest snapshot payload; other system metrics remain append-only.
+- `Fact`: The shared contract layer and current writer persistence now treat `labels_json.scope` values `run_total`, `processing_record`, and `writer_record` as replay-safe metrics keyed by `(run_id, service_name, metric_name, labels_json)`.
+- `Fact`: Under the writer advisory lock, historical duplicate rows for replay-safe metric scopes are repaired down to one logical row before the row is rewritten from the latest payload, and `ts` is refreshed from that latest payload; unscoped system metrics remain append-only.
 - `Fact`: The current `processing` runtime persists run-scoped segment identity under `/artifacts/runs/<run_id>/state/processing_metrics.json`, which keeps `silent_ratio` `run_total` snapshots stable across service restarts for the same logical run.
-- `Fact`: The current `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.failure_class` describing the failure path.
+- `Fact`: The current `processing` runtime emits per-segment `processing_ms` metrics with `labels_json={"topic":"audio.features","status":"ok"}`, `silent_ratio` `run_total` snapshots with `labels_json={"scope":"run_total"}`, and best-effort terminal `feature_errors` metrics with `labels_json.scope=processing_record`, Kafka `partition` / `offset`, and `failure_class`.
 - `Fact`: The current `writer` runtime writes replay-safe per-record `write_ms`, `rows_upserted`, and best-effort `write_failures` metrics keyed by `labels_json.scope=writer_record` plus Kafka `topic` / `partition` / `offset`; `write_failures` also carries `labels_json.failure_class`.
 - `Fact`: Dashboard-facing metric labels are normalized to `scope`, `topic`, `status`, and optional `failure_class`, and `vw_dashboard_metric_events` is the canonical SQL normalization layer for Grafana queries.
 - `Fact`: Review-facing run and track summaries are read from `vw_dashboard_run_summary`, `vw_dashboard_run_validation`, and `vw_review_tracks`; artifact presence and processing-state presence are read from the shared filesystem only for secondary runtime proof.
@@ -164,5 +167,5 @@
 ## Unresolved Contract Items
 
 - `Unknown`: Whether `audio.dlq` graduates from a reserved bootstrap topic into the first fully modeled runnable contract.
-- `Unknown`: Final system-metrics dedup treatment beyond the current `scope=run_total` snapshot-upsert rule is not fixed.
+- `Unknown`: Final system-metrics dedup treatment beyond the current `run_total`, `processing_record`, and `writer_record` replay-safe scopes is not fixed.
 - `Unknown`: Final producer/update semantics for `welford_snapshots`.

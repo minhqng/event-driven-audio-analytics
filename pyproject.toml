@@ -13,33 +13,33 @@ authors = [
   { name = "PTIT Event-Driven Audio Analytics Team" }
 ]
 dependencies = [
-  "confluent-kafka>=2.5.0",
-  "numpy>=2.0.0",
-  "PyYAML>=6.0.2",
+  "confluent-kafka==2.5.0",
+  "numpy==2.0.0",
+  "PyYAML==6.0.2",
 ]
 
 [project.optional-dependencies]
 ingestion = [
-  "av>=14.0.0",
-  "polars>=1.0.0",
+  "av==14.0.0",
+  "polars==1.0.0",
 ]
 processing = [
-  "torch>=2.10.0",
-  "torchaudio>=2.10.0",
+  "torch==2.11.0",
+  "torchaudio==2.11.0",
 ]
 review = [
-  "fastapi>=0.115.0",
-  "uvicorn>=0.30.0",
+  "fastapi==0.115.0",
+  "uvicorn==0.30.0",
 ]
 writer = [
-  "psycopg[binary]>=3.2.0",
-  "psycopg-pool>=3.2.0",
+  "psycopg[binary]==3.2.1",
+  "psycopg-pool==3.2.1",
 ]
 dev = [
-  "httpx>=0.28.0",
-  "jsonschema>=4.23.0",
-  "pytest>=8.3.0",
-  "ruff>=0.9.0",
+  "httpx==0.28.0",
+  "jsonschema==4.23.0",
+  "pytest==8.3.0",
+  "ruff==0.9.0",
 ]
 
 [tool.setuptools]

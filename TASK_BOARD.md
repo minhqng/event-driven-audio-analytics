@@ -13,6 +13,7 @@ This file is no longer a sprint board. It captures only the remaining work that 
 - Demo bootstrap and evidence scripts now gate on review preflight plus `vw_review_tracks` readiness before declaring the stack usable.
 - PowerShell demo wrappers are aligned with the bash review-first evidence path.
 - Review media playback is now anchored to persisted `artifact_uri`, and review screenshot capture waits for a DOM-ready marker instead of trusting file existence alone.
+- Review-finding hardening now covers path-safe `run_id` validation, artifacts-root enforcement for consumed `artifact_uri` values, non-finite JSON rejection, replay-safe processing failure metrics, and exact Python dependency pins.
 - Official repo test path is `scripts/smoke/check-pytest.*`.
 - Bounded restart/replay evidence exists and is documented.
 - Grafana dashboards are provisioned from files and backed by real TimescaleDB queries.
@@ -31,6 +32,7 @@ Current test baseline:
 
 - `176 passed, 5 skipped` on the official containerized `pytest` path
 - The 5 skips are the optional legacy-reference parity tests when local reference data or extra reference dependencies are unavailable
+- `60 passed` on 2026-04-27 for the targeted containerized `pytest` slice covering contract/path/metric hardening
 
 ## Accepted Unfinished Items
 

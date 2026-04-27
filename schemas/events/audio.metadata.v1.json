@@ -18,7 +18,7 @@
     "event_type": { "const": "audio.metadata" },
     "event_version": { "const": "v1" },
     "trace_id": { "type": "string", "minLength": 1 },
-    "run_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
     "produced_at": { "type": "string", "format": "date-time" },
     "source_service": { "const": "ingestion" },
     "idempotency_key": { "type": "string", "minLength": 1 },
@@ -34,7 +34,7 @@
         "duration_s"
       ],
       "properties": {
-        "run_id": { "type": "string", "minLength": 1 },
+        "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
         "track_id": { "type": "integer" },
         "artist_id": { "type": "integer" },
         "genre": { "type": "string", "minLength": 1 },

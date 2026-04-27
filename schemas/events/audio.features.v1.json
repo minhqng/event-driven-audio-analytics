@@ -18,7 +18,7 @@
     "event_type": { "const": "audio.features" },
     "event_version": { "const": "v1" },
     "trace_id": { "type": "string", "minLength": 1 },
-    "run_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
     "produced_at": { "type": "string", "format": "date-time" },
     "source_service": { "const": "processing" },
     "idempotency_key": { "type": "string", "minLength": 1 },
@@ -39,7 +39,7 @@
       ],
       "properties": {
         "ts": { "type": "string", "format": "date-time" },
-        "run_id": { "type": "string", "minLength": 1 },
+        "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
         "track_id": { "type": "integer" },
         "segment_idx": { "type": "integer" },
         "artifact_uri": { "type": "string", "minLength": 1 },

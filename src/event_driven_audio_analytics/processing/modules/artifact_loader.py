@@ -9,6 +9,7 @@ import wave
 import numpy as np
 
 from event_driven_audio_analytics.shared.checksum import sha256_file
+from event_driven_audio_analytics.shared.storage import resolve_artifact_uri
 
 
 class ArtifactLoadError(RuntimeError):
@@ -53,11 +54,12 @@ def load_segment_artifact(
     artifact_uri: str,
     checksum: str,
     *,
+    artifacts_root: Path,
     expected_sample_rate_hz: int | None = None,
 ) -> LoadedSegmentArtifact:
     """Load a mono WAV segment artifact and verify its checksum first."""
 
-    artifact_path = Path(artifact_uri)
+    artifact_path = resolve_artifact_uri(artifacts_root, artifact_uri)
     if not artifact_path.exists():
         raise FileNotFoundError(f"Segment artifact does not exist: {artifact_path.as_posix()}")
 

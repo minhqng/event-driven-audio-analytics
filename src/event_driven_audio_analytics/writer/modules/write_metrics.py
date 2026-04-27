@@ -37,7 +37,7 @@ VALUES (
 """.strip()
 
 
-REPLAY_SAFE_METRIC_SCOPES = {"run_total", "writer_record"}
+REPLAY_SAFE_METRIC_SCOPES = {"run_total", "writer_record", "processing_record"}
 
 
 SYSTEM_METRICS_REPLAY_SAFE_SELECT = """
@@ -79,7 +79,8 @@ def persist_system_metrics(cursor: Cursor, payload: SystemMetricsPayload) -> int
     try:
         from psycopg.types.json import Jsonb
     except ModuleNotFoundError:
-        Jsonb = lambda value: value
+        def Jsonb(value: object) -> object:
+            return value
 
     params = asdict(payload)
     params["labels_json"] = Jsonb(payload.labels_json)

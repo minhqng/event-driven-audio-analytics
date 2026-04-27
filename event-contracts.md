@@ -54,6 +54,8 @@ All v1 events on the 4 primary topics must use this envelope:
 - The 4 v1 payloads still repeat `run_id` inside `payload` for compatibility with the current writer-facing storage mapping.
 - The top-level `run_id` is canonical. When payload `run_id` is present, it must match the top-level `run_id` exactly.
 - Kafka remains small-event transport only. Large artifacts stay behind `artifact_uri` or other claim-check references.
+- `artifact_uri` values are references inside the configured artifacts root. Consumers must resolve them against that root and reject paths that escape it.
+- Payload numeric values must be JSON-finite. `NaN`, `Infinity`, and `-Infinity` are invalid contract values.
 
 ## Topic Contracts
 
@@ -152,6 +154,7 @@ Required payload fields:
 Optional payload fields:
 - `labels_json`
   - Small label object for dimensions such as topic, status, or stage.
+  - Replay-safe scopes are explicit. Current locked scopes are `run_total`, `processing_record`, and `writer_record`.
 - `unit`
   - Optional measurement unit such as `ms`, `count`, or `ratio`.
 
@@ -173,15 +176,18 @@ Canonical v1 compositions:
 - `audio.features`: `audio.features:v1:<run_id>:<track_id>:<segment_idx>`
 - `system.metrics` append-only metrics: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:<ts>:<labels_hash>`
 - `system.metrics` snapshot metrics where `labels_json.scope=run_total`: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:run_total:<labels_hash>`
+- `system.metrics` consumed-record metrics where `labels_json.scope=processing_record`: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:processing_record:<labels_hash>`
+- `system.metrics` writer-record metrics where `labels_json.scope=writer_record`: `system.metrics:v1:<run_id>:<service_name>:<metric_name>:writer_record:<labels_hash>`
 
 `labels_hash` rule for `system.metrics`:
 - Compute SHA-256 over canonical JSON serialization of `labels_json`.
 - Canonical JSON means sorted keys and no extra whitespace.
 - Use the hash so metrics remain deterministic without inflating the event envelope.
-- `run_total` rule:
-- Treat the logical identity as the snapshot row `(run_id, service_name, metric_name, labels_json)`.
-- Replays or timestamp refreshes for the same snapshot must keep the same `idempotency_key`.
-- The payload `ts` still records when that snapshot was observed; it is not part of the snapshot identity.
+Replay-safe scope rules:
+- Treat `run_total`, `processing_record`, and `writer_record` metrics as logical rows keyed by `(run_id, service_name, metric_name, labels_json)`.
+- Replays or timestamp refreshes for the same scoped metric must keep the same `idempotency_key`.
+- The payload `ts` still records when that metric was observed; it is not part of replay-safe scoped identity.
+- `processing_record` and `writer_record` labels must include Kafka record identity such as `topic`, `partition`, and `offset`.
 
 ## `trace_id` Rules
 
@@ -206,11 +212,13 @@ Propagation expectations:
 - It must remain stable across all events, artifacts, checkpoints, and persistence rows for that run.
 - It must not be regenerated per track or per segment.
 - Recommended form is a lowercase slug, optionally timestamp-suffixed for uniqueness.
+- It must be one path segment. Empty values, whitespace, `.`, `..`, `/`, `\`, and `:` are forbidden.
 - Artifact paths remain anchored under `/artifacts/runs/<run_id>/...`.
 
 ## Serialization, Timestamps, And Versioning
 
 - Kafka message values are UTF-8 JSON object envelopes.
+- Runtime JSON serialization and deserialization must reject non-standard JSON constants such as `NaN` and `Infinity`.
 - `produced_at` and payload timestamps such as `ts` use RFC 3339 UTC timestamps.
 - Prefer the compact `Z` suffix form, for example `2026-04-02T00:00:00Z`.
 - `event_version` is semantic contract version, not an implementation build number.
@@ -230,4 +238,4 @@ Propagation expectations:
 
 - The v1 contract is now locked in docs, schemas, shared models, contract tests, and the bounded runtime demo/smoke path.
 - `audio.dlq` remains reserved but is not part of the 4-topic core v1 contract.
-- The long-term dedup/persistence policy for `system.metrics` remains open beyond the currently locked `scope=run_total` snapshot rule.
+- The long-term dedup/persistence policy for `system.metrics` remains open beyond the currently locked replay-safe scopes.

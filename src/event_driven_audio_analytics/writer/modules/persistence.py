@@ -11,9 +11,10 @@ from event_driven_audio_analytics.shared.contracts.topics import (
 )
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
+from event_driven_audio_analytics.shared.models.payload_validation import validate_payload_contract
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from .upsert_features import persist_audio_features
-from .upsert_metadata import TRACK_METADATA_UPSERT, persist_track_metadata
+from .upsert_metadata import persist_track_metadata
 from .write_metrics import persist_system_metrics
 
 WriterPayloadModel: TypeAlias = (
@@ -31,6 +32,7 @@ def _build_payload(model_type: type[object], payload_data: dict[str, object], *,
     """Coerce one envelope payload into its typed writer model."""
 
     try:
+        validate_payload_contract(topic, payload_data)
         return model_type(**payload_data)
     except (TypeError, ValueError) as exc:
         raise WriterPayloadValidationError(

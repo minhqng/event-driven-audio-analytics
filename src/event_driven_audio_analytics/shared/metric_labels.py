@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 RUN_TOTAL_SCOPE = "run_total"
 WRITER_RECORD_SCOPE = "writer_record"
+PROCESSING_RECORD_SCOPE = "processing_record"
 
 
 def run_total_metric_labels() -> dict[str, object]:
@@ -24,14 +25,29 @@ def success_metric_labels(*, topic: str) -> dict[str, object]:
     }
 
 
-def error_metric_labels(*, topic: str, failure_class: str) -> dict[str, object]:
+def error_metric_labels(
+    *,
+    topic: str,
+    failure_class: str,
+    partition: int | None = None,
+    offset: int | None = None,
+) -> dict[str, object]:
     """Return the canonical labels for error-path append-only metrics."""
 
-    return {
+    labels: dict[str, object] = {
         "topic": topic,
         "status": "error",
         "failure_class": failure_class,
     }
+    if partition is not None and offset is not None:
+        labels.update(
+            {
+                "scope": PROCESSING_RECORD_SCOPE,
+                "partition": partition,
+                "offset": offset,
+            }
+        )
+    return labels
 
 
 @dataclass(frozen=True, slots=True)

@@ -18,7 +18,7 @@
     "event_type": { "const": "system.metrics" },
     "event_version": { "const": "v1" },
     "trace_id": { "type": "string", "minLength": 1 },
-    "run_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
     "produced_at": { "type": "string", "format": "date-time" },
     "source_service": {
       "type": "string",
@@ -36,7 +36,7 @@
       ],
       "properties": {
         "ts": { "type": "string", "format": "date-time" },
-        "run_id": { "type": "string", "minLength": 1 },
+        "run_id": { "type": "string", "minLength": 1, "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$" },
         "service_name": { "type": "string", "minLength": 1 },
         "metric_name": { "type": "string", "minLength": 1 },
         "metric_value": { "type": "number" },

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 
+from event_driven_audio_analytics.shared.storage import validate_run_id
+
 
 @dataclass(slots=True)
 class BaseServiceSettings:
@@ -33,7 +35,7 @@ def load_base_service_settings(service_name: str) -> BaseServiceSettings:
 
     return BaseServiceSettings(
         service_name=os.getenv("SERVICE_NAME", service_name),
-        run_id=os.getenv("RUN_ID", "demo-run"),
+        run_id=validate_run_id(os.getenv("RUN_ID", "demo-run")),
         kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092"),
         artifacts_root=Path(os.getenv("ARTIFACTS_ROOT", "/app/artifacts")),
     )
