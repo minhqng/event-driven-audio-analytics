@@ -50,8 +50,11 @@ class IngestionSettings:
         max_tracks_raw = os.getenv("INGESTION_MAX_TRACKS", "1").strip()
         return cls(
             base=load_base_service_settings("ingestion"),
-            metadata_csv_path=os.getenv("METADATA_CSV_PATH", "data/raw/fma_metadata/tracks.csv"),
-            audio_root_path=os.getenv("AUDIO_ROOT_PATH", "data/raw/fma_small"),
+            metadata_csv_path=os.getenv(
+                "METADATA_CSV_PATH",
+                "data/local/fma_metadata/tracks.csv",
+            ),
+            audio_root_path=os.getenv("AUDIO_ROOT_PATH", "data/local/fma_small"),
             subset=os.getenv("FMA_SUBSET", "small"),
             target_sample_rate_hz=int(os.getenv("TARGET_SAMPLE_RATE_HZ", "32000")),
             segment_duration_s=float(os.getenv("SEGMENT_DURATION_S", "3.0")),

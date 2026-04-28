@@ -17,7 +17,7 @@ def _utc_now_iso() -> str:
 
 @dataclass(slots=True)
 class IngestionRunMetrics:
-    """Accumulate the minimal Week 3 ingestion metrics for one run."""
+    """Accumulate the minimal ingestion metrics for one run."""
 
     tracks_total: int = 0
     segments_total: int = 0

@@ -3,7 +3,7 @@ set -eu
 
 cd "$(dirname "$0")/../.."
 
-demo_evidence_root="artifacts/demo/week8"
+demo_evidence_root="artifacts/evidence/final-demo"
 evidence_index_path="$demo_evidence_root/evidence-index.md"
 
 write_demo_evidence_index() {
@@ -12,29 +12,29 @@ write_demo_evidence_index() {
 
 This directory is the final handoff anchor for the bounded PoC evidence set.
 
-## Reliability Evidence
+## Restart/Replay Evidence
 
-- `restart-replay-baseline.json` captures the first bounded broker-backed run before replay.
-- `restart-replay-summary.json` captures the same `run_id` after restarting `processing` and `writer`, then rerunning `ingestion`.
-- `preflight-fail-fast.txt` records the expected startup failures before Kafka topics are bootstrapped.
+- `restart-replay/restart-replay-baseline.json` captures the first bounded broker-backed run before replay.
+- `restart-replay/restart-replay-summary.json` captures the same `run_id` after restarting `processing` and `writer`, then rerunning `ingestion`.
+- `restart-replay/preflight-fail-fast.txt` records the expected startup failures before Kafka topics are bootstrapped.
 
-## Dashboard Evidence
+## Review/Dashboard Evidence
 
-The dashboard-facing artifacts remain under `artifacts/demo/week7/` because that historical pack name is already stable across the repo:
+The review/dashboard artifacts are generated under `artifacts/evidence/final-demo/review-dashboard/`:
 
-- `../week7/dashboard-demo-summary.json`
-- `../week7/review-api.json`
-- `../week7/grafana-api.json`
-- `../week7/run_review.png`
-- `../week7/audio_quality.png`
-- `../week7/system_health.png`
-- `../week7/demo-artifact-notes.md`
+- `review-dashboard/review-dashboard-summary.json`
+- `review-dashboard/review-api.json`
+- `review-dashboard/grafana-api.json`
+- `review-dashboard/review-console.png`
+- `review-dashboard/audio-quality-dashboard.png`
+- `review-dashboard/system-health-dashboard.png`
+- `review-dashboard/review-dashboard-notes.md`
 
 ## Practical Reading Order
 
 - Use the review artifact pack first to explain the run, track, and segment story.
 - Use the restart/replay artifacts next to explain startup gating and replay safety.
-- Use the dashboard artifacts last to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
+- Use the review/dashboard artifacts last to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
 - Treat this as bounded PoC evidence only; it is not benchmark-scale or production-readiness evidence.
 EOF
 }
@@ -49,6 +49,6 @@ mkdir -p "$demo_evidence_root"
 write_demo_evidence_index
 
 echo "Final demo evidence is ready."
-echo "Reliability artifacts: $demo_evidence_root"
-echo "Dashboard artifacts: artifacts/demo/week7"
+echo "Restart/replay artifacts: $demo_evidence_root/restart-replay"
+echo "Review/dashboard artifacts: artifacts/evidence/final-demo/review-dashboard"
 echo "Evidence index: $evidence_index_path"

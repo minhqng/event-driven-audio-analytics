@@ -14,9 +14,9 @@ from event_driven_audio_analytics.shared.settings import load_database_settings
 DEFAULT_VERIFY_TIMEOUT_S = 45.0
 DEFAULT_VERIFY_POLL_INTERVAL_S = 1.0
 
-HIGH_ENERGY_RUN_ID = "week7-high-energy"
-SILENT_ORIENTED_RUN_ID = "week7-silent-oriented"
-VALIDATION_FAILURE_RUN_ID = "week7-validation-failure"
+HIGH_ENERGY_RUN_ID = "demo-high-energy"
+SILENT_ORIENTED_RUN_ID = "demo-silent-oriented"
+VALIDATION_FAILURE_RUN_ID = "demo-validation-failure"
 
 
 @dataclass(frozen=True, slots=True)

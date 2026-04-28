@@ -116,9 +116,7 @@ def test_metadata_messages_fail_when_key_drifts_from_track_id() -> None:
                     "payload": {
                         "track_id": 2,
                         "validation_status": "validated",
-                        "manifest_uri": (
-                            artifacts_root / "runs" / "demo-run" / "manifests" / "segments.parquet"
-                        ).as_posix(),
+                        "manifest_uri": "/artifacts/runs/demo-run/manifests/segments.parquet",
                     },
                 },
             },

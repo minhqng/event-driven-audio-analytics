@@ -12,6 +12,34 @@ function Assert-LastExitCode {
     }
 }
 
+$cleanupRunArtifactsScript = @'
+import os
+import shutil
+from pathlib import Path
+from event_driven_audio_analytics.shared.storage import validate_run_id
+
+run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
+root = Path("/app/artifacts/runs").resolve()
+target = (root / run_id).resolve()
+target.relative_to(root)
+shutil.rmtree(target, ignore_errors=True)
+'@
+
+function Clear-RunArtifactsInContainer {
+    param(
+        [string]$RunId
+    )
+
+    $cleanupScriptB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cleanupRunArtifactsScript))
+    $cleanupEntrypointScript = "import base64, os; exec(base64.b64decode(os.environ['CLEANUP_RUN_ARTIFACTS_SCRIPT_B64']).decode())"
+    docker compose run --rm --no-deps `
+        -e "CLEANUP_RUN_ID=$RunId" `
+        -e "CLEANUP_RUN_ARTIFACTS_SCRIPT_B64=$cleanupScriptB64" `
+        --entrypoint python ingestion `
+        -c $cleanupEntrypointScript | Out-Null
+    Assert-LastExitCode "docker compose run cleanup artifacts"
+}
+
 function Require-Path {
     param(
         [string]$Path,
@@ -28,10 +56,30 @@ function Require-Path {
     }
 }
 
-$metadataCsvHost = Join-Path $PWD "tests\fixtures\audio\tracks.csv"
-$audioRootHost = Join-Path $PWD "tests\fixtures\audio\fma_small"
-$metadataCsvContainer = "/app/tests/fixtures/audio/tracks.csv"
-$audioRootContainer = "/app/tests/fixtures/audio/fma_small"
+$metadataCsvHost = if ($env:LOCAL_FMA_METADATA_CSV_HOST) {
+    $env:LOCAL_FMA_METADATA_CSV_HOST
+}
+else {
+    Join-Path $PWD "data\local\fma_metadata\tracks.csv"
+}
+$audioRootHost = if ($env:LOCAL_FMA_AUDIO_ROOT_HOST) {
+    $env:LOCAL_FMA_AUDIO_ROOT_HOST
+}
+else {
+    Join-Path $PWD "data\local\fma_small"
+}
+$metadataCsvContainer = if ($env:LOCAL_FMA_METADATA_CSV) {
+    $env:LOCAL_FMA_METADATA_CSV
+}
+else {
+    "/app/data/local/fma_metadata/tracks.csv"
+}
+$audioRootContainer = if ($env:LOCAL_FMA_AUDIO_ROOT) {
+    $env:LOCAL_FMA_AUDIO_ROOT
+}
+else {
+    "/app/data/local/fma_small"
+}
 $runId = if ($env:RUN_ID) { $env:RUN_ID } else { "fma-small-live" }
 $maxTracks = if ($env:INGESTION_MAX_TRACKS) { $env:INGESTION_MAX_TRACKS } else { "100" }
 $trackIdAllowlist = if (Test-Path env:TRACK_ID_ALLOWLIST) { $env:TRACK_ID_ALLOWLIST } else { "" }
@@ -58,8 +106,7 @@ Write-Host "Ensuring Kafka topics exist..."
 Assert-LastExitCode "create-topics.ps1"
 
 Write-Host "Cleaning prior artifacts for run_id=$runId..."
-docker compose run --rm --no-deps --entrypoint sh ingestion -c "rm -rf /app/artifacts/runs/$runId" | Out-Null
-Assert-LastExitCode "docker compose run cleanup artifacts"
+Clear-RunArtifactsInContainer -RunId $runId
 
 Write-Host "Running repo-local FMA burst run_id=$runId max_tracks=$maxTracks..."
 docker compose run --rm --no-deps `

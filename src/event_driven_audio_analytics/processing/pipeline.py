@@ -1,4 +1,4 @@
-"""Week 5 processing pipeline from claim-check artifacts to audio.features."""
+"""Processing pipeline from claim-check artifacts to audio.features."""
 
 from __future__ import annotations
 
@@ -154,7 +154,7 @@ class ProcessingResult:
 
 @dataclass(slots=True)
 class ProcessingPipeline:
-    """Run the Week 5 processing path from segment-ready events to feature summaries."""
+    """Run the processing path from segment-ready events to feature summaries."""
 
     settings: ProcessingSettings
     _mel_extractor: LogMelExtractor = field(init=False, repr=False)

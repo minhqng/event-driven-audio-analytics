@@ -21,13 +21,33 @@ require_dir() {
   fi
 }
 
-metadata_csv_host="tests/fixtures/audio/tracks.csv"
-audio_root_host="tests/fixtures/audio/fma_small"
-metadata_csv_container="/app/tests/fixtures/audio/tracks.csv"
-audio_root_container="/app/tests/fixtures/audio/fma_small"
+metadata_csv_host="${LOCAL_FMA_METADATA_CSV_HOST:-data/local/fma_metadata/tracks.csv}"
+audio_root_host="${LOCAL_FMA_AUDIO_ROOT_HOST:-data/local/fma_small}"
+metadata_csv_container="${LOCAL_FMA_METADATA_CSV:-/app/data/local/fma_metadata/tracks.csv}"
+audio_root_container="${LOCAL_FMA_AUDIO_ROOT:-/app/data/local/fma_small}"
 run_id="${RUN_ID:-fma-small-live}"
 max_tracks="${INGESTION_MAX_TRACKS:-100}"
 track_id_allowlist="${TRACK_ID_ALLOWLIST-}"
+
+cleanup_run_artifacts() {
+  run_id="$1"
+
+  docker compose run --rm --no-deps \
+    -e CLEANUP_RUN_ID="$run_id" \
+    --entrypoint python ingestion \
+    -c '
+import os
+import shutil
+from pathlib import Path
+from event_driven_audio_analytics.shared.storage import validate_run_id
+
+run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
+root = Path("/app/artifacts/runs").resolve()
+target = (root / run_id).resolve()
+target.relative_to(root)
+shutil.rmtree(target, ignore_errors=True)
+' >/dev/null
+}
 
 require_file "$metadata_csv_host" "Repo-local FMA metadata CSV"
 require_dir "$audio_root_host" "Repo-local FMA audio root"
@@ -48,8 +68,7 @@ echo "Ensuring Kafka topics exist..."
 sh ./infra/kafka/create-topics.sh
 
 echo "Cleaning prior artifacts for run_id=$run_id..."
-docker compose run --rm --no-deps --entrypoint sh ingestion \
-  -c "rm -rf /app/artifacts/runs/$run_id" >/dev/null
+cleanup_run_artifacts "$run_id"
 
 echo "Running repo-local FMA burst run_id=$run_id max_tracks=$max_tracks..."
 docker compose run --rm --no-deps \

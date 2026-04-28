@@ -124,6 +124,15 @@ class EventContractValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "idempotency_key"):
             validate_envelope_dict(envelope, expected_event_type="audio.features")
 
+    def test_system_metrics_source_service_must_match_payload_service_name(self) -> None:
+        envelope = load_json(FIXTURES_DIR / "system.metrics.valid.json")
+        envelope["source_service"] = "writer"
+
+        load_validator("system.metrics.v1.json").validate(envelope)
+
+        with self.assertRaisesRegex(ValueError, "source_service"):
+            validate_envelope_dict(envelope, expected_event_type="system.metrics")
+
     def test_non_finite_feature_payload_fails_runtime_validation(self) -> None:
         envelope = load_json(FIXTURES_DIR / "audio.features.valid.json")
         envelope["payload"]["rms"] = float("nan")
@@ -138,7 +147,7 @@ class EventContractValidationTests(unittest.TestCase):
             '"produced_at":"2026-04-02T00:00:00Z","source_service":"processing",'
             '"idempotency_key":"audio.features:v1:demo-run:2:0",'
             '"payload":{"ts":"2026-04-02T00:00:00Z","run_id":"demo-run",'
-            '"track_id":2,"segment_idx":0,"artifact_uri":"/app/artifacts/runs/demo-run/segments/2/0.wav",'
+            '"track_id":2,"segment_idx":0,"artifact_uri":"/artifacts/runs/demo-run/segments/2/0.wav",'
             '"checksum":"x","rms":NaN,"silent_flag":false,"mel_bins":128,'
             '"mel_frames":300,"processing_ms":1.0}}'
         )

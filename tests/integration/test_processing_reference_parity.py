@@ -145,14 +145,14 @@ def _reference_paths() -> tuple[Path, Path]:
     if not metadata_csv_path or not audio_root_path:
         pytest.skip(
             "Reference FMA inputs are not configured. Set REFERENCE_METADATA_CSV_PATH and "
-            "REFERENCE_AUDIO_ROOT_PATH to run Week 6 parity integration tests."
+            "REFERENCE_AUDIO_ROOT_PATH to run reference parity integration tests."
         )
 
     metadata_csv = Path(metadata_csv_path)
     audio_root = Path(audio_root_path)
     if not metadata_csv.is_file() or not audio_root.is_dir():
         pytest.skip(
-            "Reference FMA inputs are unavailable for Week 6 parity integration tests."
+            "Reference FMA inputs are unavailable for reference parity integration tests."
         )
 
     return (metadata_csv, audio_root)
@@ -167,7 +167,7 @@ def _run_reference_parity(track_ids: tuple[int, ...]) -> ReferenceParitySummary:
     )
     if tuple(record.track_id for record in records) != track_ids:
         pytest.skip(
-            "Reference FMA inputs do not contain the full Week 6 track set "
+            "Reference FMA inputs do not contain the full reference track set "
             f"expected={track_ids} loaded={[record.track_id for record in records]}."
         )
 
@@ -177,7 +177,7 @@ def _run_reference_parity(track_ids: tuple[int, ...]) -> ReferenceParitySummary:
         pipeline = ProcessingPipeline(
             settings=_processing_settings(
                 artifacts_root,
-                run_id=f"week6-reference-{'-'.join(str(track_id) for track_id in track_ids)}",
+                run_id=f"reference-parity-{'-'.join(str(track_id) for track_id in track_ids)}",
             )
         )
         producer = RecordingProducer()

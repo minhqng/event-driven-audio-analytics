@@ -3,6 +3,12 @@ set -eu
 
 required_paths="
 README.md
+docs/README.md
+docs/architecture/system-overview.md
+docs/runbooks/demo.md
+docs/runbooks/validation.md
+artifacts/README.md
+data/README.md
 docker-compose.yml
 pyproject.toml
 infra/kafka/create-topics.sh

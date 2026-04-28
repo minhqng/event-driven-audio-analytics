@@ -28,7 +28,7 @@ def build_settings(tmp_path: Path) -> ReviewSettings:
         port=8080,
         default_limit=8,
         max_limit=25,
-        pinned_run_ids=("week7-high-energy",),
+        pinned_run_ids=("demo-high-energy",),
     )
 
 

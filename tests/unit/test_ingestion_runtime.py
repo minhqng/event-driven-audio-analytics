@@ -504,7 +504,7 @@ def test_unrecoverable_runtime_failure_logs_reserved_dlq_message_and_reraises(
         matching_record = next(
             record
             for record in caplog.records
-            if "audio.dlq is reserved and not published in Week 4" in record.getMessage()
+            if "audio.dlq is reserved and not published by this bounded PoC" in record.getMessage()
         )
         assert matching_record.failure_class == "unrecoverable"
         assert matching_record.track_id == 777
@@ -541,7 +541,7 @@ def test_final_runtime_failure_logs_reserved_dlq_message_and_reraises(
         matching_record = next(
             record
             for record in caplog.records
-            if "audio.dlq is reserved and not published in Week 4" in record.getMessage()
+            if "audio.dlq is reserved and not published by this bounded PoC" in record.getMessage()
         )
         assert matching_record.failure_class == "unrecoverable"
         assert matching_record.topic == "system.metrics"

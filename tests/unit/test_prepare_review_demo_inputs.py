@@ -4,12 +4,12 @@ import csv
 from pathlib import Path
 import wave
 
-from event_driven_audio_analytics.smoke.prepare_dashboard_demo_inputs import (
+from event_driven_audio_analytics.smoke.prepare_review_demo_inputs import (
     HIGH_ENERGY_TRACK,
     SAMPLE_RATE_HZ,
     SILENT_ORIENTED_TRACK,
     VALIDATION_FAILURE_TRACK,
-    prepare_dashboard_demo_inputs,
+    prepare_review_demo_inputs,
 )
 
 
@@ -18,8 +18,8 @@ def _track_path(audio_root: Path, track_id: int) -> Path:
     return audio_root / track_id_str[:3] / f"{track_id_str}.mp3"
 
 
-def test_prepare_dashboard_demo_inputs_creates_expected_metadata_and_audio(tmp_path: Path) -> None:
-    paths = prepare_dashboard_demo_inputs(tmp_path)
+def test_prepare_review_demo_inputs_creates_expected_metadata_and_audio(tmp_path: Path) -> None:
+    paths = prepare_review_demo_inputs(tmp_path)
 
     metadata_csv = Path(paths["metadata_csv"])
     audio_root = Path(paths["audio_root"])

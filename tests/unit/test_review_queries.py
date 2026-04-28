@@ -85,7 +85,7 @@ def build_settings(tmp_path: Path) -> ReviewSettings:
         port=8080,
         default_limit=8,
         max_limit=25,
-        pinned_run_ids=("week7-high-energy", "week7-silent-oriented"),
+        pinned_run_ids=("demo-high-energy", "demo-silent-oriented"),
     )
 
 
@@ -132,7 +132,7 @@ def test_list_runs_uses_demo_mode_query_when_pinned_runs_are_requested(
         fetchall_results=[
             [
                 (
-                    "week7-high-energy",
+                    "demo-high-energy",
                     None,
                     None,
                     1.0,
@@ -161,7 +161,7 @@ def test_list_runs_uses_demo_mode_query_when_pinned_runs_are_requested(
 
     assert payload["total"] == 3
     assert payload["has_more"] is True
-    assert payload["items"][0]["run_id"] == "week7-high-energy"
+    assert payload["items"][0]["run_id"] == "demo-high-energy"
     assert "array_position" in cursor.executed[0][0]
 
 
@@ -226,6 +226,53 @@ def test_get_run_detail_reads_processing_state_from_fs(
     assert payload["runtime_proof"]["processing_state"]["state"]["silent_ratio"] == 0.5
 
 
+def test_get_run_detail_reports_malformed_processing_state_as_read_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    processing_state_path = tmp_path / "runs" / "demo-run" / "state" / "processing_metrics.json"
+    processing_state_path.parent.mkdir(parents=True, exist_ok=True)
+    processing_state_path.write_text("[]", encoding="utf-8")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            (
+                "demo-run",
+                None,
+                None,
+                1.0,
+                2.0,
+                0.0,
+                11.0,
+                2,
+                -9.9,
+                4.2,
+                0.5,
+                0,
+                0,
+                0.0,
+                0.0,
+            )
+        ],
+        fetchall_results=[
+            [("validated", 1)],
+            [("audio.features", 0, 8, None)],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    processing_state = payload["runtime_proof"]["processing_state"]
+    assert processing_state["state"] is None
+    assert "decode to an object" in processing_state["read_error"]
+
+
 def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -246,7 +293,7 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
                 "data/source.mp3",
                 "validated",
                 6.0,
-                "/app/artifacts/runs/demo-run/manifests/segments.parquet",
+                "/artifacts/runs/demo-run/manifests/segments.parquet",
                 "sha256:track",
                 1,
                 0,
@@ -266,7 +313,7 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
                     3.2,
                     artifact_path.as_posix(),
                     "sha256:segment",
-                    "/app/artifacts/runs/demo-run/manifests/segments.parquet",
+                    "/artifacts/runs/demo-run/manifests/segments.parquet",
                     1,
                 )
             ]

@@ -271,6 +271,25 @@ def test_segment_loader_reads_claim_check_artifact_and_validates_checksum(tmp_pa
     assert artifact.waveform.shape == (1, 96000)
 
 
+def test_segment_loader_resolves_logical_artifacts_uri_with_service_mount_root(
+    tmp_path: Path,
+) -> None:
+    artifacts_root = tmp_path / "service-artifacts"
+    artifact_path = artifacts_root / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+    artifact_path.parent.mkdir(parents=True)
+    _write_tone_wav(artifact_path, duration_s=3.0)
+
+    artifact = load_segment_artifact(
+        "/artifacts/runs/demo-run/segments/2/0.wav",
+        sha256_file(artifact_path),
+        artifacts_root=artifacts_root,
+        expected_sample_rate_hz=32000,
+    )
+
+    assert artifact.artifact_path == artifact_path
+    assert artifact.artifact_uri == "/artifacts/runs/demo-run/segments/2/0.wav"
+
+
 def test_segment_loader_rejects_checksum_mismatch(tmp_path: Path) -> None:
     artifact_path = tmp_path / "tone.wav"
     _write_tone_wav(artifact_path, duration_s=3.0)

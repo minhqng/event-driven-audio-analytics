@@ -10,9 +10,9 @@ from urllib.request import urlopen
 
 DEFAULT_BASE_URL = "http://localhost:8080"
 EXPECTED_RUN_IDS = [
-    "week7-high-energy",
-    "week7-silent-oriented",
-    "week7-validation-failure",
+    "demo-high-energy",
+    "demo-silent-oriented",
+    "demo-validation-failure",
 ]
 
 
@@ -53,16 +53,16 @@ def verify_review_api(*, base_url: str) -> dict[str, object]:
     if runs["mode"]["pinned_run_ids"] != EXPECTED_RUN_IDS:
         raise RuntimeError("Review API did not expose the configured pinned demo run IDs.")
 
-    high_energy = _read_json(f"{base_url}/api/runs/week7-high-energy")
-    high_energy_tracks = _read_json(f"{base_url}/api/runs/week7-high-energy/tracks?limit=10")
+    high_energy = _read_json(f"{base_url}/api/runs/demo-high-energy")
+    high_energy_tracks = _read_json(f"{base_url}/api/runs/demo-high-energy/tracks?limit=10")
     high_energy_track = _read_json(
-        f"{base_url}/api/runs/week7-high-energy/tracks/910001?segments_limit=10"
+        f"{base_url}/api/runs/demo-high-energy/tracks/910001?segments_limit=10"
     )
     silent_oriented_track = _read_json(
-        f"{base_url}/api/runs/week7-silent-oriented/tracks/910002?segments_limit=10"
+        f"{base_url}/api/runs/demo-silent-oriented/tracks/910002?segments_limit=10"
     )
     validation_failure_track = _read_json(
-        f"{base_url}/api/runs/week7-validation-failure/tracks/910003?segments_limit=10"
+        f"{base_url}/api/runs/demo-validation-failure/tracks/910003?segments_limit=10"
     )
 
     if high_energy["run"]["segments_persisted"] < 3:
@@ -87,11 +87,11 @@ def verify_review_api(*, base_url: str) -> dict[str, object]:
         raise RuntimeError("Validation-failure track must not expose persisted segments.")
 
     high_energy_artifact_url = (
-        f"{base_url}/media/runs/week7-high-energy/segments/910001/"
+        f"{base_url}/media/runs/demo-high-energy/segments/910001/"
         f"{high_energy_track['segments']['items'][0]['segment_idx']}.wav"
     )
     silent_oriented_artifact_url = (
-        f"{base_url}/media/runs/week7-silent-oriented/segments/910002/"
+        f"{base_url}/media/runs/demo-silent-oriented/segments/910002/"
         f"{silent_oriented_track['segments']['items'][0]['segment_idx']}.wav"
     )
     _verify_wav_stream(high_energy_artifact_url, label="High-energy segment artifact")

@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir \
 
 COPY infra /app/infra
 COPY schemas /app/schemas
+COPY docker-compose.yml /app/
 COPY tests /app/tests
 
 ENTRYPOINT ["python", "-m", "pytest"]

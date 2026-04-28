@@ -26,7 +26,7 @@ from event_driven_audio_analytics.shared.contracts.topics import (
     SYSTEM_METRICS,
 )
 from event_driven_audio_analytics.shared.kafka import build_consumer, deserialize_envelope
-from event_driven_audio_analytics.shared.storage import manifest_uri
+from event_driven_audio_analytics.shared.storage import manifest_uri, resolve_artifact_uri
 
 
 EXPECTED_RUN_TOTAL_METRICS = {
@@ -403,7 +403,7 @@ def _assert_manifest(
     if not expectation.segment_pairs:
         if manifest_uri_value is not None:
             raise RuntimeError("Metadata-only smoke runs must not surface a manifest URI.")
-        manifest_path = Path(expected_manifest_uri)
+        manifest_path = resolve_artifact_uri(artifacts_root, expected_manifest_uri)
         if manifest_path.exists():
             raise RuntimeError(
                 "Metadata-only smoke runs must not leave behind a run manifest file."
@@ -420,7 +420,7 @@ def _assert_manifest(
             "Smoke metadata manifest_uri did not match the canonical run manifest location."
         )
 
-    manifest_path = Path(manifest_uri_value)
+    manifest_path = resolve_artifact_uri(artifacts_root, manifest_uri_value)
     if not manifest_path.exists():
         raise RuntimeError(f"Run manifest does not exist: {manifest_path.as_posix()}")
 
@@ -460,7 +460,8 @@ def _assert_manifest(
             raise RuntimeError("Run manifest artifact_uri did not match segment-ready payload.")
         if manifest_row["checksum"] != payload["checksum"]:
             raise RuntimeError("Run manifest checksum did not match segment-ready payload.")
-        if sha256_file(payload["artifact_uri"]) != payload["checksum"]:
+        artifact_path = resolve_artifact_uri(artifacts_root, str(payload["artifact_uri"]))
+        if sha256_file(artifact_path) != payload["checksum"]:
             raise RuntimeError("Segment artifact checksum did not match the smoke payload.")
 
     return {

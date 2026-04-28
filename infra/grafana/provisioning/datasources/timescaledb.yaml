@@ -5,11 +5,11 @@ datasources:
     uid: timescaledb
     type: postgres
     access: proxy
-    url: timescaledb:5432
-    database: audio_analytics
-    user: audio_analytics
+    url: "$POSTGRES_HOST:$POSTGRES_PORT"
+    database: "$POSTGRES_DB"
+    user: "$POSTGRES_USER"
     secureJsonData:
-      password: audio_analytics
+      password: "$POSTGRES_PASSWORD"
     jsonData:
       sslmode: disable
       postgresVersion: 1600

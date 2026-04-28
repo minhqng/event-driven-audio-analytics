@@ -1,4 +1,4 @@
-"""Week 6 writer pipeline from Kafka envelopes to TimescaleDB persistence."""
+"""Writer pipeline from Kafka envelopes to TimescaleDB persistence."""
 
 from __future__ import annotations
 

@@ -13,6 +13,28 @@ function Assert-LastExitCode {
     }
 }
 
+$cleanupRunArtifactsScript = @'
+import os
+import shutil
+from pathlib import Path
+from event_driven_audio_analytics.shared.storage import validate_run_id
+
+run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
+root = Path("/app/artifacts/runs").resolve()
+target = (root / run_id).resolve()
+target.relative_to(root)
+shutil.rmtree(target, ignore_errors=True)
+'@
+
+function Clear-RunArtifactsInContainer {
+    param(
+        [string]$RunId
+    )
+
+    docker compose run --rm --no-deps -e "CLEANUP_RUN_ID=$RunId" --entrypoint python ingestion -c $cleanupRunArtifactsScript | Out-Null
+    Assert-LastExitCode "docker compose run cleanup artifacts"
+}
+
 function Require-Topic {
     param(
         [string]$TopicName
@@ -39,8 +61,7 @@ docker compose down --remove-orphans
 Assert-LastExitCode "docker compose down"
 
 Write-Host "Cleaning prior run artifacts..."
-docker compose run --rm --no-deps --entrypoint sh ingestion -c "rm -rf /app/artifacts/runs/$effectiveRunId" | Out-Null
-Assert-LastExitCode "docker compose run cleanup artifacts"
+Clear-RunArtifactsInContainer -RunId $effectiveRunId
 
 Write-Host "Starting Kafka for processing smoke..."
 docker compose up --build -d kafka

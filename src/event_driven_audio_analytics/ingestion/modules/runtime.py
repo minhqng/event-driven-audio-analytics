@@ -16,7 +16,11 @@ from event_driven_audio_analytics.shared.contracts.topics import (
     SYSTEM_METRICS,
 )
 from event_driven_audio_analytics.shared.models.envelope import build_trace_id
-from event_driven_audio_analytics.shared.storage import manifest_uri, run_root
+from event_driven_audio_analytics.shared.storage import (
+    manifest_uri,
+    resolve_artifact_uri,
+    run_root,
+)
 
 if TYPE_CHECKING:
     from confluent_kafka.admin import ClusterMetadata
@@ -168,7 +172,10 @@ def _prepare_run_artifact_targets(artifacts_root: Path, run_id: str) -> tuple[Pa
 def _assert_manifest_target_ready(artifacts_root: Path, run_id: str) -> None:
     """Ensure the deterministic run manifest target is safe to overwrite."""
 
-    manifest_path = Path(manifest_uri(artifacts_root, run_id))
+    manifest_path = resolve_artifact_uri(
+        artifacts_root,
+        manifest_uri(artifacts_root, run_id),
+    )
     if not manifest_path.exists():
         return
     if not manifest_path.is_file():

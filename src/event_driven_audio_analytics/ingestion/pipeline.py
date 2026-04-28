@@ -1,4 +1,4 @@
-"""Week 3 ingestion pipeline from real audio input to claim-check events."""
+"""Ingestion pipeline from real audio input to claim-check events."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class TrackIngestionResult:
 
 @dataclass(slots=True)
 class IngestionPipeline:
-    """Run the Week 3 ingestion path from metadata ETL to event emission."""
+    """Run the ingestion path from metadata ETL to event emission."""
 
     settings: IngestionSettings
 
@@ -281,7 +281,7 @@ class IngestionPipeline:
         )
 
     def run(self, producer: ProducerLike | None = None) -> list[TrackIngestionResult]:
-        """Execute the Week 3 ingestion path for the configured sample set."""
+        """Execute the ingestion path for the configured sample set."""
 
         own_producer = producer is None
         logger = self._service_logger()
@@ -309,7 +309,7 @@ class IngestionPipeline:
                         record.track_id,
                         failure_class="unrecoverable",
                     ).exception(
-                        "Ingestion failed for selected track; audio.dlq is reserved and not published in Week 4."
+                        "Ingestion failed for selected track; audio.dlq is reserved and not published by this bounded PoC."
                     )
                     raise
                 metrics.record_track(
@@ -340,7 +340,7 @@ class IngestionPipeline:
                     failure_class="unrecoverable",
                     topic=SYSTEM_METRICS,
                 ).exception(
-                    "Ingestion failed after track processing; audio.dlq is reserved and not published in Week 4."
+                    "Ingestion failed after track processing; audio.dlq is reserved and not published by this bounded PoC."
                 )
                 raise
             logger.info(

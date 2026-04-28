@@ -22,34 +22,34 @@ function Write-DemoEvidenceIndex {
 
 This directory is the final handoff anchor for the bounded PoC evidence set.
 
-## Reliability Evidence
+## Restart/Replay Evidence
 
-- `restart-replay-baseline.json` captures the first bounded broker-backed run before replay.
-- `restart-replay-summary.json` captures the same `run_id` after restarting `processing` and `writer`, then rerunning `ingestion`.
-- `preflight-fail-fast.txt` records the expected startup failures before Kafka topics are bootstrapped.
+- `restart-replay/restart-replay-baseline.json` captures the first bounded broker-backed run before replay.
+- `restart-replay/restart-replay-summary.json` captures the same `run_id` after restarting `processing` and `writer`, then rerunning `ingestion`.
+- `restart-replay/preflight-fail-fast.txt` records the expected startup failures before Kafka topics are bootstrapped.
 
-## Dashboard Evidence
+## Review/Dashboard Evidence
 
-The dashboard-facing artifacts remain under `artifacts/demo/week7/` because that historical pack name is already stable across the repo:
+The review/dashboard artifacts are generated under `artifacts/evidence/final-demo/review-dashboard/`:
 
-- `../week7/dashboard-demo-summary.json`
-- `../week7/review-api.json`
-- `../week7/grafana-api.json`
-- `../week7/run_review.png`
-- `../week7/audio_quality.png`
-- `../week7/system_health.png`
-- `../week7/demo-artifact-notes.md`
+- `review-dashboard/review-dashboard-summary.json`
+- `review-dashboard/review-api.json`
+- `review-dashboard/grafana-api.json`
+- `review-dashboard/review-console.png`
+- `review-dashboard/audio-quality-dashboard.png`
+- `review-dashboard/system-health-dashboard.png`
+- `review-dashboard/review-dashboard-notes.md`
 
 ## Practical Reading Order
 
 - Use the review artifact pack first to explain the run, track, and segment story.
 - Use the restart/replay artifacts next to explain startup gating and replay safety.
-- Use the dashboard artifacts last to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
+- Use the review/dashboard artifacts last to explain TimescaleDB persistence, Grafana provisioning, and panel interpretation.
 - Treat this as bounded PoC evidence only; it is not benchmark-scale or production-readiness evidence.
 '@ | Set-Content -LiteralPath $OutputPath -Encoding utf8
 }
 
-$demoEvidenceRoot = Join-Path $PWD "artifacts\demo\week8"
+$demoEvidenceRoot = Join-Path $PWD "artifacts\evidence\final-demo"
 $evidenceIndexPath = Join-Path $demoEvidenceRoot "evidence-index.md"
 
 Write-Host "Running restart/replay evidence path..."
@@ -64,6 +64,6 @@ New-Item -ItemType Directory -Path $demoEvidenceRoot -Force | Out-Null
 Write-DemoEvidenceIndex -OutputPath $evidenceIndexPath
 
 Write-Host "Final demo evidence is ready."
-Write-Host "Reliability artifacts: $demoEvidenceRoot"
-Write-Host "Dashboard artifacts: $(Join-Path $PWD 'artifacts\demo\week7')"
+Write-Host "Restart/replay artifacts: $(Join-Path $demoEvidenceRoot 'restart-replay')"
+Write-Host "Review/dashboard artifacts: $(Join-Path $PWD 'artifacts\evidence\final-demo\review-dashboard')"
 Write-Host "Evidence index: $evidenceIndexPath"

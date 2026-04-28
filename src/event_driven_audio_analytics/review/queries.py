@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from event_driven_audio_analytics.shared.db import open_database_connection
-from event_driven_audio_analytics.shared.storage import run_root
+from event_driven_audio_analytics.shared.storage import resolve_artifact_uri, run_root
 
 from .config import ReviewSettings
 from .schemas import (
@@ -35,18 +35,7 @@ def _processing_state_path(artifacts_root: Path, run_id: str) -> Path:
 
 
 def _resolve_artifact_path(artifacts_root: Path, artifact_uri: str) -> Path:
-    root = artifacts_root.resolve()
-    candidate = Path(artifact_uri)
-    if not candidate.is_absolute():
-        candidate = root / candidate
-    resolved = candidate.resolve()
-    try:
-        resolved.relative_to(root)
-    except ValueError as exc:
-        raise ValueError(
-            "artifact_uri must resolve within the configured artifacts_root."
-        ) from exc
-    return resolved
+    return resolve_artifact_uri(artifacts_root, artifact_uri)
 
 
 def lookup_segment_artifact_path(
@@ -278,7 +267,11 @@ def get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object] |
     if processing_state_path.exists():
         try:
             raw_state = json.loads(processing_state_path.read_text(encoding="utf-8"))
+            if not isinstance(raw_state, dict):
+                raise TypeError("Processing state must decode to an object.")
             segments = raw_state.get("segments", [])
+            if not isinstance(segments, list):
+                raise TypeError("Processing state field segments must decode to a list.")
             silent_segments = sum(
                 1
                 for segment in segments

@@ -1,0 +1,12 @@
+*.md text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.csv text eol=lf
+*.mp3 binary
+*.wav binary
+*.parquet binary
+*.png binary

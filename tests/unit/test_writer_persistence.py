@@ -51,9 +51,9 @@ class WriterPersistenceTests(unittest.TestCase):
             run_id="demo-run",
             track_id=2,
             segment_idx=0,
-            artifact_uri="/app/artifacts/runs/demo-run/segments/2/0.wav",
+            artifact_uri="/artifacts/runs/demo-run/segments/2/0.wav",
             checksum="abc123",
-            manifest_uri="/app/artifacts/runs/demo-run/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/demo-run/manifests/segments.parquet",
             rms=0.42,
             silent_flag=False,
             mel_bins=128,
@@ -71,7 +71,7 @@ class WriterPersistenceTests(unittest.TestCase):
             validation_status="validated",
             duration_s=29.95,
             subset="small",
-            manifest_uri="/app/artifacts/runs/demo-run/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/demo-run/manifests/segments.parquet",
             checksum="sha256:track-000002",
         )
 

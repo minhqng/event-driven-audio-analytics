@@ -1,4 +1,4 @@
-"""Prepare deterministic dashboard demo inputs under the shared artifacts mount."""
+"""Prepare deterministic review demo inputs under the shared artifacts mount."""
 
 from __future__ import annotations
 
@@ -127,7 +127,7 @@ def _write_metadata_csv(output_root: Path, tracks: list[DemoTrack]) -> Path:
     return csv_path
 
 
-def prepare_dashboard_demo_inputs(output_root: Path) -> dict[str, str]:
+def prepare_review_demo_inputs(output_root: Path) -> dict[str, str]:
     output_root.mkdir(parents=True, exist_ok=True)
 
     tracks = [
@@ -154,11 +154,11 @@ def main() -> None:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("artifacts/demo_inputs/dashboard-demo"),
-        help="Directory used to stage the dashboard demo inputs.",
+        default=Path("artifacts/demo-inputs/review-demo"),
+        help="Directory used to stage the review demo inputs.",
     )
     args = parser.parse_args()
-    paths = prepare_dashboard_demo_inputs(args.output_root.resolve())
+    paths = prepare_review_demo_inputs(args.output_root.resolve())
     for key, value in paths.items():
         print(f"{key}={value}")
 

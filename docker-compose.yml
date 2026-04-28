@@ -50,6 +50,11 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
+      POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"
+      POSTGRES_HOST: timescaledb
+      POSTGRES_PORT: "5432"
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro,Z
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
@@ -84,6 +89,7 @@ services:
       INGESTION_STARTUP_RETRY_INTERVAL_S: "${INGESTION_STARTUP_RETRY_INTERVAL_S:-2}"
     volumes:
       - ./artifacts:/app/artifacts:z
+      - ./data/local:/app/data/local:ro,z
       - ./tests/fixtures/audio:/app/tests/fixtures/audio:ro,z
     depends_on:
       kafka:
@@ -203,7 +209,7 @@ services:
       REVIEW_PORT: "8080"
       REVIEW_DEFAULT_LIMIT: "${REVIEW_DEFAULT_LIMIT:-8}"
       REVIEW_MAX_LIMIT: "${REVIEW_MAX_LIMIT:-25}"
-      REVIEW_PINNED_RUN_IDS: "${REVIEW_PINNED_RUN_IDS:-week7-high-energy,week7-silent-oriented,week7-validation-failure}"
+      REVIEW_PINNED_RUN_IDS: "${REVIEW_PINNED_RUN_IDS:-demo-high-energy,demo-silent-oriented,demo-validation-failure}"
     volumes:
       - ./artifacts:/app/artifacts:z
     depends_on:

@@ -313,7 +313,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Compact run summary for academic reporting: counts, RMS, and silent_ratio from the Week 7 dashboard views.",
+      "description": "Compact run summary for academic reporting: counts, RMS, and silent_ratio from the final dashboard views.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -377,7 +377,7 @@
   "tags": [
     "poc",
     "audio-quality",
-    "week7"
+    "final-demo"
   ],
   "templating": {
     "list": []

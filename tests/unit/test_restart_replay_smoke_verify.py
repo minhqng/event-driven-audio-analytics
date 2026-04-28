@@ -41,7 +41,7 @@ def _metadata_rows() -> tuple[MetadataRowSnapshot, ...]:
             source_audio_uri="/app/tests/fixtures/audio/smoke_fma_small/000/000002.mp3",
             validation_status="validated",
             duration_s=6.0,
-            manifest_uri="/app/artifacts/runs/week8-replay/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/replay-smoke/manifests/segments.parquet",
             checksum="sha256:track-2",
         ),
         MetadataRowSnapshot(
@@ -63,9 +63,9 @@ def _feature_rows() -> tuple[FeatureRowSnapshot, ...]:
         FeatureRowSnapshot(
             track_id=2,
             segment_idx=0,
-            artifact_uri="/app/artifacts/runs/week8-replay/segments/2/0.wav",
+            artifact_uri="/artifacts/runs/replay-smoke/segments/2/0.wav",
             checksum="sha256:segment-0",
-            manifest_uri="/app/artifacts/runs/week8-replay/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/replay-smoke/manifests/segments.parquet",
             rms=-12.0,
             silent_flag=False,
             mel_bins=128,
@@ -74,9 +74,9 @@ def _feature_rows() -> tuple[FeatureRowSnapshot, ...]:
         FeatureRowSnapshot(
             track_id=2,
             segment_idx=1,
-            artifact_uri="/app/artifacts/runs/week8-replay/segments/2/1.wav",
+            artifact_uri="/artifacts/runs/replay-smoke/segments/2/1.wav",
             checksum="sha256:segment-1",
-            manifest_uri="/app/artifacts/runs/week8-replay/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/replay-smoke/manifests/segments.parquet",
             rms=-12.1,
             silent_flag=False,
             mel_bins=128,
@@ -85,9 +85,9 @@ def _feature_rows() -> tuple[FeatureRowSnapshot, ...]:
         FeatureRowSnapshot(
             track_id=2,
             segment_idx=2,
-            artifact_uri="/app/artifacts/runs/week8-replay/segments/2/2.wav",
+            artifact_uri="/artifacts/runs/replay-smoke/segments/2/2.wav",
             checksum="sha256:segment-2",
-            manifest_uri="/app/artifacts/runs/week8-replay/manifests/segments.parquet",
+            manifest_uri="/artifacts/runs/replay-smoke/manifests/segments.parquet",
             rms=-12.2,
             silent_flag=False,
             mel_bins=128,
@@ -98,7 +98,7 @@ def _feature_rows() -> tuple[FeatureRowSnapshot, ...]:
 
 def _baseline_snapshot() -> RestartReplaySnapshot:
     return RestartReplaySnapshot(
-        run_id="week8-replay",
+        run_id="replay-smoke",
         metadata_rows=_metadata_rows(),
         feature_rows=_feature_rows(),
         ingestion_metric_counts={
@@ -150,7 +150,7 @@ def test_assert_baseline_snapshot_rejects_processing_state_drift() -> None:
 def test_assert_replay_snapshot_accepts_one_rerun_same_run_id() -> None:
     summary = _assert_replay_snapshot(
         RestartReplaySnapshot(
-            run_id="week8-replay",
+            run_id="replay-smoke",
             metadata_rows=_metadata_rows(),
             feature_rows=_feature_rows(),
             ingestion_metric_counts={
@@ -189,16 +189,16 @@ def test_assert_replay_snapshot_accepts_one_rerun_same_run_id() -> None:
 
 def test_assert_replay_snapshot_rejects_feature_row_inflation() -> None:
     current = RestartReplaySnapshot(
-        run_id="week8-replay",
+        run_id="replay-smoke",
         metadata_rows=_metadata_rows(),
         feature_rows=_feature_rows()
         + (
             FeatureRowSnapshot(
                 track_id=2,
                 segment_idx=3,
-                artifact_uri="/app/artifacts/runs/week8-replay/segments/2/3.wav",
+                artifact_uri="/artifacts/runs/replay-smoke/segments/2/3.wav",
                 checksum="sha256:segment-3",
-                manifest_uri="/app/artifacts/runs/week8-replay/manifests/segments.parquet",
+                manifest_uri="/artifacts/runs/replay-smoke/manifests/segments.parquet",
                 rms=-12.3,
                 silent_flag=False,
                 mel_bins=128,
@@ -242,7 +242,7 @@ def test_assert_replay_snapshot_rejects_feature_row_inflation() -> None:
 
 def test_assert_replay_snapshot_rejects_checkpoint_stall() -> None:
     current = RestartReplaySnapshot(
-        run_id="week8-replay",
+        run_id="replay-smoke",
         metadata_rows=_metadata_rows(),
         feature_rows=_feature_rows(),
         ingestion_metric_counts={
@@ -283,10 +283,9 @@ def test_assert_replay_snapshot_rejects_checkpoint_stall() -> None:
 @pytest.mark.parametrize(
     "run_id",
     (
-        "week8-replay",
+        "replay-smoke",
         "demo-run",
-        "run.with_underscores",
-        "run with spaces",
+        "run-with-underscores",
     ),
 )
 def test_validate_cleanup_run_id_accepts_single_segment_run_ids(run_id: str) -> None:
@@ -306,27 +305,29 @@ def test_validate_cleanup_run_id_accepts_single_segment_run_ids(run_id: str) -> 
         "nested\\run",
         "/absolute",
         "C:\\absolute",
+        "run.with.periods",
+        "run with spaces",
     ),
 )
 def test_validate_cleanup_run_id_rejects_escape_candidates(run_id: str) -> None:
-    with pytest.raises(ValueError, match="empty or whitespace|artifacts/runs"):
+    with pytest.raises(ValueError, match="empty or whitespace|artifacts/runs|reserved path"):
         validate_cleanup_run_id(run_id)
 
 
 def test_resolve_replay_run_id_accepts_matching_env_and_baseline() -> None:
     assert (
         resolve_replay_run_id(
-            configured_run_id="week8-replay",
-            baseline_run_id="week8-replay",
+            configured_run_id="replay-smoke",
+            baseline_run_id="replay-smoke",
         )
-        == "week8-replay"
+        == "replay-smoke"
     )
 
 
 def test_resolve_replay_run_id_rejects_baseline_run_id_mismatch() -> None:
     with pytest.raises(ValueError, match="does not match the active RUN_ID"):
         resolve_replay_run_id(
-            configured_run_id="week8-replay",
+            configured_run_id="replay-smoke",
             baseline_run_id="demo-run",
         )
 
@@ -334,6 +335,8 @@ def test_resolve_replay_run_id_rejects_baseline_run_id_mismatch() -> None:
 def test_resolve_replay_run_id_rejects_invalid_baseline_run_id() -> None:
     with pytest.raises(ValueError, match="artifacts/runs"):
         resolve_replay_run_id(
-            configured_run_id="week8-replay",
+            configured_run_id="replay-smoke",
             baseline_run_id="../escape",
         )
+
+

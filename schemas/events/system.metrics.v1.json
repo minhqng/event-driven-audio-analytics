@@ -27,6 +27,7 @@
     "idempotency_key": { "type": "string", "minLength": 1 },
     "payload": {
       "type": "object",
+      "$comment": "payload.service_name must match top-level source_service; this cross-field invariant is enforced by runtime semantic validation.",
       "required": [
         "ts",
         "run_id",

@@ -10,7 +10,12 @@ import numpy as np
 import polars as pl
 
 from event_driven_audio_analytics.shared.checksum import sha256_file
-from event_driven_audio_analytics.shared.storage import manifest_uri, segment_artifact_uri
+from event_driven_audio_analytics.shared.storage import (
+    manifest_uri,
+    resolve_artifact_uri,
+    run_root,
+    segment_artifact_uri,
+)
 
 from .segmenter import AudioSegment
 
@@ -47,8 +52,9 @@ class SegmentDescriptor:
 def ensure_artifact_layout(artifacts_root: Path, run_id: str) -> tuple[Path, Path]:
     """Return segment and manifest directories for a run."""
 
-    segments_dir = artifacts_root / "runs" / run_id / "segments"
-    manifests_dir = artifacts_root / "runs" / run_id / "manifests"
+    run_dir = run_root(artifacts_root, run_id)
+    segments_dir = run_dir / "segments"
+    manifests_dir = run_dir / "manifests"
     segments_dir.mkdir(parents=True, exist_ok=True)
     manifests_dir.mkdir(parents=True, exist_ok=True)
     return segments_dir, manifests_dir
@@ -73,7 +79,7 @@ def _manifest_frame(entries: list[SegmentDescriptor]) -> pl.DataFrame:
 
 
 def read_manifest_frame(manifest_path: Path) -> pl.DataFrame:
-    """Load the run manifest and enforce the current Week 4 required columns."""
+    """Load the run manifest and enforce the current required columns."""
 
     if not manifest_path.exists():
         raise FileNotFoundError(f"Segment manifest does not exist: {manifest_path.as_posix()}")
@@ -88,7 +94,17 @@ def read_manifest_frame(manifest_path: Path) -> pl.DataFrame:
     return frame
 
 
-def verify_manifest_consistency(descriptors: list[SegmentDescriptor]) -> None:
+def _resolve_descriptor_path(uri: str, artifacts_root: Path | None) -> Path:
+    if artifacts_root is None:
+        return Path(uri)
+    return resolve_artifact_uri(artifacts_root, uri)
+
+
+def verify_manifest_consistency(
+    descriptors: list[SegmentDescriptor],
+    *,
+    artifacts_root: Path | None = None,
+) -> None:
     """Verify artifact, checksum, and manifest linkage before events are published."""
 
     if not descriptors:
@@ -98,11 +114,11 @@ def verify_manifest_consistency(descriptors: list[SegmentDescriptor]) -> None:
     if len(manifest_uris) != 1:
         raise ValueError("Segment descriptors must share exactly one manifest_uri.")
 
-    manifest_path = Path(next(iter(manifest_uris)))
+    manifest_path = _resolve_descriptor_path(next(iter(manifest_uris)), artifacts_root)
     manifest_frame = read_manifest_frame(manifest_path)
 
     for descriptor in descriptors:
-        artifact_path = Path(descriptor.artifact_uri)
+        artifact_path = _resolve_descriptor_path(descriptor.artifact_uri, artifacts_root)
         if not artifact_path.exists():
             raise FileNotFoundError(
                 f"Segment artifact does not exist: {artifact_path.as_posix()}"
@@ -148,7 +164,7 @@ def write_segment_artifacts(
 
     run_id = segments[0].run_id
     manifest_uri_str = manifest_uri(artifacts_root, run_id)
-    manifest_path = Path(manifest_uri_str)
+    manifest_path = resolve_artifact_uri(artifacts_root, manifest_uri_str)
     ensure_artifact_layout(artifacts_root, run_id)
 
     descriptors: list[SegmentDescriptor] = []
@@ -159,7 +175,7 @@ def write_segment_artifacts(
             segment.track_id,
             segment.segment_idx,
         )
-        artifact_path = Path(artifact_uri_str)
+        artifact_path = resolve_artifact_uri(artifacts_root, artifact_uri_str)
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
         _write_wav_mono(artifact_path, segment.waveform, segment.sample_rate)
         descriptors.append(
@@ -186,5 +202,5 @@ def write_segment_artifacts(
         )
 
     current_frame.write_parquet(manifest_path)
-    verify_manifest_consistency(descriptors)
+    verify_manifest_consistency(descriptors, artifacts_root=artifacts_root)
     return descriptors

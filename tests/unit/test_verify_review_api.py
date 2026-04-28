@@ -12,13 +12,13 @@ def _build_payload(*, run_ids: list[str]) -> dict[str, dict[str, object]]:
             "items": [{"run_id": run_id} for run_id in run_ids],
             "mode": {"pinned_run_ids": list(module.EXPECTED_RUN_IDS)},
         },
-        "/api/runs/week7-high-energy": {
+        "/api/runs/demo-high-energy": {
             "run": {"segments_persisted": 4},
         },
-        "/api/runs/week7-high-energy/tracks?limit=10": {
+        "/api/runs/demo-high-energy/tracks?limit=10": {
             "total": 1,
         },
-        "/api/runs/week7-high-energy/tracks/910001?segments_limit=10": {
+        "/api/runs/demo-high-energy/tracks/910001?segments_limit=10": {
             "segments": {
                 "total": 4,
                 "items": [
@@ -29,7 +29,7 @@ def _build_payload(*, run_ids: list[str]) -> dict[str, dict[str, object]]:
                 ],
             },
         },
-        "/api/runs/week7-silent-oriented/tracks/910002?segments_limit=10": {
+        "/api/runs/demo-silent-oriented/tracks/910002?segments_limit=10": {
             "track": {"track_state": {"value": "persisted"}},
             "segments": {
                 "total": 4,
@@ -41,7 +41,7 @@ def _build_payload(*, run_ids: list[str]) -> dict[str, dict[str, object]]:
                 ],
             },
         },
-        "/api/runs/week7-validation-failure/tracks/910003?segments_limit=10": {
+        "/api/runs/demo-validation-failure/tracks/910003?segments_limit=10": {
             "track": {
                 "track_state": {"value": "metadata_only"},
                 "validation_status": "silent",
@@ -78,9 +78,9 @@ def test_verify_review_api_rejects_out_of_order_demo_runs(
 ) -> None:
     payload = _build_payload(
         run_ids=[
-            "week7-silent-oriented",
-            "week7-high-energy",
-            "week7-validation-failure",
+            "demo-silent-oriented",
+            "demo-high-energy",
+            "demo-validation-failure",
         ]
     )
 

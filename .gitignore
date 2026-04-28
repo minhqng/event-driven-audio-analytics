@@ -11,13 +11,19 @@ dist/
 *.pyc
 *.pyo
 *.pyd
+
+# Runtime outputs and generated evidence.
 artifacts/runs/*
 !artifacts/runs/.gitkeep
 artifacts/shared/*
 !artifacts/shared/.gitkeep
-artifacts/demo/*
-artifacts/demo_inputs/*
+artifacts/evidence/*
+artifacts/demo-inputs/*
+
+# Local-only datasets and reference checkouts.
+data/local/**
 references/legacy-fma-pipeline/
 tests/fixtures/audio/tracks.csv
+tests/fixtures/audio/fma_metadata/**
 tests/fixtures/audio/fma_small/**
 !tests/fixtures/audio/fma_small/.gitkeep

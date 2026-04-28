@@ -16,6 +16,7 @@ from event_driven_audio_analytics.processing.modules.metrics import (
 )
 from event_driven_audio_analytics.shared.db import open_database_connection
 from event_driven_audio_analytics.shared.settings import load_database_settings
+from event_driven_audio_analytics.shared.storage import validate_run_id
 from event_driven_audio_analytics.smoke.verify_ingestion_flow import (
     EXPECTED_RUN_TOTAL_METRICS,
     SmokeExpectation,
@@ -35,13 +36,13 @@ EPSILON = 1e-6
 def validate_cleanup_run_id(run_id: str) -> str:
     """Validate the host-side replay cleanup run id as one relative path segment."""
 
-    if run_id.strip() == "":
-        raise ValueError("RUN_ID must not be empty or whitespace.")
-    if run_id in {".", ".."} or any(character in run_id for character in ("/", "\\", ":")):
+    try:
+        return validate_run_id(run_id)
+    except ValueError as exc:
         raise ValueError(
-            "RUN_ID must be a single relative path segment for cleanup under artifacts/runs."
-        )
-    return run_id
+            "RUN_ID must be a single relative path segment without whitespace "
+            "or reserved path characters for cleanup under artifacts/runs."
+        ) from exc
 
 
 def resolve_replay_run_id(
@@ -183,7 +184,7 @@ class RestartReplaySnapshot:
 
 @dataclass(slots=True)
 class RestartReplaySummary:
-    """Compact Week 8 summary for restart/replay evidence."""
+    """Compact restart/replay summary for restart/replay evidence."""
 
     run_id: str
     metadata_count: int

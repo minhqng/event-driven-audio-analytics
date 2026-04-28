@@ -88,7 +88,7 @@ def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
     return ProcessingSettings(
         base=BaseServiceSettings(
             service_name="processing",
-            run_id="week6-reference",
+            run_id="reference-parity",
             kafka_bootstrap_servers="unused:9092",
             artifacts_root=artifacts_root,
         ),
@@ -203,7 +203,7 @@ def test_processing_summary_keeps_reference_shape_and_silence_semantics() -> Non
     assert validation.decoded_audio is not None
 
     current_segments = segment_audio(
-        run_id="week6-reference",
+        run_id="reference-parity",
         track_id=record.track_id,
         waveform=validation.decoded_audio.waveform,
         sample_rate_hz=validation.decoded_audio.sample_rate_hz,

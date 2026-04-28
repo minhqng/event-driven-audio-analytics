@@ -1,11 +1,17 @@
 .git
 .gitignore
+.gitattributes
 .idea
 .pytest_cache
 .pytest-tmp-gate
 .ruff_cache
+.mypy_cache
 .venv
 __pycache__/
 *.py[cod]
 artifacts/
+data/local/
+tests/fixtures/audio/tracks.csv
+tests/fixtures/audio/fma_metadata/
+tests/fixtures/audio/fma_small/
 references/legacy-fma-pipeline/

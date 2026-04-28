@@ -50,8 +50,9 @@ from event_driven_audio_analytics.shared.models.envelope import (
 )
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
+from event_driven_audio_analytics.shared.storage import resolve_artifact_uri
 from tests.unit.test_event_contract_validation import load_validator
-from event_driven_audio_analytics.writer.modules.persistence import TRACK_METADATA_UPSERT
+from event_driven_audio_analytics.writer.modules.upsert_metadata import TRACK_METADATA_UPSERT
 
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "audio"
@@ -62,6 +63,10 @@ FIXTURE_DURATION_S = {
     "corrupt_audio.mp3": 30.6,
 }
 AUDIO_METADATA_V1_VALIDATOR = load_validator("audio.metadata.v1.json")
+
+
+def _artifact_path(artifacts_root: Path | str, artifact_uri: str) -> Path:
+    return resolve_artifact_uri(Path(artifacts_root), artifact_uri)
 
 
 class _DeliveredMessage:
@@ -458,11 +463,16 @@ def test_artifact_writer_creates_wavs_checksums_and_manifest() -> None:
 
         assert len(descriptors) == 1
         descriptor = descriptors[0]
-        assert Path(descriptor.artifact_uri).exists()
+        assert descriptor.artifact_uri == "/artifacts/runs/demo-run/segments/2/0.wav"
+        assert (
+            descriptor.manifest_uri
+            == "/artifacts/runs/demo-run/manifests/segments.parquet"
+        )
+        assert _artifact_path(tmp_dir, descriptor.artifact_uri).exists()
         assert descriptor.checksum.startswith("sha256:")
-        assert Path(descriptor.manifest_uri).exists()
+        assert _artifact_path(tmp_dir, descriptor.manifest_uri).exists()
 
-        manifest = pl.read_parquet(descriptor.manifest_uri)
+        manifest = pl.read_parquet(_artifact_path(tmp_dir, descriptor.manifest_uri))
         assert manifest.shape == (1, 9)
         assert manifest["artifact_uri"][0] == descriptor.artifact_uri
 
@@ -484,7 +494,9 @@ def test_manifest_emits_week4_required_fields_only() -> None:
             ],
         )
 
-        manifest = read_manifest_frame(Path(descriptors[0].manifest_uri))
+        manifest = read_manifest_frame(
+            _artifact_path(tmp_dir, descriptors[0].manifest_uri)
+        )
 
         assert set(manifest.columns) == set(MANIFEST_REQUIRED_FIELDS)
         assert MANIFEST_OPTIONAL_FIELDS == ()
@@ -507,11 +519,11 @@ def test_manifest_verification_detects_artifact_checksum_drift() -> None:
             ],
         )
 
-        artifact_path = Path(descriptors[0].artifact_uri)
+        artifact_path = _artifact_path(tmp_dir, descriptors[0].artifact_uri)
         artifact_path.write_bytes(b"tampered")
 
         with pytest.raises(ValueError, match="checksum does not match"):
-            verify_manifest_consistency(descriptors)
+            verify_manifest_consistency(descriptors, artifacts_root=Path(tmp_dir))
 
 
 def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> None:
@@ -546,7 +558,9 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
         assert metadata_envelope["payload"]["checksum"] == result.validation.checksum
         assert metadata_envelope["payload"]["manifest_uri"] == result.segment_descriptors[0].manifest_uri
 
-        manifest = read_manifest_frame(Path(result.segment_descriptors[0].manifest_uri))
+        manifest = read_manifest_frame(
+            _artifact_path(tmp_dir, result.segment_descriptors[0].manifest_uri)
+        )
         manifest_rows = {
             int(row["segment_idx"]): row for row in manifest.to_dicts()
         }
@@ -555,8 +569,14 @@ def test_pipeline_emits_metadata_before_segment_ready_and_writes_artifacts() -> 
             envelope = message["value"]
             assert isinstance(envelope, dict)
             validate_envelope_dict(envelope, expected_event_type="audio.segment.ready")
-            assert Path(str(envelope["payload"]["artifact_uri"])).exists()
-            assert sha256_file(descriptor.artifact_uri) == descriptor.checksum
+            assert _artifact_path(
+                tmp_dir,
+                str(envelope["payload"]["artifact_uri"]),
+            ).exists()
+            assert (
+                sha256_file(_artifact_path(tmp_dir, descriptor.artifact_uri))
+                == descriptor.checksum
+            )
             assert envelope["payload"]["checksum"] == descriptor.checksum
             assert envelope["payload"]["checksum"] == manifest_rows[descriptor.segment_idx]["checksum"]
             assert envelope["payload"]["artifact_uri"] == manifest_rows[descriptor.segment_idx]["artifact_uri"]
@@ -899,3 +919,4 @@ def test_process_record_raises_when_kafka_delivery_reports_error() -> None:
                 DeliveryErrorProducer(),
                 _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
             )
+

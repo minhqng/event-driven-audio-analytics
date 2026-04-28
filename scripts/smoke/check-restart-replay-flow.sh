@@ -3,13 +3,13 @@ set -eu
 
 cd "$(dirname "$0")/../.."
 
-effective_run_id="${RUN_ID:-week8-replay}"
-evidence_root_host="artifacts/demo/week8"
+effective_run_id="${RUN_ID:-replay-smoke}"
+evidence_root_host="artifacts/evidence/final-demo/restart-replay"
 baseline_path_host="$evidence_root_host/restart-replay-baseline.json"
 summary_path_host="$evidence_root_host/restart-replay-summary.json"
 preflight_notes_host="$evidence_root_host/preflight-fail-fast.txt"
-baseline_path_container="/app/artifacts/demo/week8/restart-replay-baseline.json"
-summary_path_container="/app/artifacts/demo/week8/restart-replay-summary.json"
+baseline_path_container="/app/artifacts/evidence/final-demo/restart-replay/restart-replay-baseline.json"
+summary_path_container="/app/artifacts/evidence/final-demo/restart-replay/restart-replay-summary.json"
 
 resolve_run_cleanup_path() {
   run_id="$1"
@@ -19,8 +19,8 @@ resolve_run_cleanup_path() {
     return 1
   fi
   case "$run_id" in
-    "."|".."|*/*|*\\*|*:*)
-      echo "RUN_ID must be a single relative path segment for cleanup under artifacts/runs." >&2
+    "."|".."|*.*|*/*|*\\*|*:*|*" "*|*"	"*)
+      echo "RUN_ID must be a single relative path segment without whitespace or reserved path characters for cleanup under artifacts/runs." >&2
       return 1
       ;;
   esac

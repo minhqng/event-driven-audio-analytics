@@ -3,6 +3,26 @@ set -eu
 
 effective_run_id="${RUN_ID:-demo-run}"
 
+cleanup_run_artifacts() {
+  run_id="$1"
+
+  docker compose run --rm --no-deps \
+    -e CLEANUP_RUN_ID="$run_id" \
+    --entrypoint python ingestion \
+    -c '
+import os
+import shutil
+from pathlib import Path
+from event_driven_audio_analytics.shared.storage import validate_run_id
+
+run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
+root = Path("/app/artifacts/runs").resolve()
+target = (root / run_id).resolve()
+target.relative_to(root)
+shutil.rmtree(target, ignore_errors=True)
+' >/dev/null
+}
+
 require_topic() {
   topic_name="$1"
 
@@ -18,8 +38,7 @@ echo "Resetting local stack..."
 docker compose down --remove-orphans
 
 echo "Cleaning prior run artifacts..."
-docker compose run --rm --no-deps --entrypoint sh ingestion \
-  -c "rm -rf /app/artifacts/runs/$effective_run_id" >/dev/null
+cleanup_run_artifacts "$effective_run_id"
 
 echo "Starting Kafka and TimescaleDB for processing->writer smoke..."
 docker compose up --build -d kafka timescaledb
@@ -94,9 +113,7 @@ if printf '%s\n' "$writer_logs" | grep -q 'Writer failed'; then
 fi
 
 if printf '%s\n' "$verification_summary" | grep -Eq '"metadata_count":[1-9][0-9]*'; then
-  if ! printf '%s\n' "$writer_logs" \
-    | grep 'Persisted writer outputs' \
-    | grep -Eq "\"trace_id\":\"run/$effective_run_id/track/[0-9]+\""; then
+  if ! printf '%s\n' "$writer_logs" | grep 'Persisted writer outputs' | grep -Eq "\"trace_id\":\"run/$effective_run_id/track/[0-9]+\""; then
     echo "Expected a writer success log line with a current-run track trace_id." >&2
     exit 1
   fi

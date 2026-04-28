@@ -21,10 +21,9 @@
 
 1. Read `docs/README.md`.
 2. Read `docs/architecture/system-overview.md`.
-3. Read `docs/runbooks/review-demo.md` for the primary live-demo surface.
-4. Run the final demo/evidence path from `docs/runbooks/demo.md`.
-5. Use `docs/runbooks/validation.md` when you need targeted smoke checks or the official containerized `pytest` path.
-6. Use `correctness-against-reference.md` and `docs/architecture/dashboard-interpretation.md` for the technical justification behind the demo outputs.
+3. Run the final demo/evidence path from `docs/runbooks/demo.md`.
+4. Use `docs/runbooks/validation.md` for smoke checks and the official containerized `pytest` path.
+5. Use `artifacts/README.md` and `data/README.md` for generated output and local dataset boundaries.
 
 ## Recommended Commands
 
@@ -38,7 +37,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-demo-evidence.p
 bash ./scripts/demo/generate-demo-evidence.sh
 ```
 
-Dashboard-only evidence:
+Review/dashboard evidence:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-dashboard-evidence.ps1
@@ -68,15 +67,26 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
 bash ./scripts/smoke/check-pytest.sh
 ```
 
+Bounded local FMA-small burst after placing the dataset under `data/local/`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-local-fma-burst.ps1
+```
+
+```sh
+bash ./scripts/demo/run-local-fma-burst.sh
+```
+
 ## Repository Layout
 
 - `src/event_driven_audio_analytics/`: repo-owned Python package for ingestion, processing, writer, and shared logic
 - `services/`: per-service container wrappers
 - `infra/`: Kafka topic bootstrap, TimescaleDB SQL, and Grafana provisioning
 - `schemas/`: JSON schemas aligned to the locked event contract v1
-- `docs/`: runbooks, architecture notes, archive material, and reader guidance
+- `docs/`: compact final runbooks, architecture notes, and reader guidance
 - `tests/`: contract, unit, integration, smoke-verifier, and fixture coverage
-- `artifacts/`: shared claim-check boundary and demo evidence output root
+- `data/`: local-only dataset mount point; `data/local/` is ignored and excluded from Docker build context
+- `artifacts/`: generated claim-check boundary and demo evidence output root
 
 ## Core Topics
 
@@ -96,4 +106,5 @@ bash ./scripts/smoke/check-pytest.sh
 - The default stack also exposes the read-only `review` service at `http://localhost:8080`.
 - `processing` and `writer` are long-lived consumers with graceful shutdown handling for bounded restart/replay checks.
 - The official `pytest` path runs in a dedicated Compose service against image-bundled repo contents.
-- Historical evidence directories under `artifacts/demo/week7/` and `artifacts/demo/week8/` are intentionally retained because they are the stable demo packs referenced throughout the repo.
+- Generated evidence lives under `artifacts/evidence/`, with final demo output under `artifacts/evidence/final-demo/`.
+- Full FMA-small data is a local runtime input under `data/local/`, not a tracked test fixture.

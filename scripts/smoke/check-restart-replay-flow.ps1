@@ -2,13 +2,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot "../.."))
 
-$effectiveRunId = if ($env:RUN_ID) { $env:RUN_ID } else { "week8-replay" }
-$evidenceRootHost = Join-Path $PWD "artifacts\demo\week8"
+$effectiveRunId = if ($env:RUN_ID) { $env:RUN_ID } else { "replay-smoke" }
+$evidenceRootHost = Join-Path $PWD "artifacts\evidence\final-demo\restart-replay"
 $baselinePathHost = Join-Path $evidenceRootHost "restart-replay-baseline.json"
 $summaryPathHost = Join-Path $evidenceRootHost "restart-replay-summary.json"
 $preflightNotesHost = Join-Path $evidenceRootHost "preflight-fail-fast.txt"
-$baselinePathContainer = "/app/artifacts/demo/week8/restart-replay-baseline.json"
-$summaryPathContainer = "/app/artifacts/demo/week8/restart-replay-summary.json"
+$baselinePathContainer = "/app/artifacts/evidence/final-demo/restart-replay/restart-replay-baseline.json"
+$summaryPathContainer = "/app/artifacts/evidence/final-demo/restart-replay/restart-replay-summary.json"
 $kafkaBootstrapServer = if ($env:KAFKA_BOOTSTRAP_SERVERS) { $env:KAFKA_BOOTSTRAP_SERVERS } else { "kafka:29092" }
 
 function Assert-LastExitCode {
@@ -29,8 +29,8 @@ function Resolve-RunCleanupPath {
     if ([string]::IsNullOrWhiteSpace($RunId)) {
         throw "RUN_ID must not be empty or whitespace."
     }
-    if ($RunId -in @(".", "..") -or $RunId.Contains("/") -or $RunId.Contains("\") -or $RunId.Contains(":")) {
-        throw "RUN_ID must be a single relative path segment for cleanup under artifacts/runs."
+    if ($RunId -in @(".", "..") -or $RunId.Contains("/") -or $RunId.Contains("\") -or $RunId.Contains(":") -or $RunId.Contains(".") -or $RunId -match "\s") {
+        throw "RUN_ID must be a single relative path segment without whitespace or reserved path characters for cleanup under artifacts/runs."
     }
 
     $runsRoot = [System.IO.Path]::GetFullPath((Join-Path $PWD "artifacts\runs"))

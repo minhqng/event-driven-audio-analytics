@@ -113,6 +113,23 @@ def _labels_digest(labels: object) -> str:
     ).hexdigest()[:16]
 
 
+def _validate_source_service_payload_alignment(
+    event_type: str,
+    source_service: str,
+    payload_data: dict[str, object],
+) -> None:
+    """Enforce service identity consistency where the payload carries it."""
+
+    if event_type != "system.metrics":
+        return
+
+    payload_service_name = payload_data.get("service_name")
+    if payload_service_name != source_service:
+        raise ValueError(
+            "Envelope source_service must match payload service_name for system.metrics."
+        )
+
+
 def validate_envelope_dict(
     envelope: dict[str, object],
     *,
@@ -165,6 +182,7 @@ def validate_envelope_dict(
     payload = envelope.get("payload")
     if not isinstance(payload, dict):
         raise ValueError("Envelope payload must be a JSON object.")
+    _validate_source_service_payload_alignment(event_type, source_service, payload)
 
     payload_run_id = payload.get("run_id")
     if not isinstance(payload_run_id, str) or not payload_run_id:
@@ -290,6 +308,7 @@ def build_envelope(
     payload_data = _payload_to_dict(payload)
     run_id = _require_string(payload_data, "run_id")
     validate_run_id(run_id)
+    _validate_source_service_payload_alignment(event_type, source_service, payload_data)
     validate_payload_contract(event_type, payload_data)
     envelope_trace_id = trace_id or build_trace_id(payload_data, source_service=source_service)
     if not isinstance(envelope_trace_id, str) or not envelope_trace_id:

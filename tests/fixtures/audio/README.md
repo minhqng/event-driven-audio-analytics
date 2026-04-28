@@ -1,21 +1,20 @@
 # Audio Fixtures
 
-This directory contains the committed audio fixtures and the repo-local dataset layout used by the PoC.
+This directory contains the committed audio fixtures used by tests and smoke flows.
 
 ## Purpose
 
 - Provide a tiny, deterministic fixture pack for validation, decode/resample, segmentation, and silence-gate testing.
 - Keep the repo free of redistributed raw FMA audio.
-- Normalize a separate, non-committed FMA-small reference pack for local parity checks.
+- Keep the full FMA-small reference pack outside test fixtures.
 
 ## Fixture Layers
 
 1. Committed synthetic fixtures
 2. Committed smoke-layout mirrors
-3. Repo-local full FMA-small pack
 
 The committed synthetic fixtures are safe to version in this repo.
-The repo-local full FMA pack is described in `fixture_manifest.json` but intentionally not committed.
+The local full FMA pack belongs under `data/local/` and is intentionally not committed.
 
 ## Committed Synthetic Fixtures
 
@@ -33,18 +32,19 @@ The repo-local full FMA pack is described in `fixture_manifest.json` but intenti
 - `smoke_fma_small/000/000666.mp3` mirrors the corrupt fixture under canonical FMA naming.
 - These are still synthetic or intentionally corrupt repo fixtures, not redistributed FMA audio.
 
-## Repo-Local Full FMA-small Pack
+## Local Full FMA-small Pack
 
 To run the bounded live FMA-small path on any machine, place the dataset under these repo-local paths:
 
-- `tests/fixtures/audio/tracks.csv`
-- `tests/fixtures/audio/fma_small/<folder>/<track_id>.mp3`
+- `data/local/fma_metadata/tracks.csv`
+- `data/local/fma_small/<folder>/<track_id>.mp3`
 
 Notes:
 
 - This full pack is intentionally not committed.
-- `.gitignore` excludes the repo-local `tracks.csv` plus `fma_small/` contents so cross-machine local copies do not dirty git.
-- The committed smoke mirrors live under `smoke_fma_small/` specifically so the full FMA pack can occupy `fma_small/` without overwriting tracked files.
+- `.gitignore` excludes `data/local/` so cross-machine local copies do not dirty git.
+- `.dockerignore` excludes `data/local/` so full FMA-small is mounted at runtime rather than copied into service images.
+- The committed smoke mirrors live under `smoke_fma_small/` specifically so tests do not depend on local FMA data.
 - Use `scripts/demo/run-local-fma-burst.ps1` or `scripts/demo/run-local-fma-burst.sh` after `run-demo.*` to publish a bounded repo-local burst into the live stack.
 
 ## Naming Convention
@@ -100,5 +100,5 @@ Set-Content -LiteralPath tests\fixtures\audio\corrupt_audio.mp3 -Value 'not an a
 
 ## Missing Or Non-Committed Fixtures
 
-- Actual FMA-derived audio binaries are intentionally absent from this repo.
+- Actual FMA-derived audio binaries are intentionally absent from committed test fixtures.
 - If a future thread needs a committed real-audio fixture, that decision should be reviewed against the repo's current no-redistribution posture first.

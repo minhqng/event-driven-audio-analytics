@@ -11,7 +11,7 @@ import polars as pl
 
 @dataclass(slots=True)
 class MetadataRecord:
-    """Normalized FMA metadata record carried into the Week 3 replay path."""
+    """Normalized FMA metadata record carried into the ingestion replay path."""
 
     track_id: int
     artist_id: int
@@ -81,7 +81,7 @@ def _load_fma_metadata_frame(csv_path: Path) -> pl.DataFrame:
 
 
 def _select_required_columns(frame: pl.DataFrame, subset: str) -> pl.DataFrame:
-    """Select the columns required by the Week 3 ingestion path."""
+    """Select the columns required by the ingestion path."""
 
     column_by_key: dict[str, str | None] = {
         "track_id": "track_id",

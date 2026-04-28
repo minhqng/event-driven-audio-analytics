@@ -5,6 +5,7 @@ from event_driven_audio_analytics.processing.modules.publisher import (
     build_system_metrics_event,
 )
 from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
+from event_driven_audio_analytics.shared.models.envelope import build_envelope
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.smoke.verify_processing_flow import (
     _assert_processing_metrics,
@@ -52,18 +53,27 @@ def _processing_metric_message(
     service_name: str = "processing",
     ts: str = "2026-04-04T00:00:11Z",
 ) -> dict[str, object]:
-    envelope = build_system_metrics_event(
-        SystemMetricsPayload(
-            ts=ts,
-            run_id=run_id,
-            service_name=service_name,
-            metric_name=metric_name,
-            metric_value=metric_value,
-            labels_json=labels_json,
-            unit=unit,
-        ),
-        trace_id=f"run/{run_id}/service/{service_name}",
-    ).to_dict()
+    payload = SystemMetricsPayload(
+        ts=ts,
+        run_id=run_id,
+        service_name=service_name,
+        metric_name=metric_name,
+        metric_value=metric_value,
+        labels_json=labels_json,
+        unit=unit,
+    )
+    if service_name == "processing":
+        envelope = build_system_metrics_event(
+            payload,
+            trace_id=f"run/{run_id}/service/{service_name}",
+        ).to_dict()
+    else:
+        envelope = build_envelope(
+            event_type="system.metrics",
+            source_service=service_name,
+            payload=payload,
+            trace_id=f"run/{run_id}/service/{service_name}",
+        ).to_dict()
     return {
         "key": service_name,
         "envelope": envelope,

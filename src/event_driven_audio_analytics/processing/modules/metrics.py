@@ -35,7 +35,7 @@ def processing_metrics_state_path(artifacts_root: Path, run_id: str) -> Path:
 
 @dataclass(slots=True)
 class ProcessingRunMetrics:
-    """Track the processing success ratio needed for the Week 5 runtime metrics."""
+    """Track the processing success ratio needed for the runtime metrics."""
 
     processed_segments: dict[tuple[int, int], bool] = field(default_factory=dict, repr=False)
 
