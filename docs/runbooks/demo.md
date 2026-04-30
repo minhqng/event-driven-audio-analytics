@@ -51,6 +51,64 @@ The final command writes:
 - `artifacts/evidence/final-demo/restart-replay/restart-replay-baseline.json`
 - `artifacts/evidence/final-demo/restart-replay/restart-replay-summary.json`
 - `artifacts/evidence/final-demo/restart-replay/preflight-fail-fast.txt`
+- `artifacts/evidence/final-demo/dataset-exports/dataset-export-summary.json`
+- `artifacts/datasets/demo-high-energy/`
+- `artifacts/datasets/demo-silent-oriented/`
+- `artifacts/datasets/demo-validation-failure/`
+
+## Dataset Output
+
+The final demo/evidence command already exports and verifies the deterministic
+FMA-Small dataset/analytics bundles for:
+
+- `demo-high-energy`
+- `demo-silent-oriented`
+- `demo-validation-failure`
+
+The exporter writes:
+
+```text
+artifacts/datasets/<run_id>/
+|-- dataset-build-manifest.json
+|-- run-summary.json
+|-- quality-verdict.json
+|-- accepted-tracks.csv
+|-- rejected-tracks.csv
+|-- accepted-segments.csv
+|-- rejected-segments.csv
+|-- anomaly-summary.json
+|-- label-map.json
+|-- splits/
+|   |-- split-manifest.json
+|   |-- train.parquet
+|   |-- validation.parquet
+|   `-- test.parquet
+|-- stats/
+|   `-- normalization-stats.json
+`-- dataset-card.md
+```
+
+The split Parquet files are training-oriented reference tables with labels,
+artifact URIs, FMA-Small metadata, and persisted scalar summaries. They do not
+contain log-mel tensors because those tensors are not persisted by the current
+pipeline.
+
+Standalone export remains available for any completed run:
+
+```powershell
+docker compose run --rm dataset-exporter export --run-id demo-high-energy
+```
+
+```sh
+docker compose run --rm dataset-exporter export --run-id demo-high-energy
+```
+
+For a repo-local FMA burst, replace `demo-high-energy` with the burst `RUN_ID`
+such as `fma-small-live`.
+
+The dataset bundle is the final product output. The review console and Grafana
+remain read-only inspection and corroboration surfaces over the same persisted
+truth.
 
 ## Bootstrap Only
 

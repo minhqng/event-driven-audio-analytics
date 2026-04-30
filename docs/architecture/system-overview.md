@@ -35,5 +35,8 @@ The active topics are:
 Final generated evidence lives under `artifacts/evidence/final-demo/`:
 
 - `review-dashboard/`: review API snapshot, review screenshot, Grafana API proof, dashboard screenshots, notes.
+- `dataset-exports/`: machine-readable verification of the deterministic dataset bundles.
 - `restart-replay/`: fail-fast preflight notes, baseline snapshot, replay summary.
 - `evidence-index.md`: final handoff index.
+
+Final dataset bundles themselves live under `artifacts/datasets/<run_id>/`.

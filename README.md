@@ -1,6 +1,6 @@
 # event-driven-audio-analytics
 
-`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, and Grafana provides the supporting observability story from file-provisioned dashboards.
+`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, Grafana provides the supporting observability story from file-provisioned dashboards, and the dataset-exporter materializes final FMA-Small analytics/dataset bundles from persisted truth.
 
 ## What This Repository Demonstrates
 
@@ -8,6 +8,7 @@
 - Claim-check handling for audio segments and run manifests under `artifacts/`
 - At-least-once delivery with checkpoint-aware, idempotent persistence
 - A read-only review surface over persisted run, track, and segment outcomes
+- Deterministic dataset/analytics bundle generation from completed persisted runs
 - Bounded restart/replay verification for the same `run_id`
 - Dashboard-backed observability over real persisted PoC data
 
@@ -36,6 +37,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-demo-evidence.p
 ```sh
 bash ./scripts/demo/generate-demo-evidence.sh
 ```
+
+This is the front-door productization path: it produces review console evidence, Grafana corroboration, restart/replay proof, and the final deterministic FMA-Small dataset bundles under `artifacts/datasets/`. Read the review outputs first, use Grafana as supporting corroboration, and treat the dataset bundles as the productized output layer from persisted truth.
 
 Review/dashboard evidence:
 

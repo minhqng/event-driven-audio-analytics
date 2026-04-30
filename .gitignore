@@ -5,6 +5,8 @@ __pycache__/
 .pytest-tmp-gate/
 .ruff_cache/
 .mypy_cache/
+.bg-shell/
+.gsd/runtime/
 .coverage
 build/
 dist/
@@ -19,6 +21,7 @@ artifacts/shared/*
 !artifacts/shared/.gitkeep
 artifacts/evidence/*
 artifacts/demo-inputs/*
+artifacts/datasets/*
 
 # Local-only datasets and reference checkouts.
 data/local/**
@@ -27,3 +30,27 @@ tests/fixtures/audio/tracks.csv
 tests/fixtures/audio/fma_metadata/**
 tests/fixtures/audio/fma_small/**
 !tests/fixtures/audio/fma_small/.gitkeep
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+.mcp.json
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+venv/
+target/
+vendor/
+*.log
+coverage/
+.cache/
+tmp/

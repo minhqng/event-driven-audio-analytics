@@ -226,6 +226,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  dataset-exporter:
+    build:
+      context: .
+      dockerfile: services/dataset-exporter/Dockerfile
+    environment:
+      SERVICE_NAME: dataset-exporter
+      ARTIFACTS_ROOT: "${ARTIFACTS_ROOT:-/app/artifacts}"
+      DATASET_EXPORT_ROOT: "${DATASET_EXPORT_ROOT:-/app/artifacts/datasets}"
+      POSTGRES_DB: "${POSTGRES_DB:-audio_analytics}"
+      POSTGRES_USER: "${POSTGRES_USER:-audio_analytics}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-audio_analytics}"
+      POSTGRES_HOST: timescaledb
+      POSTGRES_PORT: "5432"
+    volumes:
+      - ./artifacts:/app/artifacts:z
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   pytest:
     build:
       context: .

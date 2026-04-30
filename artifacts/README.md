@@ -10,6 +10,7 @@ This directory is the local claim-check and evidence output root.
 ## Generated
 
 - `artifacts/runs/`: claim-check segments, manifests, and processing state
+- `artifacts/datasets/`: final dataset/analytics bundles generated from persisted truth
 - `artifacts/evidence/`: generated evidence output
 - `artifacts/demo-inputs/`: generated deterministic review-demo inputs
 

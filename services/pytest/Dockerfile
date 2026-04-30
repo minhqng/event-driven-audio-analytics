@@ -17,10 +17,11 @@ RUN pip install --no-cache-dir \
       --index-url "${PYTORCH_CPU_INDEX_URL}" \
       "torch==${TORCH_CPU_VERSION}" \
       "torchaudio==${TORCHAUDIO_CPU_VERSION}" \
-    && pip install --no-cache-dir ".[dev,ingestion,processing,review,writer]"
+    && pip install --no-cache-dir ".[dev,dataset-exporter,ingestion,processing,review,writer]"
 
 COPY infra /app/infra
 COPY schemas /app/schemas
+COPY scripts /app/scripts
 COPY docker-compose.yml /app/
 COPY tests /app/tests
 
