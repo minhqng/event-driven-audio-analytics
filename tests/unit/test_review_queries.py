@@ -19,6 +19,7 @@ from event_driven_audio_analytics.review.schemas import (
     validate_run_id,
 )
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings, DatabaseSettings
+from event_driven_audio_analytics.shared.storage import StorageBackendSettings
 
 
 class FakeCursor:
@@ -73,6 +74,34 @@ def build_settings(tmp_path: Path) -> ReviewSettings:
             run_id="demo-run",
             kafka_bootstrap_servers="kafka:29092",
             artifacts_root=tmp_path,
+        ),
+        database=DatabaseSettings(
+            host="timescaledb",
+            port=5432,
+            database="audio_analytics",
+            user="audio_analytics",
+            password="audio_analytics",
+        ),
+        host="0.0.0.0",
+        port=8080,
+        default_limit=8,
+        max_limit=25,
+        pinned_run_ids=("demo-high-energy", "demo-silent-oriented"),
+    )
+
+
+def build_minio_settings(tmp_path: Path) -> ReviewSettings:
+    return ReviewSettings(
+        base=BaseServiceSettings(
+            service_name="review",
+            run_id="demo-run",
+            kafka_bootstrap_servers="kafka:29092",
+            artifacts_root=tmp_path,
+            storage=StorageBackendSettings(
+                backend="minio",
+                artifacts_root=tmp_path,
+                bucket="fma-small-artifacts",
+            ),
         ),
         database=DatabaseSettings(
             host="timescaledb",
@@ -337,6 +366,119 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
     assert payload["segments"]["items"][0]["artifact"]["exists"] is True
     assert payload["segments"]["items"][0]["artifact"]["uri"] == artifact_path.as_posix()
     assert payload["segments"]["items"][0]["artifact"]["provenance"]["exists"] == "fs"
+
+
+def test_get_track_detail_uses_uri_family_for_artifact_exists_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_minio_settings(tmp_path)
+    artifact_path = tmp_path / "runs" / "demo-run" / "review-media" / "segment-0.wav"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_bytes(b"RIFF")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            (
+                "demo-run",
+                42,
+                9,
+                "Synthetic",
+                "small",
+                "data/source.mp3",
+                "validated",
+                6.0,
+                "/artifacts/runs/demo-run/manifests/segments.parquet",
+                "sha256:track",
+                1,
+                0,
+                0.0,
+                -7.1,
+                3.2,
+                "persisted",
+            )
+        ],
+        fetchall_results=[
+            [
+                (
+                    None,
+                    0,
+                    -7.1,
+                    False,
+                    3.2,
+                    "/artifacts/runs/demo-run/segments/42/0.wav",
+                    "sha256:segment",
+                    "/artifacts/runs/demo-run/manifests/segments.parquet",
+                    1,
+                )
+            ]
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_track_detail(
+        settings,
+        run_id="demo-run",
+        track_id=42,
+        segments_limit=8,
+        segments_offset=0,
+    )
+
+    assert payload is not None
+    assert payload["segments"]["items"][0]["artifact"]["exists"] is False
+    assert payload["segments"]["items"][0]["artifact"]["provenance"]["exists"] == "fs"
+
+
+def test_get_run_detail_prefers_persisted_manifest_uri_for_runtime_proof(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_minio_settings(tmp_path)
+    manifest_path = tmp_path / "runs" / "demo-run" / "manifests" / "segments.parquet"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_bytes(b"PAR1")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            (
+                "demo-run",
+                None,
+                None,
+                1.0,
+                2.0,
+                0.0,
+                11.0,
+                2,
+                -9.9,
+                4.2,
+                0.5,
+                0,
+                0,
+                0.0,
+                0.0,
+            ),
+            ("/artifacts/runs/demo-run/manifests/segments.parquet",),
+        ],
+        fetchall_results=[
+            [("validated", 1)],
+            [("audio.features", 0, 8, None)],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    manifest = payload["runtime_proof"]["manifest"]
+    assert manifest["path"] == "/artifacts/runs/demo-run/manifests/segments.parquet"
+    assert manifest["exists"] is True
+    assert manifest["provenance"]["exists"] == "fs"
 
 
 def test_lookup_segment_artifact_path_rejects_uri_outside_artifacts_root(

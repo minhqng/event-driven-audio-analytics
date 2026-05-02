@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -21,7 +22,14 @@ from event_driven_audio_analytics.dataset_exporter.exporter import (
 )
 from event_driven_audio_analytics.shared.checksum import sha256_file
 from event_driven_audio_analytics.shared.settings import DatabaseSettings
-from event_driven_audio_analytics.shared.storage import manifest_uri, resolve_artifact_uri, segment_artifact_uri
+from event_driven_audio_analytics.shared.storage import (
+    S3ClaimCheckStore,
+    StorageBackendSettings,
+    manifest_uri,
+    resolve_artifact_uri,
+    segment_artifact_uri,
+)
+from tests.unit.test_claim_check_storage import FakeS3Client
 
 
 EXPECTED_BUNDLE_FILES = {
@@ -775,6 +783,72 @@ def test_exporter_uses_manifest_row_uri_for_accepted_segments(tmp_path: Path) ->
     )
 
 
+def test_exporter_reads_minio_manifest_and_validates_artifact_checksums(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    run_id = "demo-run"
+    store = S3ClaimCheckStore(
+        StorageBackendSettings(backend="minio", bucket="fma-small-artifacts"),
+        client=FakeS3Client(),
+    )
+    artifact_uri = store.segment_uri(run_id, 2, 0)
+    checksum = store.write_bytes(artifact_uri, b"segment", content_type="audio/wav")
+    manifest_uri_value = store.manifest_uri(run_id)
+    store.write_parquet(
+        manifest_uri_value,
+        pl.DataFrame(
+            [
+                _manifest_row(
+                    run_id=run_id,
+                    track_id=2,
+                    segment_idx=0,
+                    artifact_uri=artifact_uri,
+                    checksum=checksum,
+                )
+                | {"manifest_uri": manifest_uri_value}
+            ]
+        ),
+    )
+    monkeypatch.setattr(exporter_module, "build_claim_check_store", lambda _: store)
+    monkeypatch.setattr(
+        exporter_module,
+        "build_claim_check_store_for_uri",
+        lambda *args, **kwargs: store,
+    )
+    snapshot = SourceSnapshot(
+        run_id=run_id,
+        run_summary=_run_summary(run_id=run_id),
+        tracks=(replace(_track(run_id=run_id, track_id=2), manifest_uri=manifest_uri_value),),
+        features=(
+            _feature(
+                run_id=run_id,
+                track_id=2,
+                segment_idx=0,
+                artifact_uri=artifact_uri,
+                checksum=checksum,
+                manifest_uri_override=manifest_uri_value,
+            ),
+        ),
+    )
+
+    result = build_dataset_bundle(
+        snapshot=snapshot,
+        artifacts_root=tmp_path,
+        datasets_root=tmp_path / "datasets",
+        storage_settings=store.settings,
+    )
+
+    accepted_segments = _read_csv(result.output_dir / "accepted-segments.csv")
+    build_manifest = json.loads((result.output_dir / "dataset-build-manifest.json").read_text())
+    dataset_card = (result.output_dir / "dataset-card.md").read_text()
+    assert result.quality_verdict == "pass"
+    assert accepted_segments[0]["artifact_uri"] == artifact_uri
+    assert accepted_segments[0]["manifest_uri"] == manifest_uri_value
+    assert build_manifest["source_truth"]["segment_manifest"] == manifest_uri_value
+    assert manifest_uri_value in dataset_card
+
+
 def test_exporter_rejects_manifest_uri_mismatch(tmp_path: Path) -> None:
     run_id = "demo-run"
     artifact_uri, checksum = _write_segment_artifact(
@@ -1379,6 +1453,10 @@ def test_cli_export_invokes_exporter_and_prints_summary(
             "database": database,
             "artifacts_root": tmp_path / "artifacts",
             "datasets_root": tmp_path / "datasets",
+            "storage_settings": StorageBackendSettings(
+                backend="local",
+                artifacts_root=tmp_path / "artifacts",
+            ),
             "run_id": "demo-run",
         }
     ]

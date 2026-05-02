@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from io import BytesIO
 from pathlib import Path
 import wave
 
 import numpy as np
 import polars as pl
 
-from event_driven_audio_analytics.shared.checksum import sha256_file
 from event_driven_audio_analytics.shared.storage import (
-    manifest_uri,
-    resolve_artifact_uri,
+    ClaimCheckStore,
+    build_claim_check_store,
     run_root,
-    segment_artifact_uri,
+    storage_settings_for_local,
 )
 
 from .segmenter import AudioSegment
@@ -72,6 +72,20 @@ def _write_wav_mono(path: Path, waveform: np.ndarray, sample_rate: int) -> None:
         handle.writeframes(pcm.tobytes())
 
 
+def _encode_wav_mono(waveform: np.ndarray, sample_rate: int) -> bytes:
+    """Encode a mono float waveform as 16-bit PCM WAV bytes."""
+
+    buffer = BytesIO()
+    clipped = np.clip(waveform[0], -1.0, 1.0)
+    pcm = np.round(clipped * 32767.0).astype("<i2")
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(sample_rate)
+        handle.writeframes(pcm.tobytes())
+    return buffer.getvalue()
+
+
 def _manifest_frame(entries: list[SegmentDescriptor]) -> pl.DataFrame:
     """Convert written segment descriptors into a Parquet-friendly frame."""
 
@@ -94,37 +108,45 @@ def read_manifest_frame(manifest_path: Path) -> pl.DataFrame:
     return frame
 
 
-def _resolve_descriptor_path(uri: str, artifacts_root: Path | None) -> Path:
-    if artifacts_root is None:
-        return Path(uri)
-    return resolve_artifact_uri(artifacts_root, uri)
+def _read_manifest_frame_from_store(store: ClaimCheckStore, manifest_uri: str) -> pl.DataFrame:
+    frame = store.read_parquet(manifest_uri)
+    missing_fields = sorted(set(MANIFEST_REQUIRED_FIELDS) - set(frame.columns))
+    if missing_fields:
+        raise ValueError(
+            "Segment manifest is missing required fields: "
+            f"{', '.join(missing_fields)}."
+        )
+    return frame
 
 
 def verify_manifest_consistency(
     descriptors: list[SegmentDescriptor],
     *,
     artifacts_root: Path | None = None,
+    store: ClaimCheckStore | None = None,
 ) -> None:
     """Verify artifact, checksum, and manifest linkage before events are published."""
 
     if not descriptors:
         return
+    if store is None:
+        if artifacts_root is None:
+            raise ValueError("artifacts_root or store is required for manifest verification.")
+        store = build_claim_check_store(storage_settings_for_local(artifacts_root))
 
     manifest_uris = {descriptor.manifest_uri for descriptor in descriptors}
     if len(manifest_uris) != 1:
         raise ValueError("Segment descriptors must share exactly one manifest_uri.")
 
-    manifest_path = _resolve_descriptor_path(next(iter(manifest_uris)), artifacts_root)
-    manifest_frame = read_manifest_frame(manifest_path)
+    manifest_frame = _read_manifest_frame_from_store(store, next(iter(manifest_uris)))
 
     for descriptor in descriptors:
-        artifact_path = _resolve_descriptor_path(descriptor.artifact_uri, artifacts_root)
-        if not artifact_path.exists():
+        if not store.exists(descriptor.artifact_uri):
             raise FileNotFoundError(
-                f"Segment artifact does not exist: {artifact_path.as_posix()}"
+                f"Segment artifact does not exist: {descriptor.artifact_uri}"
             )
 
-        actual_checksum = sha256_file(artifact_path)
+        actual_checksum = store.checksum(descriptor.artifact_uri)
         if actual_checksum != descriptor.checksum:
             raise ValueError(
                 "Segment artifact checksum does not match its descriptor "
@@ -156,35 +178,41 @@ def verify_manifest_consistency(
 def write_segment_artifacts(
     artifacts_root: Path,
     segments: list[AudioSegment],
+    *,
+    store: ClaimCheckStore | None = None,
 ) -> list[SegmentDescriptor]:
     """Write WAV artifacts, compute checksums, and update the run manifest."""
 
     if not segments:
         return []
+    if store is None:
+        store = build_claim_check_store(storage_settings_for_local(artifacts_root))
 
     run_id = segments[0].run_id
-    manifest_uri_str = manifest_uri(artifacts_root, run_id)
-    manifest_path = resolve_artifact_uri(artifacts_root, manifest_uri_str)
-    ensure_artifact_layout(artifacts_root, run_id)
+    manifest_uri_str = store.manifest_uri(run_id)
+    if store.settings.normalized_backend() == "local":
+        ensure_artifact_layout(artifacts_root, run_id)
 
     descriptors: list[SegmentDescriptor] = []
     for segment in segments:
-        artifact_uri_str = segment_artifact_uri(
-            artifacts_root,
+        artifact_uri_str = store.segment_uri(
             segment.run_id,
             segment.track_id,
             segment.segment_idx,
         )
-        artifact_path = resolve_artifact_uri(artifacts_root, artifact_uri_str)
-        artifact_path.parent.mkdir(parents=True, exist_ok=True)
-        _write_wav_mono(artifact_path, segment.waveform, segment.sample_rate)
+        wav_payload = _encode_wav_mono(segment.waveform, segment.sample_rate)
+        checksum = store.write_bytes(
+            artifact_uri_str,
+            wav_payload,
+            content_type="audio/wav",
+        )
         descriptors.append(
             SegmentDescriptor(
                 run_id=segment.run_id,
                 track_id=segment.track_id,
                 segment_idx=segment.segment_idx,
                 artifact_uri=artifact_uri_str,
-                checksum=sha256_file(artifact_path),
+                checksum=checksum,
                 manifest_uri=manifest_uri_str,
                 sample_rate=segment.sample_rate,
                 duration_s=segment.duration_s,
@@ -193,14 +221,14 @@ def write_segment_artifacts(
         )
 
     current_frame = _manifest_frame(descriptors)
-    if manifest_path.exists():
-        existing_frame = pl.read_parquet(manifest_path)
+    if store.exists(manifest_uri_str):
+        existing_frame = store.read_parquet(manifest_uri_str)
         current_frame = (
             pl.concat([existing_frame, current_frame], how="vertical_relaxed")
             .unique(subset=["run_id", "track_id", "segment_idx"], keep="last")
             .sort(["run_id", "track_id", "segment_idx"])
         )
 
-    current_frame.write_parquet(manifest_path)
-    verify_manifest_consistency(descriptors, artifacts_root=artifacts_root)
+    store.write_parquet(manifest_uri_str, current_frame)
+    verify_manifest_consistency(descriptors, artifacts_root=artifacts_root, store=store)
     return descriptors

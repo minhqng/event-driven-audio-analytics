@@ -55,6 +55,7 @@ from event_driven_audio_analytics.shared.models.envelope import (
     validate_envelope_dict,
 )
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
+from event_driven_audio_analytics.shared.storage import ClaimCheckStore, build_claim_check_store
 
 if TYPE_CHECKING:
     from confluent_kafka import Consumer, Message
@@ -160,6 +161,7 @@ class ProcessingPipeline:
     _mel_extractor: LogMelExtractor = field(init=False, repr=False)
     _welford_state_by_run_id: dict[str, WelfordState] = field(init=False, repr=False)
     _run_metrics_by_run_id: dict[str, ProcessingRunMetrics] = field(init=False, repr=False)
+    _claim_check_store: ClaimCheckStore = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self._mel_extractor = LogMelExtractor(
@@ -174,6 +176,7 @@ class ProcessingPipeline:
         )
         self._welford_state_by_run_id = {}
         self._run_metrics_by_run_id = {}
+        self._claim_check_store = build_claim_check_store(self.settings.base.storage)
 
     def describe(self) -> list[str]:
         return [
@@ -453,6 +456,7 @@ class ProcessingPipeline:
                 payload.checksum,
                 artifacts_root=self.settings.base.artifacts_root,
                 expected_sample_rate_hz=self.settings.target_sample_rate_hz,
+                store=self._claim_check_store,
             )
             self._validate_loaded_artifact(payload, artifact)
         except (FileNotFoundError, ArtifactChecksumMismatch):

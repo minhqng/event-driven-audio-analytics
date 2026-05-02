@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from time import perf_counter
 from typing import Any
 
@@ -34,6 +34,7 @@ from event_driven_audio_analytics.shared.logging import ServiceLoggerAdapter, ge
 from event_driven_audio_analytics.shared.models.audio_metadata import AudioMetadataPayload
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import EventEnvelope, build_trace_id
+from event_driven_audio_analytics.shared.storage import ClaimCheckStore, build_claim_check_store
 
 
 @dataclass(slots=True)
@@ -53,6 +54,10 @@ class IngestionPipeline:
     """Run the ingestion path from metadata ETL to event emission."""
 
     settings: IngestionSettings
+    _claim_check_store: ClaimCheckStore = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._claim_check_store = build_claim_check_store(self.settings.base.storage)
 
     def _service_logger(self) -> ServiceLoggerAdapter:
         """Return the service-scoped structured logger."""
@@ -231,6 +236,7 @@ class IngestionPipeline:
         segment_descriptors = write_segment_artifacts(
             self.settings.base.artifacts_root,
             segments,
+            store=self._claim_check_store,
         )
         artifact_write_ms = (perf_counter() - artifact_write_started) * 1000.0
         if not segment_descriptors:

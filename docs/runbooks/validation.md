@@ -69,6 +69,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-ingestion-flow.ps
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-flow.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-processing-writer-flow.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-restart-replay-flow.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-minio-claim-check-flow.ps1
 ```
 
 Bash:
@@ -78,6 +79,7 @@ bash ./scripts/smoke/check-ingestion-flow.sh
 bash ./scripts/smoke/check-processing-flow.sh
 bash ./scripts/smoke/check-processing-writer-flow.sh
 bash ./scripts/smoke/check-restart-replay-flow.sh
+bash ./scripts/smoke/check-minio-claim-check-flow.sh
 ```
 
 ## Review/Dashboard Evidence Only
@@ -166,3 +168,67 @@ Expected normalization output lives under `artifacts/datasets/<run_id>/stats/`:
 
 These files contain FMA-Small metadata, labels, artifact references, and scalar
 summaries only. They do not contain log-mel tensors.
+
+## MinIO Claim-Check Variant
+
+Local filesystem claim-check remains the default:
+
+```powershell
+$env:STORAGE_BACKEND="local"
+```
+
+Canonical MinIO env names are:
+
+- `MINIO_ENDPOINT_URL`
+- `MINIO_BUCKET`
+
+Prompt-compatible aliases are also accepted:
+
+- `MINIO_ENDPOINT` -> `MINIO_ENDPOINT_URL`
+- `ARTIFACT_BUCKET` -> `MINIO_BUCKET`
+
+If both the canonical name and alias are set, they must match exactly.
+
+For the bounded private-cloud variant, set the MinIO backend and initialize the bucket:
+
+```powershell
+$env:STORAGE_BACKEND="minio"
+$env:MINIO_CREATE_BUCKET="true"
+$env:MINIO_ENDPOINT_URL="http://minio:9000"
+$env:MINIO_BUCKET="fma-small-artifacts"
+docker compose up -d minio minio-init
+```
+
+```sh
+export STORAGE_BACKEND=minio
+export MINIO_CREATE_BUCKET=true
+export MINIO_ENDPOINT_URL=http://minio:9000
+export MINIO_BUCKET=fma-small-artifacts
+docker compose up -d minio minio-init
+```
+
+The official bounded MinIO smoke/evidence path is:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-minio-claim-check-flow.ps1
+```
+
+```sh
+bash ./scripts/smoke/check-minio-claim-check-flow.sh
+```
+
+This starts Kafka, TimescaleDB, MinIO, processing, writer, and review; runs a bounded ingestion flow; exports the dataset bundle; and writes a verification summary under:
+
+```text
+artifacts/evidence/minio-claim-check/<run_id>-summary.json
+```
+
+MinIO-backed claim-check artifact URIs use:
+
+```text
+s3://fma-small-artifacts/runs/<run_id>/segments/<track_id>/<segment_idx>.wav
+s3://fma-small-artifacts/runs/<run_id>/manifests/segments.parquet
+```
+
+Existing local runs with `/artifacts/runs/...` URIs remain readable with
+`STORAGE_BACKEND=local`. Do not mix backends inside one persisted run.

@@ -21,13 +21,16 @@ dependencies = [
 [project.optional-dependencies]
 ingestion = [
   "av==14.0.0",
+  "boto3==1.34.162",
   "polars==1.0.0",
 ]
 processing = [
+  "boto3==1.34.162",
   "torch==2.11.0",
   "torchaudio==2.11.0",
 ]
 review = [
+  "boto3==1.34.162",
   "fastapi==0.115.0",
   "uvicorn==0.30.0",
 ]
@@ -36,6 +39,7 @@ writer = [
   "psycopg-pool==3.2.1",
 ]
 dataset-exporter = [
+  "boto3==1.34.162",
   "polars==1.0.0",
   "psycopg[binary]==3.2.1",
 ]

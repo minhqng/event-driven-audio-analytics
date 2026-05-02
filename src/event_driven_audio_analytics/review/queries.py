@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from json import JSONDecodeError
 import json
 from pathlib import Path
 
 from event_driven_audio_analytics.shared.db import open_database_connection
-from event_driven_audio_analytics.shared.storage import resolve_artifact_uri, run_root
+from event_driven_audio_analytics.shared.storage import (
+    build_claim_check_store,
+    build_claim_check_store_for_uri,
+    resolve_artifact_uri,
+    run_root,
+)
 
 from .config import ReviewSettings
 from .schemas import (
@@ -20,6 +26,18 @@ from .schemas import (
     isoformat_or_none,
     validate_run_id,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class SegmentArtifactRef:
+    uri: str
+    exists: bool
+    local_path: Path | None
+
+
+def _store_exists_provenance(store: object) -> str:
+    backend = store.settings.normalized_backend()
+    return "fs" if backend == "local" else backend
 
 
 def _canonical_run_root(artifacts_root: Path, run_id: str) -> Path:
@@ -36,6 +54,20 @@ def _processing_state_path(artifacts_root: Path, run_id: str) -> Path:
 
 def _resolve_artifact_path(artifacts_root: Path, artifact_uri: str) -> Path:
     return resolve_artifact_uri(artifacts_root, artifact_uri)
+
+
+def _derived_manifest_runtime_ref(
+    settings: ReviewSettings,
+    *,
+    run_id: str,
+) -> tuple[str, bool, str]:
+    store = build_claim_check_store(settings.base.storage)
+    manifest_uri_value = store.manifest_uri(run_id)
+    return (
+        manifest_uri_value,
+        store.exists(manifest_uri_value),
+        _store_exists_provenance(store),
+    )
 
 
 def lookup_segment_artifact_path(
@@ -65,6 +97,44 @@ def lookup_segment_artifact_path(
         return None
     try:
         return _resolve_artifact_path(settings.base.artifacts_root, str(row[0]))
+    except ValueError:
+        return None
+
+
+def lookup_segment_artifact_ref(
+    settings: ReviewSettings,
+    *,
+    run_id: str,
+    track_id: int,
+    segment_idx: int,
+) -> SegmentArtifactRef | None:
+    validated_run_id = validate_run_id(run_id)
+    with open_database_connection(settings.database) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT artifact_uri
+                FROM audio_features
+                WHERE run_id = %s
+                  AND track_id = %s
+                  AND segment_idx = %s
+                ORDER BY ts DESC
+                LIMIT 1;
+                """,
+                (validated_run_id, track_id, segment_idx),
+            )
+            row = cursor.fetchone()
+    if row is None:
+        return None
+
+    uri = str(row[0])
+    store = build_claim_check_store_for_uri(settings.base.storage, uri)
+    try:
+        return SegmentArtifactRef(
+            uri=uri,
+            exists=store.exists(uri),
+            local_path=store.local_path(uri),
+        )
     except ValueError:
         return None
 
@@ -259,7 +329,32 @@ def get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object] |
             )
             checkpoint_rows = cursor.fetchall()
 
-    manifest_path = _manifest_path(settings.base.artifacts_root, validated_run_id)
+            cursor.execute(
+                """
+                SELECT manifest_uri
+                FROM audio_features
+                WHERE run_id = %s
+                  AND manifest_uri IS NOT NULL
+                ORDER BY ts DESC, track_id ASC, segment_idx ASC
+                LIMIT 1;
+                """,
+                (validated_run_id,),
+            )
+            manifest_row = cursor.fetchone()
+
+    if manifest_row is not None and manifest_row[0] is not None:
+        manifest_uri_value = str(manifest_row[0])
+        manifest_store = build_claim_check_store_for_uri(settings.base.storage, manifest_uri_value)
+        try:
+            manifest_exists = manifest_store.exists(manifest_uri_value)
+        except ValueError:
+            manifest_exists = False
+        manifest_exists_provenance = _store_exists_provenance(manifest_store)
+    else:
+        manifest_uri_value, manifest_exists, manifest_exists_provenance = _derived_manifest_runtime_ref(
+            settings,
+            run_id=validated_run_id,
+        )
     processing_state_path = _processing_state_path(settings.base.artifacts_root, validated_run_id)
 
     processing_state_payload: dict[str, object] | None = None
@@ -306,11 +401,11 @@ def get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object] |
             "emphasis": "secondary",
             "provenance": build_derived_provenance(),
             "manifest": {
-                "path": manifest_path.as_posix(),
-                "exists": manifest_path.exists(),
+                "path": manifest_uri_value,
+                "exists": manifest_exists,
                 "provenance": {
-                    "path": "fs",
-                    "exists": "fs",
+                    "path": "claim_check_uri",
+                    "exists": manifest_exists_provenance,
                 },
             },
             "processing_state": {
@@ -456,14 +551,13 @@ def get_track_detail(
     segments_total = int(segment_rows[0][8]) if segment_rows else 0
     segment_items: list[dict[str, object]] = []
     for ts, segment_idx, rms, silent_flag, processing_ms, artifact_uri, checksum, manifest_uri, _total in segment_rows:
+        uri = str(artifact_uri)
+        store = build_claim_check_store_for_uri(settings.base.storage, uri)
         try:
-            artifact_path = _resolve_artifact_path(
-                settings.base.artifacts_root,
-                str(artifact_uri),
-            )
-            artifact_exists = artifact_path.exists()
+            artifact_exists = store.exists(uri)
         except ValueError:
             artifact_exists = False
+        artifact_exists_provenance = _store_exists_provenance(store)
         segment_items.append(
             {
                 "ts": isoformat_or_none(ts),
@@ -483,7 +577,7 @@ def get_track_detail(
                     "provenance": {
                         "uri": "db",
                         "media_url": "derived",
-                        "exists": "fs",
+                        "exists": artifact_exists_provenance,
                     },
                 },
             }

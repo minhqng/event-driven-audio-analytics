@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -39,11 +40,13 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     if args.command == "export":
         artifacts_root = args.artifacts_root or settings.artifacts_root
+        storage = replace(settings.storage, artifacts_root=artifacts_root)
         datasets_root = args.datasets_root or settings.datasets_root
         result = export_dataset_bundle(
             database=settings.database,
             artifacts_root=artifacts_root,
             datasets_root=datasets_root,
+            storage_settings=storage,
             run_id=validate_run_id(args.run_id),
         )
         print(json.dumps(  # noqa: T201 - CLI result payload
@@ -67,4 +70,3 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

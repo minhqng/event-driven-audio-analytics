@@ -15,8 +15,11 @@ from event_driven_audio_analytics.shared.checksum import sha256_file
 from event_driven_audio_analytics.shared.db import open_database_connection
 from event_driven_audio_analytics.shared.settings import DatabaseSettings
 from event_driven_audio_analytics.shared.storage import (
-    resolve_artifact_uri,
-    run_root,
+    ClaimCheckStore,
+    StorageBackendSettings,
+    build_claim_check_store,
+    build_claim_check_store_for_uri,
+    storage_settings_for_local,
     validate_run_id,
 )
 
@@ -310,21 +313,34 @@ def _row_count(path: Path) -> int | None:
     return None
 
 
-def _manifest_path(artifacts_root: Path, run_id: str) -> Path:
-    return run_root(artifacts_root, run_id) / "manifests" / "segments.parquet"
+def _snapshot_manifest_uri(snapshot: SourceSnapshot, *, fallback_uri: str) -> str:
+    for track in snapshot.tracks:
+        if track.manifest_uri:
+            return track.manifest_uri
+    for feature in snapshot.features:
+        if feature.manifest_uri:
+            return feature.manifest_uri
+    return fallback_uri
 
 
 def _load_manifest_rows(
     *,
     artifacts_root: Path,
     snapshot: SourceSnapshot,
+    store: ClaimCheckStore | None = None,
 ) -> tuple[tuple[ManifestSegmentRow, ...], list[Anomaly]]:
-    path = _manifest_path(artifacts_root, snapshot.run_id)
+    if store is None:
+        store = build_claim_check_store(storage_settings_for_local(artifacts_root))
+    manifest_uri_value = _snapshot_manifest_uri(
+        snapshot,
+        fallback_uri=store.manifest_uri(snapshot.run_id),
+    )
+    manifest_store = build_claim_check_store_for_uri(store.settings, manifest_uri_value)
     manifest_required = bool(snapshot.features) or any(
         track.validation_status == "validated" and track.segments_persisted > 0
         for track in snapshot.tracks
     )
-    if not path.exists():
+    if not manifest_store.exists(manifest_uri_value):
         if not manifest_required:
             return (), []
         return (), [
@@ -332,21 +348,19 @@ def _load_manifest_rows(
                 type="segment_manifest_missing",
                 severity="blocking",
                 message="Required claim-check segment manifest is missing.",
-                example={"path": path.as_posix()},
+                example={"uri": manifest_uri_value},
             )
         ]
 
     try:
-        import polars as pl
-
-        rows = pl.read_parquet(path).to_dicts()
+        rows = manifest_store.read_parquet(manifest_uri_value).to_dicts()
     except Exception as exc:
         return (), [
             Anomaly(
                 type="segment_manifest_unreadable",
                 severity="blocking",
                 message="Claim-check segment manifest could not be read.",
-                example={"path": path.as_posix(), "error": str(exc)},
+                example={"uri": manifest_uri_value, "error": str(exc)},
             )
         ]
 
@@ -457,6 +471,7 @@ def _group_features(
 def _artifact_rejection_reasons(
     *,
     artifacts_root: Path,
+    store: ClaimCheckStore,
     feature: FeatureRow,
     manifest_row: ManifestSegmentRow | None,
     manifest_required: bool,
@@ -505,8 +520,9 @@ def _artifact_rejection_reasons(
                 example={"track_id": feature.track_id, "segment_idx": feature.segment_idx},
             )
 
+    artifact_store = build_claim_check_store_for_uri(store.settings, feature.artifact_uri)
     try:
-        artifact_path = resolve_artifact_uri(artifacts_root, feature.artifact_uri)
+        artifact_exists = artifact_store.exists(feature.artifact_uri)
     except ValueError as exc:
         reasons.append("artifact_uri_invalid")
         _add_anomaly(
@@ -523,7 +539,7 @@ def _artifact_rejection_reasons(
         )
         return reasons
 
-    if not artifact_path.exists():
+    if not artifact_exists:
         reasons.append("artifact_missing")
         _add_anomaly(
             anomalies,
@@ -538,7 +554,7 @@ def _artifact_rejection_reasons(
         )
         return reasons
 
-    actual_checksum = sha256_file(artifact_path)
+    actual_checksum = artifact_store.checksum(feature.artifact_uri)
     if actual_checksum != feature.checksum:
         reasons.append("artifact_checksum_mismatch")
         _add_anomaly(
@@ -655,6 +671,7 @@ def _classify_bundle(
     *,
     snapshot: SourceSnapshot,
     artifacts_root: Path,
+    store: ClaimCheckStore,
     manifest_rows: tuple[ManifestSegmentRow, ...],
     manifest_anomalies: list[Anomaly],
 ) -> _ClassifiedBundle:
@@ -750,6 +767,7 @@ def _classify_bundle(
             reasons.extend(
                 _artifact_rejection_reasons(
                     artifacts_root=artifacts_root,
+                    store=store,
                     feature=feature,
                     manifest_row=manifest_by_key.get(key),
                     manifest_required=manifest_required,
@@ -1321,6 +1339,7 @@ def _dataset_card(
     *,
     run_id: str,
     split_manifest: dict[str, object],
+    manifest_reference: str,
 ) -> str:
     run_summary = classified.run_summary
     track_counts = run_summary["tracks"]
@@ -1346,7 +1365,7 @@ def _dataset_card(
             "## Source Of Truth",
             "",
             "- Track and feature summaries: TimescaleDB persisted truth.",
-            "- Audio segment references: claim-check artifacts under `artifacts/runs/<run_id>/`.",
+            f"- Audio segment references: claim-check artifact URIs recorded in `{manifest_reference}`.",
             "- Review console and Grafana: inspection surfaces only.",
             "",
             "## Counts",
@@ -1395,6 +1414,7 @@ def _write_bundle_files(
     output_dir: Path,
     run_id: str,
     classified: _ClassifiedBundle,
+    manifest_reference: str,
 ) -> dict[str, int | None]:
     output_dir.mkdir(parents=True, exist_ok=True)
     files: dict[str, int | None] = {}
@@ -1432,6 +1452,7 @@ def _write_bundle_files(
             classified,
             run_id=run_id,
             split_manifest=training_split_result.split_manifest,
+            manifest_reference=manifest_reference,
         ),
         encoding="utf-8",
     )
@@ -1444,6 +1465,7 @@ def _write_dataset_build_manifest(
     output_dir: Path,
     snapshot: SourceSnapshot,
     files: dict[str, int | None],
+    manifest_reference: str,
 ) -> None:
     file_items = []
     for relative_path in sorted(files):
@@ -1466,7 +1488,7 @@ def _write_dataset_build_manifest(
             "tracks": "track_metadata via vw_review_tracks",
             "features": "audio_features",
             "run_summary": "vw_dashboard_run_summary",
-            "segment_manifest": f"artifacts/runs/{snapshot.run_id}/manifests/segments.parquet",
+            "segment_manifest": manifest_reference,
         },
         "determinism": {
             "sort_keys": ["track_id", "segment_idx"],
@@ -1511,19 +1533,27 @@ def build_dataset_bundle(
     snapshot: SourceSnapshot,
     artifacts_root: Path,
     datasets_root: Path,
+    storage_settings: StorageBackendSettings | None = None,
 ) -> DatasetExportResult:
     """Write the deterministic dataset bundle for one completed run."""
 
     run_id = validate_run_id(snapshot.run_id)
+    store = build_claim_check_store(storage_settings or storage_settings_for_local(artifacts_root))
+    manifest_reference = _snapshot_manifest_uri(
+        snapshot,
+        fallback_uri=store.manifest_uri(run_id),
+    )
     output_dir = datasets_root / run_id
     staging_dir = datasets_root / f".{run_id}.tmp"
     manifest_rows, manifest_anomalies = _load_manifest_rows(
         artifacts_root=artifacts_root,
         snapshot=snapshot,
+        store=store,
     )
     classified = _classify_bundle(
         snapshot=snapshot,
         artifacts_root=artifacts_root,
+        store=store,
         manifest_rows=manifest_rows,
         manifest_anomalies=manifest_anomalies,
     )
@@ -1534,8 +1564,14 @@ def build_dataset_bundle(
         output_dir=staging_dir,
         run_id=run_id,
         classified=classified,
+        manifest_reference=manifest_reference,
     )
-    _write_dataset_build_manifest(output_dir=staging_dir, snapshot=snapshot, files=files)
+    _write_dataset_build_manifest(
+        output_dir=staging_dir,
+        snapshot=snapshot,
+        files=files,
+        manifest_reference=manifest_reference,
+    )
     _publish_bundle_files(
         datasets_root=datasets_root,
         output_dir=output_dir,
@@ -1719,6 +1755,7 @@ def export_dataset_bundle(
     artifacts_root: Path,
     datasets_root: Path,
     run_id: str,
+    storage_settings: StorageBackendSettings | None = None,
 ) -> DatasetExportResult:
     """Load persisted truth and write the run-scoped dataset bundle."""
 
@@ -1727,4 +1764,5 @@ def export_dataset_bundle(
         snapshot=snapshot,
         artifacts_root=artifacts_root,
         datasets_root=datasets_root,
+        storage_settings=storage_settings,
     )

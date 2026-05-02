@@ -34,6 +34,8 @@ from event_driven_audio_analytics.shared.kafka import deserialize_envelope
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.models.envelope import validate_envelope_dict
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
+from event_driven_audio_analytics.shared.storage import S3ClaimCheckStore, StorageBackendSettings
+from tests.unit.test_claim_check_storage import FakeS3Client
 from tests.unit.test_event_contract_validation import load_validator
 
 
@@ -301,6 +303,34 @@ def test_segment_loader_rejects_checksum_mismatch(tmp_path: Path) -> None:
             artifacts_root=tmp_path,
             expected_sample_rate_hz=32000,
         )
+
+
+def test_segment_loader_reads_minio_artifact_and_validates_checksum(tmp_path: Path) -> None:
+    local_artifact = tmp_path / "tone.wav"
+    _write_tone_wav(local_artifact, duration_s=3.0)
+    store = S3ClaimCheckStore(
+        StorageBackendSettings(backend="minio", bucket="fma-small-artifacts"),
+        client=FakeS3Client(),
+    )
+    artifact_uri = store.segment_uri("demo-run", 2, 0)
+    checksum = store.write_bytes(
+        artifact_uri,
+        local_artifact.read_bytes(),
+        content_type="audio/wav",
+    )
+
+    artifact = load_segment_artifact(
+        artifact_uri,
+        checksum,
+        artifacts_root=tmp_path,
+        expected_sample_rate_hz=32000,
+        store=store,
+    )
+
+    assert artifact.artifact_path is None
+    assert artifact.artifact_uri == artifact_uri
+    assert artifact.sample_rate_hz == 32000
+    assert artifact.duration_s == pytest.approx(3.0, abs=1e-6)
 
 
 def test_segment_loader_rejects_artifact_uri_outside_artifacts_root(tmp_path: Path) -> None:
