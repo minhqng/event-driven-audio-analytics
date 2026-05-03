@@ -11,8 +11,9 @@ from event_driven_audio_analytics.shared.db import open_database_connection
 from event_driven_audio_analytics.shared.storage import (
     build_claim_check_store,
     build_claim_check_store_for_uri,
-    resolve_artifact_uri,
     run_root,
+    validate_manifest_artifact_uri,
+    validate_segment_artifact_uri,
 )
 
 from .config import ReviewSettings
@@ -31,6 +32,7 @@ from .schemas import (
 @dataclass(frozen=True, slots=True)
 class SegmentArtifactRef:
     uri: str
+    checksum: str
     exists: bool
     local_path: Path | None
 
@@ -44,16 +46,8 @@ def _canonical_run_root(artifacts_root: Path, run_id: str) -> Path:
     return run_root(artifacts_root, validate_run_id(run_id))
 
 
-def _manifest_path(artifacts_root: Path, run_id: str) -> Path:
-    return _canonical_run_root(artifacts_root, run_id) / "manifests" / "segments.parquet"
-
-
 def _processing_state_path(artifacts_root: Path, run_id: str) -> Path:
     return _canonical_run_root(artifacts_root, run_id) / "state" / "processing_metrics.json"
-
-
-def _resolve_artifact_path(artifacts_root: Path, artifact_uri: str) -> Path:
-    return resolve_artifact_uri(artifacts_root, artifact_uri)
 
 
 def _derived_manifest_runtime_ref(
@@ -82,7 +76,7 @@ def lookup_segment_artifact_path(
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT artifact_uri
+                SELECT artifact_uri, checksum
                 FROM audio_features
                 WHERE run_id = %s
                   AND track_id = %s
@@ -96,7 +90,16 @@ def lookup_segment_artifact_path(
     if row is None:
         return None
     try:
-        return _resolve_artifact_path(settings.base.artifacts_root, str(row[0]))
+        uri = str(row[0])
+        store = build_claim_check_store_for_uri(settings.base.storage, uri)
+        validate_segment_artifact_uri(
+            uri,
+            run_id=validated_run_id,
+            track_id=track_id,
+            segment_idx=segment_idx,
+            bucket=store.settings.bucket,
+        )
+        return store.local_path(uri)
     except ValueError:
         return None
 
@@ -128,10 +131,19 @@ def lookup_segment_artifact_ref(
         return None
 
     uri = str(row[0])
+    checksum = str(row[1])
     store = build_claim_check_store_for_uri(settings.base.storage, uri)
     try:
+        validate_segment_artifact_uri(
+            uri,
+            run_id=validated_run_id,
+            track_id=track_id,
+            segment_idx=segment_idx,
+            bucket=store.settings.bucket,
+        )
         return SegmentArtifactRef(
             uri=uri,
+            checksum=checksum,
             exists=store.exists(uri),
             local_path=store.local_path(uri),
         )
@@ -346,6 +358,11 @@ def get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object] |
         manifest_uri_value = str(manifest_row[0])
         manifest_store = build_claim_check_store_for_uri(settings.base.storage, manifest_uri_value)
         try:
+            validate_manifest_artifact_uri(
+                manifest_uri_value,
+                run_id=validated_run_id,
+                bucket=manifest_store.settings.bucket,
+            )
             manifest_exists = manifest_store.exists(manifest_uri_value)
         except ValueError:
             manifest_exists = False
@@ -554,6 +571,13 @@ def get_track_detail(
         uri = str(artifact_uri)
         store = build_claim_check_store_for_uri(settings.base.storage, uri)
         try:
+            validate_segment_artifact_uri(
+                uri,
+                run_id=validated_run_id,
+                track_id=track_id,
+                segment_idx=int(segment_idx),
+                bucket=store.settings.bucket,
+            )
             artifact_exists = store.exists(uri)
         except ValueError:
             artifact_exists = False

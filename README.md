@@ -1,11 +1,11 @@
 # event-driven-audio-analytics
 
-`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, Grafana provides the supporting observability story from file-provisioned dashboards, and the dataset-exporter materializes final FMA-Small analytics/dataset bundles from persisted truth.
+`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, local or MinIO-backed claim-check storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, Grafana provides the supporting observability story from file-provisioned dashboards, and the dataset-exporter materializes final FMA-Small analytics/dataset bundles from persisted truth.
 
 ## What This Repository Demonstrates
 
 - Event-driven decoupling across `ingestion`, `processing`, and `writer`
-- Claim-check handling for audio segments and run manifests under `artifacts/`
+- Claim-check handling for audio segments and run manifests under logical `/artifacts/...` or `s3://<bucket>/...`
 - At-least-once delivery with checkpoint-aware, idempotent persistence
 - A read-only review surface over persisted run, track, and segment outcomes
 - Deterministic dataset/analytics bundle generation from completed persisted runs
@@ -14,7 +14,7 @@
 
 ## Scope
 
-- In scope: Docker Compose, Kafka KRaft, shared-volume claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style monitoring output, and bounded demo/evidence flows
+- In scope: Docker Compose, Kafka KRaft, local and MinIO/S3-compatible claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style monitoring output, and bounded demo/evidence flows
 - Out of scope: Kubernetes, service mesh, HA/DR, multi-node Kafka, production object storage/IAM, model serving, full MLOps, and benchmark-scale claims beyond the documented bounded runs
 - Kafka remains small-event transport only. Raw waveform payloads and large tensors do not belong on the broker.
 
@@ -69,6 +69,37 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
 ```sh
 bash ./scripts/smoke/check-pytest.sh
 ```
+
+Optional MinIO claim-check smoke and evidence path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-minio-claim-check-flow.ps1
+```
+
+```sh
+bash ./scripts/smoke/check-minio-claim-check-flow.sh
+```
+
+This path keeps the default deterministic demo on `STORAGE_BACKEND=local`, then exercises the bounded MinIO variant separately. Canonical storage env vars live in `.env.example`, and the full manual/acceptance steps are in `docs/runbooks/validation.md`.
+
+When `MINIO_ENDPOINT_URL` is left unset, the services derive `http://minio:9000`
+or `https://minio:9000` from `MINIO_SECURE`. If a local processing deployment
+must also fail fast on historical `s3://...` replay readiness, set
+`PROCESSING_PROBE_S3_REPLAY_READINESS=true`.
+
+Bounded FMA-Small evaluation evidence:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\evaluation\run-evaluation.ps1
+```
+
+```sh
+bash ./scripts/evaluation/run-evaluation.sh
+```
+
+This writes latency, throughput, resource usage, scaling, and markdown report
+artifacts under `artifacts/evidence/final-demo/evaluation/`. Treat these as
+bounded local measurements, not benchmark-scale performance claims.
 
 Bounded local FMA-small burst after placing the dataset under `data/local/`:
 

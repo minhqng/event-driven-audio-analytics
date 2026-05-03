@@ -82,6 +82,8 @@ def test_uri_policy_accepts_run_scoped_local_and_s3_uris() -> None:
         "gs://bucket/runs/demo-run/segments/2/0.wav",
         "/artifacts/runs/../segments/2/0.wav",
         "s3://other-bucket/runs/demo-run/segments/2/0.wav",
+        "s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav?versionId=1",
+        "s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav#fragment",
     ],
 )
 def test_uri_policy_rejects_unsupported_or_unsafe_uris(uri: str) -> None:
@@ -122,6 +124,7 @@ def test_s3_store_round_trips_bytes_and_parquet_manifest() -> None:
 
     assert store.exists(segment_uri)
     assert store.read_bytes(segment_uri) == b"payload"
+    assert list(store.read_bytes_chunked(segment_uri, chunk_size=3)) == [b"pay", b"loa", b"d"]
     assert store.checksum(segment_uri) == checksum
     assert store.read_parquet(manifest_uri).to_dicts() == frame.to_dicts()
     assert store.local_path(segment_uri) is None
@@ -138,7 +141,18 @@ def test_local_store_preserves_existing_logical_uri_layout(tmp_path: Path) -> No
     assert uri == "/artifacts/runs/demo-run/segments/2/0.wav"
     assert store.exists(uri)
     assert store.checksum(uri) == checksum
+    assert list(store.read_bytes_chunked(uri, chunk_size=3)) == [b"pay", b"loa", b"d"]
     assert store.local_path(uri) == tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+
+
+def test_local_store_rejects_raw_filesystem_paths_under_artifacts_root(tmp_path: Path) -> None:
+    store = build_claim_check_store(
+        StorageBackendSettings(backend="local", artifacts_root=tmp_path)
+    )
+    raw_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+
+    with pytest.raises(ValueError, match="logical /artifacts"):
+        store.write_bytes(raw_path.as_posix(), b"payload", content_type="audio/wav")
 
 
 def test_backend_stores_reject_foreign_uri_families(tmp_path: Path) -> None:

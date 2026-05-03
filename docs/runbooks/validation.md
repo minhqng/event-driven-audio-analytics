@@ -116,6 +116,36 @@ This is the full bounded evidence path. It keeps the review/Grafana story,
 keeps restart/replay evidence, and also exports and verifies the deterministic
 FMA-Small dataset bundles for the demo runs.
 
+## Bounded Evaluation Evidence
+
+Phase 6 evaluation evidence is generated separately from the front-door demo so
+the demo remains deterministic and each evaluation scenario can be marked as a
+bounded local measurement.
+
+PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\evaluation\run-evaluation.ps1
+```
+
+Bash:
+
+```sh
+bash ./scripts/evaluation/run-evaluation.sh
+```
+
+Expected outputs:
+
+- `artifacts/evidence/final-demo/evaluation/latency-summary.json`
+- `artifacts/evidence/final-demo/evaluation/throughput-summary.json`
+- `artifacts/evidence/final-demo/evaluation/resource-usage-summary.json`
+- `artifacts/evidence/final-demo/evaluation/scaling-summary.json`
+- `artifacts/evidence/final-demo/evaluation/evaluation-report.md`
+
+The evaluator uses persisted TimescaleDB truth, checksum-verified claim-check
+artifact reads, script wall-clock timing, and bounded `docker stats` samples. It
+does not claim benchmark-scale or production performance.
+
 ## Local FMA-small Burst
 
 Place local data under:
@@ -182,6 +212,10 @@ Canonical MinIO env names are:
 - `MINIO_ENDPOINT_URL`
 - `MINIO_BUCKET`
 
+If `MINIO_ENDPOINT_URL` is left unset, the services derive the default endpoint
+from `MINIO_SECURE`: `http://minio:9000` when false, `https://minio:9000` when
+true.
+
 Prompt-compatible aliases are also accepted:
 
 - `MINIO_ENDPOINT` -> `MINIO_ENDPOINT_URL`
@@ -232,3 +266,18 @@ s3://fma-small-artifacts/runs/<run_id>/manifests/segments.parquet
 
 Existing local runs with `/artifacts/runs/...` URIs remain readable with
 `STORAGE_BACKEND=local`. Do not mix backends inside one persisted run.
+
+If `processing` stays on `STORAGE_BACKEND=local` but you expect it to replay
+historical `s3://...` claim-check events, also set:
+
+```powershell
+$env:PROCESSING_PROBE_S3_REPLAY_READINESS="true"
+```
+
+```sh
+export PROCESSING_PROBE_S3_REPLAY_READINESS=true
+```
+
+This keeps the default local demo independent from MinIO, but makes processing
+preflight fail fast when S3 replay support is expected and the MinIO backend is
+not reachable.

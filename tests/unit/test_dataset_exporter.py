@@ -849,6 +849,55 @@ def test_exporter_reads_minio_manifest_and_validates_artifact_checksums(
     assert manifest_uri_value in dataset_card
 
 
+def test_exporter_rejects_cross_run_claim_check_artifact_uri(tmp_path: Path) -> None:
+    run_id = "demo-run"
+    artifact_uri, checksum = _write_segment_artifact(
+        tmp_path,
+        run_id="other-run",
+        track_id=2,
+        segment_idx=0,
+    )
+    _write_manifest(
+        tmp_path,
+        run_id=run_id,
+        rows=[
+            _manifest_row(
+                run_id=run_id,
+                track_id=2,
+                segment_idx=0,
+                artifact_uri=artifact_uri,
+                checksum=checksum,
+            )
+        ],
+    )
+    snapshot = SourceSnapshot(
+        run_id=run_id,
+        run_summary=_run_summary(run_id=run_id),
+        tracks=(_track(run_id=run_id, track_id=2),),
+        features=(
+            _feature(
+                run_id=run_id,
+                track_id=2,
+                segment_idx=0,
+                artifact_uri=artifact_uri,
+                checksum=checksum,
+            ),
+        ),
+    )
+
+    result = build_dataset_bundle(
+        snapshot=snapshot,
+        artifacts_root=tmp_path,
+        datasets_root=tmp_path / "datasets",
+    )
+
+    quality = _read_json(result.output_dir / "quality-verdict.json")
+    assert result.quality_verdict == "fail"
+    assert result.accepted_segments == 0
+    assert "segment_manifest_uri_invalid" in quality["reasons"]
+    assert "artifact_uri_invalid" in quality["reasons"]
+
+
 def test_exporter_rejects_manifest_uri_mismatch(tmp_path: Path) -> None:
     run_id = "demo-run"
     artifact_uri, checksum = _write_segment_artifact(

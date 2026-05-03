@@ -10,6 +10,7 @@ from event_driven_audio_analytics.review.queries import (
     get_run_detail,
     get_track_detail,
     list_runs,
+    lookup_segment_artifact_ref,
     lookup_segment_artifact_path,
 )
 from event_driven_audio_analytics.review.schemas import (
@@ -307,7 +308,8 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
     tmp_path: Path,
 ) -> None:
     settings = build_settings(tmp_path)
-    artifact_path = tmp_path / "runs" / "demo-run" / "review-media" / "segment-0.wav"
+    artifact_uri = "/artifacts/runs/demo-run/segments/42/0.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "42" / "0.wav"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_bytes(b"RIFF")
 
@@ -340,7 +342,7 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
                     -7.1,
                     False,
                     3.2,
-                    artifact_path.as_posix(),
+                    artifact_uri,
                     "sha256:segment",
                     "/artifacts/runs/demo-run/manifests/segments.parquet",
                     1,
@@ -364,7 +366,7 @@ def test_get_track_detail_marks_artifact_existence_from_persisted_uri(
     assert payload is not None
     assert payload["track"]["track_state"]["value"] == "persisted"
     assert payload["segments"]["items"][0]["artifact"]["exists"] is True
-    assert payload["segments"]["items"][0]["artifact"]["uri"] == artifact_path.as_posix()
+    assert payload["segments"]["items"][0]["artifact"]["uri"] == artifact_uri
     assert payload["segments"]["items"][0]["artifact"]["provenance"]["exists"] == "fs"
 
 
@@ -430,6 +432,95 @@ def test_get_track_detail_uses_uri_family_for_artifact_exists_provenance(
     assert payload is not None
     assert payload["segments"]["items"][0]["artifact"]["exists"] is False
     assert payload["segments"]["items"][0]["artifact"]["provenance"]["exists"] == "fs"
+
+
+def test_get_track_detail_rejects_cross_run_artifact_uri(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    artifact_path = tmp_path / "runs" / "other-run" / "segments" / "42" / "0.wav"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_bytes(b"RIFF")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            (
+                "demo-run",
+                42,
+                9,
+                "Synthetic",
+                "small",
+                "data/source.mp3",
+                "validated",
+                6.0,
+                "/artifacts/runs/demo-run/manifests/segments.parquet",
+                "sha256:track",
+                1,
+                0,
+                0.0,
+                -7.1,
+                3.2,
+                "persisted",
+            )
+        ],
+        fetchall_results=[
+            [
+                (
+                    None,
+                    0,
+                    -7.1,
+                    False,
+                    3.2,
+                    "/artifacts/runs/other-run/segments/42/0.wav",
+                    "sha256:segment",
+                    "/artifacts/runs/demo-run/manifests/segments.parquet",
+                    1,
+                )
+            ]
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_track_detail(
+        settings,
+        run_id="demo-run",
+        track_id=42,
+        segments_limit=8,
+        segments_offset=0,
+    )
+
+    assert payload is not None
+    assert payload["segments"]["items"][0]["artifact"]["exists"] is False
+
+
+def test_lookup_segment_artifact_ref_rejects_cross_run_media_uri(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    artifact_path = tmp_path / "runs" / "other-run" / "segments" / "42" / "0.wav"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_bytes(b"RIFF")
+    cursor = FakeCursor(
+        fetchone_results=[("/artifacts/runs/other-run/segments/42/0.wav", "sha256:segment")]
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    artifact_ref = lookup_segment_artifact_ref(
+        settings,
+        run_id="demo-run",
+        track_id=42,
+        segment_idx=0,
+    )
+
+    assert artifact_ref is None
 
 
 def test_get_run_detail_prefers_persisted_manifest_uri_for_runtime_proof(

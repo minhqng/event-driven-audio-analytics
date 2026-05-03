@@ -129,13 +129,18 @@ class FailAfterNProducer(RecordingProducer):
                 on_delivery(None, _DeliveredMessage(topic))
 
 
-def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
+def _processing_settings(
+    artifacts_root: Path,
+    *,
+    storage: StorageBackendSettings | None = None,
+) -> ProcessingSettings:
     return ProcessingSettings(
         base=BaseServiceSettings(
             service_name="processing",
             run_id="demo-run",
             kafka_bootstrap_servers="unused:9092",
             artifacts_root=artifacts_root,
+            storage=storage or StorageBackendSettings(backend="local", artifacts_root=artifacts_root),
         ),
         consumer_group="event-driven-audio-analytics-processing",
         auto_offset_reset="earliest",
@@ -214,12 +219,28 @@ def _segment_ready_payload_for_artifact(
     duration_s: float,
     manifest_uri: str | None = None,
 ) -> AudioSegmentReadyPayload:
+    logical_suffix = ("runs", run_id, "segments", str(track_id), f"{segment_idx}.wav")
+    if tuple(artifact_path.parts[-len(logical_suffix):]) == logical_suffix:
+        logical_artifact_path = artifact_path
+    else:
+        logical_artifact_path = (
+            artifact_path.parent
+            / "runs"
+            / run_id
+            / "segments"
+            / str(track_id)
+            / f"{segment_idx}.wav"
+        )
+    if artifact_path != logical_artifact_path:
+        logical_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(artifact_path, logical_artifact_path)
+    artifact_uri = f"/artifacts/runs/{run_id}/segments/{track_id}/{segment_idx}.wav"
     return AudioSegmentReadyPayload(
         run_id=run_id,
         track_id=track_id,
         segment_idx=segment_idx,
-        artifact_uri=artifact_path.as_posix(),
-        checksum=sha256_file(artifact_path),
+        artifact_uri=artifact_uri,
+        checksum=sha256_file(logical_artifact_path),
         sample_rate=32000,
         duration_s=duration_s,
         is_last_segment=True,
@@ -257,11 +278,13 @@ def _assert_valid_audio_features_envelope(envelope: dict[str, object]) -> None:
 
 
 def test_segment_loader_reads_claim_check_artifact_and_validates_checksum(tmp_path: Path) -> None:
-    artifact_path = tmp_path / "tone.wav"
+    artifact_uri = "/artifacts/runs/demo-run/segments/2/0.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+    artifact_path.parent.mkdir(parents=True)
     _write_tone_wav(artifact_path, duration_s=3.0)
 
     artifact = load_segment_artifact(
-        artifact_path.as_posix(),
+        artifact_uri,
         sha256_file(artifact_path),
         artifacts_root=tmp_path,
         expected_sample_rate_hz=32000,
@@ -292,13 +315,35 @@ def test_segment_loader_resolves_logical_artifacts_uri_with_service_mount_root(
     assert artifact.artifact_uri == "/artifacts/runs/demo-run/segments/2/0.wav"
 
 
+def test_segment_loader_rejects_cross_run_artifact_uri(
+    tmp_path: Path,
+) -> None:
+    artifacts_root = tmp_path / "service-artifacts"
+    artifact_path = artifacts_root / "runs" / "other-run" / "segments" / "2" / "0.wav"
+    artifact_path.parent.mkdir(parents=True)
+    _write_tone_wav(artifact_path, duration_s=3.0)
+
+    with pytest.raises(ValueError, match="expected run-scoped segment key"):
+        load_segment_artifact(
+            "/artifacts/runs/other-run/segments/2/0.wav",
+            sha256_file(artifact_path),
+            artifacts_root=artifacts_root,
+            expected_sample_rate_hz=32000,
+            expected_run_id="demo-run",
+            expected_track_id=2,
+            expected_segment_idx=0,
+        )
+
+
 def test_segment_loader_rejects_checksum_mismatch(tmp_path: Path) -> None:
-    artifact_path = tmp_path / "tone.wav"
+    artifact_uri = "/artifacts/runs/demo-run/segments/2/0.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+    artifact_path.parent.mkdir(parents=True)
     _write_tone_wav(artifact_path, duration_s=3.0)
 
     with pytest.raises(ArtifactChecksumMismatch, match="checksum mismatch"):
         load_segment_artifact(
-            artifact_path.as_posix(),
+            artifact_uri,
             "sha256:not-the-real-digest",
             artifacts_root=tmp_path,
             expected_sample_rate_hz=32000,
@@ -339,7 +384,7 @@ def test_segment_loader_rejects_artifact_uri_outside_artifacts_root(tmp_path: Pa
     outside_artifact = tmp_path / "outside.wav"
     _write_tone_wav(outside_artifact, duration_s=3.0)
 
-    with pytest.raises(ValueError, match="artifacts_root"):
+    with pytest.raises(ValueError, match="logical /artifacts"):
         load_segment_artifact(
             outside_artifact.as_posix(),
             sha256_file(outside_artifact),
@@ -349,11 +394,13 @@ def test_segment_loader_rejects_artifact_uri_outside_artifacts_root(tmp_path: Pa
 
 
 def test_rms_summary_matches_expected_dbfs_for_tone_fixture(tmp_path: Path) -> None:
-    artifact_path = tmp_path / "tone.wav"
+    artifact_uri = "/artifacts/runs/demo-run/segments/2/0.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+    artifact_path.parent.mkdir(parents=True)
     _write_tone_wav(artifact_path, duration_s=3.0, amplitude=0.2)
 
     artifact = load_segment_artifact(
-        artifact_path.as_posix(),
+        artifact_uri,
         sha256_file(artifact_path),
         artifacts_root=tmp_path,
         expected_sample_rate_hz=32000,
@@ -432,6 +479,107 @@ def test_processing_pipeline_emits_audio_features_from_claim_check_artifact(tmp_
     assert silent_ratio_payload["labels_json"] == {"scope": "run_total"}
     assert silent_ratio_payload["unit"] == "ratio"
     assert silent_ratio_payload["metric_value"] == pytest.approx(0.0)
+
+
+def test_processing_pipeline_rejects_cross_run_claim_check_artifact(tmp_path: Path) -> None:
+    artifact_path = tmp_path / "runs" / "other-run" / "segments" / "2" / "0.wav"
+    _write_tone_wav(artifact_path, duration_s=3.0)
+    pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    payload = AudioSegmentReadyPayload(
+        run_id="demo-run",
+        track_id=2,
+        segment_idx=0,
+        artifact_uri="/artifacts/runs/other-run/segments/2/0.wav",
+        checksum=sha256_file(artifact_path),
+        sample_rate=32000,
+        duration_s=3.0,
+        is_last_segment=True,
+    )
+
+    with pytest.raises(ProcessingStageError, match="claim-check artifact"):
+        pipeline.process_payload(RecordingProducer(), payload)
+
+
+def test_processing_pipeline_replays_local_artifact_when_configured_for_minio(
+    tmp_path: Path,
+) -> None:
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
+    _write_tone_wav(artifact_path, duration_s=3.0)
+    settings = _processing_settings(
+        tmp_path,
+        storage=StorageBackendSettings(
+            backend="minio",
+            artifacts_root=tmp_path,
+            bucket="fma-small-artifacts",
+        ),
+    )
+    pipeline = ProcessingPipeline(settings=settings)
+    producer = RecordingProducer()
+
+    result = pipeline.process_payload(
+        producer,
+        _segment_ready_payload_for_artifact(
+            artifact_path,
+            track_id=2,
+            segment_idx=0,
+            duration_s=3.0,
+        ),
+    )
+
+    assert result.loaded_artifact.artifact_path == artifact_path
+    assert result.loaded_artifact.artifact_uri == "/artifacts/runs/demo-run/segments/2/0.wav"
+
+
+def test_processing_pipeline_replays_minio_artifact_when_configured_for_local(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    local_artifact = tmp_path / "tone.wav"
+    _write_tone_wav(local_artifact, duration_s=3.0)
+    s3_store = S3ClaimCheckStore(
+        StorageBackendSettings(backend="minio", bucket="fma-small-artifacts"),
+        client=FakeS3Client(),
+    )
+    artifact_uri = s3_store.segment_uri("demo-run", 2, 0)
+    checksum = s3_store.write_bytes(
+        artifact_uri,
+        local_artifact.read_bytes(),
+        content_type="audio/wav",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_build_claim_check_store_for_uri(
+        settings: StorageBackendSettings,
+        uri: str,
+    ) -> S3ClaimCheckStore:
+        captured["backend"] = settings.normalized_backend()
+        captured["uri"] = uri
+        return s3_store
+
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.processing.pipeline.build_claim_check_store_for_uri",
+        fake_build_claim_check_store_for_uri,
+    )
+    pipeline = ProcessingPipeline(settings=_processing_settings(tmp_path))
+    producer = RecordingProducer()
+
+    result = pipeline.process_payload(
+        producer,
+        AudioSegmentReadyPayload(
+            run_id="demo-run",
+            track_id=2,
+            segment_idx=0,
+            artifact_uri=artifact_uri,
+            checksum=checksum,
+            sample_rate=32000,
+            duration_s=3.0,
+            is_last_segment=True,
+        ),
+    )
+
+    assert captured == {"backend": "local", "uri": artifact_uri}
+    assert result.loaded_artifact.artifact_path is None
+    assert result.loaded_artifact.artifact_uri == artifact_uri
 
 
 def test_processing_pipeline_marks_silent_fixture_and_clamps_transport_rms(tmp_path: Path) -> None:

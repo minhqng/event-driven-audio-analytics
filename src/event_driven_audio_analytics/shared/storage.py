@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path, PurePosixPath
@@ -61,6 +62,13 @@ class ClaimCheckStore(Protocol):
     def write_bytes(self, uri: str, payload: bytes, *, content_type: str) -> str: ...
 
     def read_bytes(self, uri: str) -> bytes: ...
+
+    def read_bytes_chunked(
+        self,
+        uri: str,
+        *,
+        chunk_size: int = 64 * 1024,
+    ) -> Iterator[bytes]: ...
 
     def exists(self, uri: str) -> bool: ...
 
@@ -171,6 +179,8 @@ def parse_artifact_uri(uri: str, *, bucket: str = DEFAULT_MINIO_BUCKET) -> Parse
 
     parsed = urlparse(normalized_uri)
     if parsed.scheme == "s3":
+        if parsed.query or parsed.fragment:
+            raise ValueError("s3 artifact_uri must not include query or fragment components.")
         if parsed.netloc != bucket:
             raise ValueError(
                 f"s3 artifact_uri bucket mismatch expected={bucket!r} actual={parsed.netloc!r}."
@@ -272,7 +282,13 @@ class LocalClaimCheckStore:
                 "local claim-check store cannot resolve artifact_uri schemes "
                 f"scheme={parsed.scheme!r}."
             )
-        return resolve_artifact_uri(self.settings.artifacts_root, uri)
+        parsed_uri = parse_artifact_uri(uri, bucket=self.settings.bucket)
+        if parsed_uri.scheme != "local":
+            raise ValueError("local claim-check store requires logical /artifacts artifact_uri values.")
+        root = self.settings.artifacts_root.resolve()
+        path = (root / Path(*PurePosixPath(parsed_uri.key).parts)).resolve()
+        path.relative_to(root)
+        return path
 
     def write_bytes(self, uri: str, payload: bytes, *, content_type: str) -> str:
         path = self._path(uri)
@@ -285,6 +301,22 @@ class LocalClaimCheckStore:
         if not path.exists():
             raise FileNotFoundError(f"Artifact does not exist: {path.as_posix()}")
         return path.read_bytes()
+
+    def read_bytes_chunked(
+        self,
+        uri: str,
+        *,
+        chunk_size: int = 64 * 1024,
+    ) -> Iterator[bytes]:
+        path = self._path(uri)
+        if not path.exists():
+            raise FileNotFoundError(f"Artifact does not exist: {path.as_posix()}")
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(chunk_size)
+                if chunk == b"":
+                    break
+                yield chunk
 
     def exists(self, uri: str) -> bool:
         try:
@@ -372,7 +404,38 @@ class S3ClaimCheckStore:
             if _is_s3_not_found(exc):
                 raise FileNotFoundError(f"S3 artifact does not exist: {uri}") from exc
             raise
-        return response["Body"].read()
+        body = response["Body"]
+        try:
+            return body.read()
+        finally:
+            close = getattr(body, "close", None)
+            if callable(close):
+                close()
+
+    def read_bytes_chunked(
+        self,
+        uri: str,
+        *,
+        chunk_size: int = 64 * 1024,
+    ) -> Iterator[bytes]:
+        key = self._key(uri)
+        try:
+            response = self._client.get_object(Bucket=self.settings.bucket, Key=key)
+        except Exception as exc:
+            if _is_s3_not_found(exc):
+                raise FileNotFoundError(f"S3 artifact does not exist: {uri}") from exc
+            raise
+        body = response["Body"]
+        try:
+            while True:
+                chunk = body.read(chunk_size)
+                if chunk == b"":
+                    break
+                yield chunk
+        finally:
+            close = getattr(body, "close", None)
+            if callable(close):
+                close()
 
     def exists(self, uri: str) -> bool:
         try:

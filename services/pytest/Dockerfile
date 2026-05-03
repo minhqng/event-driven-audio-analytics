@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY pyproject.toml README.md /app/
+COPY pyproject.toml README.md .env.example /app/
 COPY src /app/src
 COPY references /app/references
 

@@ -4,6 +4,7 @@ import io
 import json
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 import wave
 
 import numpy as np
@@ -30,6 +31,7 @@ from event_driven_audio_analytics.shared.kafka import deserialize_envelope, seri
 from event_driven_audio_analytics.shared.logging import JsonLogFormatter, ServiceLoggerAdapter
 from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
+from event_driven_audio_analytics.shared.storage import StorageBackendSettings
 
 
 class RecordingProducer:
@@ -115,13 +117,19 @@ class CommitFailingConsumer(FakeConsumer):
         raise RuntimeError("commit failed")
 
 
-def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
+def _processing_settings(
+    artifacts_root: Path,
+    *,
+    storage: StorageBackendSettings | None = None,
+    probe_s3_replay_readiness: bool = False,
+) -> ProcessingSettings:
     return ProcessingSettings(
         base=BaseServiceSettings(
             service_name="processing",
             run_id="demo-run",
             kafka_bootstrap_servers="unused:9092",
             artifacts_root=artifacts_root,
+            storage=storage or StorageBackendSettings(artifacts_root=artifacts_root),
         ),
         consumer_group="event-driven-audio-analytics-processing",
         auto_offset_reset="earliest",
@@ -147,6 +155,7 @@ def _processing_settings(artifacts_root: Path) -> ProcessingSettings:
         producer_retry_backoff_ms=250,
         producer_retry_backoff_max_ms=5000,
         producer_delivery_timeout_ms=120000,
+        probe_s3_replay_readiness=probe_s3_replay_readiness,
     )
 
 
@@ -171,13 +180,13 @@ def _write_tone_wav(
 
 
 def _build_segment_ready_bytes(tmp_path: Path) -> bytes:
-    artifact_path = tmp_path / "tone.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
     _write_tone_wav(artifact_path)
     payload = AudioSegmentReadyPayload(
         run_id="demo-run",
         track_id=2,
         segment_idx=0,
-        artifact_uri=artifact_path.as_posix(),
+        artifact_uri="/artifacts/runs/demo-run/segments/2/0.wav",
         checksum=sha256_file(artifact_path),
         sample_rate=32000,
         duration_s=3.0,
@@ -241,6 +250,18 @@ def test_processing_settings_from_env_falls_back_to_legacy_producer_names(
     assert settings.producer_delivery_timeout_ms == 654321
 
 
+def test_processing_settings_from_env_reads_s3_replay_readiness_probe_flag(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("ARTIFACTS_ROOT", tmp_path.as_posix())
+    monkeypatch.setenv("PROCESSING_PROBE_S3_REPLAY_READINESS", "true")
+
+    settings = ProcessingSettings.from_env()
+
+    assert settings.probe_s3_replay_readiness is True
+
+
 def test_processing_readiness_succeeds_when_topics_and_artifacts_root_are_ready(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -256,6 +277,66 @@ def test_processing_readiness_succeeds_when_topics_and_artifacts_root_are_ready(
 
     check_runtime_dependencies(_processing_settings(tmp_path))
     assert processing_metrics_state_path(tmp_path, "demo-run").parent.is_dir()
+
+
+def test_processing_readiness_skips_s3_probe_when_local_backend_is_default(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    build_calls: list[str] = []
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.processing.modules.runtime._list_kafka_topics",
+        lambda bootstrap_servers: {
+            "audio.segment.ready",
+            "audio.features",
+            "system.metrics",
+        },
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.processing.modules.runtime.build_claim_check_store",
+        lambda settings: build_calls.append(settings.normalized_backend()) or SimpleNamespace(
+            probe=lambda run_id: None
+        ),
+    )
+
+    check_runtime_dependencies(_processing_settings(tmp_path))
+
+    assert build_calls == []
+
+
+def test_processing_readiness_probes_s3_replay_when_explicitly_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    build_calls: list[str] = []
+    probe_calls: list[str] = []
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.processing.modules.runtime._list_kafka_topics",
+        lambda bootstrap_servers: {
+            "audio.segment.ready",
+            "audio.features",
+            "system.metrics",
+        },
+    )
+
+    def fake_build_claim_check_store(settings: StorageBackendSettings) -> SimpleNamespace:
+        build_calls.append(settings.normalized_backend())
+        return SimpleNamespace(probe=lambda run_id: probe_calls.append(run_id))
+
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.processing.modules.runtime.build_claim_check_store",
+        fake_build_claim_check_store,
+    )
+
+    check_runtime_dependencies(
+        _processing_settings(
+            tmp_path,
+            probe_s3_replay_readiness=True,
+        )
+    )
+
+    assert build_calls == ["minio"]
+    assert probe_calls == ["demo-run"]
 
 
 def test_processing_readiness_fails_when_required_topic_is_missing(

@@ -5,7 +5,20 @@ effective_run_id="${RUN_ID:-minio-smoke}"
 export RUN_ID="$effective_run_id"
 export STORAGE_BACKEND="${STORAGE_BACKEND:-minio}"
 export MINIO_CREATE_BUCKET="${MINIO_CREATE_BUCKET:-true}"
-export MINIO_ENDPOINT_URL="${MINIO_ENDPOINT_URL:-${MINIO_ENDPOINT:-http://minio:9000}}"
+if [ -n "${MINIO_ENDPOINT_URL:-}" ]; then
+  export MINIO_ENDPOINT_URL
+elif [ -n "${MINIO_ENDPOINT:-}" ]; then
+  export MINIO_ENDPOINT_URL="$MINIO_ENDPOINT"
+else
+  case "$(printf '%s' "${MINIO_SECURE:-false}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on)
+      export MINIO_ENDPOINT_URL="https://minio:9000"
+      ;;
+    *)
+      export MINIO_ENDPOINT_URL="http://minio:9000"
+      ;;
+  esac
+fi
 export MINIO_BUCKET="${MINIO_BUCKET:-${ARTIFACT_BUCKET:-fma-small-artifacts}}"
 
 if [ "$STORAGE_BACKEND" != "minio" ]; then
@@ -16,7 +29,7 @@ fi
 cleanup_run_state() {
   run_id="$1"
 
-  docker compose run --rm --no-deps \
+  docker compose run --rm --no-deps --build \
     -e CLEANUP_RUN_ID="$run_id" \
     --entrypoint python ingestion \
     -c '

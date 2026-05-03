@@ -20,7 +20,9 @@ from event_driven_audio_analytics.shared.storage import (
     build_claim_check_store,
     build_claim_check_store_for_uri,
     storage_settings_for_local,
+    validate_manifest_artifact_uri,
     validate_run_id,
+    validate_segment_artifact_uri,
 )
 
 
@@ -340,6 +342,23 @@ def _load_manifest_rows(
         track.validation_status == "validated" and track.segments_persisted > 0
         for track in snapshot.tracks
     )
+    try:
+        validate_manifest_artifact_uri(
+            manifest_uri_value,
+            run_id=snapshot.run_id,
+            bucket=manifest_store.settings.bucket,
+        )
+    except ValueError as exc:
+        if not manifest_required:
+            return (), []
+        return (), [
+            Anomaly(
+                type="segment_manifest_uri_invalid",
+                severity="blocking",
+                message="Required claim-check segment manifest URI is not run-scoped.",
+                example={"uri": manifest_uri_value, "error": str(exc)},
+            )
+        ]
     if not manifest_store.exists(manifest_uri_value):
         if not manifest_required:
             return (), []
@@ -388,6 +407,35 @@ def _load_manifest_rows(
                     example={
                         "expected_run_id": snapshot.run_id,
                         "actual_run_id": str(row["run_id"]),
+                    },
+                )
+            )
+            continue
+        try:
+            validate_segment_artifact_uri(
+                str(row["artifact_uri"]),
+                run_id=str(row["run_id"]),
+                track_id=int(row["track_id"]),
+                segment_idx=int(row["segment_idx"]),
+                bucket=manifest_store.settings.bucket,
+            )
+            if row.get("manifest_uri"):
+                validate_manifest_artifact_uri(
+                    str(row["manifest_uri"]),
+                    run_id=str(row["run_id"]),
+                    bucket=manifest_store.settings.bucket,
+                )
+        except ValueError as exc:
+            anomalies.append(
+                Anomaly(
+                    type="segment_manifest_uri_invalid",
+                    severity="blocking",
+                    message="Claim-check segment manifest row contains a URI outside its logical segment.",
+                    example={
+                        "track_id": int(row["track_id"]),
+                        "segment_idx": int(row["segment_idx"]),
+                        "artifact_uri": str(row["artifact_uri"]),
+                        "error": str(exc),
                     },
                 )
             )
@@ -522,6 +570,13 @@ def _artifact_rejection_reasons(
 
     artifact_store = build_claim_check_store_for_uri(store.settings, feature.artifact_uri)
     try:
+        validate_segment_artifact_uri(
+            feature.artifact_uri,
+            run_id=feature.run_id,
+            track_id=feature.track_id,
+            segment_idx=feature.segment_idx,
+            bucket=artifact_store.settings.bucket,
+        )
         artifact_exists = artifact_store.exists(feature.artifact_uri)
     except ValueError as exc:
         reasons.append("artifact_uri_invalid")

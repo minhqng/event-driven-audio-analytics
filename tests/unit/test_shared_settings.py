@@ -58,3 +58,20 @@ def test_load_storage_backend_settings_uses_https_default_when_secure_enabled(
 
     assert settings.secure is True
     assert settings.endpoint_url == "https://minio:9000"
+
+
+def test_env_example_leaves_minio_endpoint_url_unset_for_secure_default_derivation() -> None:
+    env_example_lines = Path(".env.example").read_text(encoding="utf-8").splitlines()
+
+    assert "MINIO_ENDPOINT_URL=http://minio:9000" not in env_example_lines
+    assert "# MINIO_ENDPOINT_URL=http://minio:9000" in env_example_lines
+    assert "PROCESSING_PROBE_S3_REPLAY_READINESS=false" in env_example_lines
+
+
+def test_processing_compose_service_passes_s3_replay_probe_flag() -> None:
+    compose = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert (
+        'PROCESSING_PROBE_S3_REPLAY_READINESS: "${PROCESSING_PROBE_S3_REPLAY_READINESS:-false}"'
+        in compose
+    )

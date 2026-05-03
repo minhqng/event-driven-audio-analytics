@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
-from io import BytesIO
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -173,6 +172,25 @@ def create_app(settings: ReviewSettings | None = None) -> FastAPI:
                     f"run_id={validated_run_id} track_id={track_id} segment_idx={segment_idx}."
                 ),
             )
+        store = build_claim_check_store_for_uri(active_settings.base.storage, artifact_ref.uri)
+        try:
+            actual_checksum = store.checksum(artifact_ref.uri)
+        except (FileNotFoundError, ValueError) as exc:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Segment artifact not found for "
+                    f"run_id={validated_run_id} track_id={track_id} segment_idx={segment_idx}."
+                ),
+            ) from exc
+        if actual_checksum != artifact_ref.checksum:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Segment artifact checksum mismatch for "
+                    f"run_id={validated_run_id} track_id={track_id} segment_idx={segment_idx}."
+                ),
+            )
         if artifact_ref.local_path is not None:
             return FileResponse(
                 artifact_ref.local_path,
@@ -180,9 +198,8 @@ def create_app(settings: ReviewSettings | None = None) -> FastAPI:
                 filename=artifact_ref.local_path.name,
             )
 
-        store = build_claim_check_store_for_uri(active_settings.base.storage, artifact_ref.uri)
         return StreamingResponse(
-            BytesIO(store.read_bytes(artifact_ref.uri)),
+            store.read_bytes_chunked(artifact_ref.uri),
             media_type="audio/wav",
             headers={"Content-Disposition": f'inline; filename="{segment_idx}.wav"'},
         )

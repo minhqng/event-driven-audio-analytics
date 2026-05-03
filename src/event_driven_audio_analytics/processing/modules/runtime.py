@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from os import R_OK, W_OK, X_OK, access
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -128,6 +128,27 @@ def _prepare_processing_state_target(artifacts_root: Path, run_id: str) -> None:
         )
 
 
+def _probe_primary_claim_check_backend(settings: "ProcessingSettings") -> None:
+    if settings.base.storage.normalized_backend() == "local":
+        return
+
+    store = build_claim_check_store(settings.base.storage)
+    probe = getattr(store, "probe")
+    probe(settings.base.run_id)
+
+
+def _probe_s3_replay_backend(settings: "ProcessingSettings") -> None:
+    if not settings.probe_s3_replay_readiness:
+        return
+    if settings.base.storage.normalized_backend() != "local":
+        return
+
+    s3_settings = replace(settings.base.storage, backend="minio")
+    store = build_claim_check_store(s3_settings)
+    probe = getattr(store, "probe")
+    probe(settings.base.run_id)
+
+
 def check_runtime_dependencies(settings: "ProcessingSettings") -> None:
     """Validate the current processing runtime dependencies once."""
 
@@ -142,7 +163,5 @@ def check_runtime_dependencies(settings: "ProcessingSettings") -> None:
     _assert_writable_directory(settings.base.artifacts_root, label="ARTIFACTS_ROOT")
     _assert_readable_directory(settings.base.artifacts_root, label="ARTIFACTS_ROOT")
     _prepare_processing_state_target(settings.base.artifacts_root, settings.base.run_id)
-    if settings.base.storage.normalized_backend() != "local":
-        store = build_claim_check_store(settings.base.storage)
-        probe = getattr(store, "probe")
-        probe(settings.base.run_id)
+    _probe_primary_claim_check_backend(settings)
+    _probe_s3_replay_backend(settings)

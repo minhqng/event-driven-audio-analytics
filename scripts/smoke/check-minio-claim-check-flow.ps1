@@ -10,6 +10,8 @@ $env:MINIO_ENDPOINT_URL = if ($env:MINIO_ENDPOINT_URL) {
     $env:MINIO_ENDPOINT_URL
 } elseif ($env:MINIO_ENDPOINT) {
     $env:MINIO_ENDPOINT
+} elseif ($env:MINIO_SECURE -match "^(?i:1|true|yes|on)$") {
+    "https://minio:9000"
 } else {
     "http://minio:9000"
 }
@@ -97,7 +99,7 @@ function Clear-RunStateInContainer {
         [string]$RunId
     )
 
-    docker compose run --rm --no-deps -e "CLEANUP_RUN_ID=$RunId" --entrypoint python ingestion -c $cleanupRunStateScript | Out-Null
+    docker compose run --rm --no-deps --build -e "CLEANUP_RUN_ID=$RunId" --entrypoint python ingestion -c $cleanupRunStateScript | Out-Null
     Assert-LastExitCode "docker compose run cleanup run state"
 }
 
