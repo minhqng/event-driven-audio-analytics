@@ -27,7 +27,24 @@ def test_powershell_evaluation_script_contract() -> None:
     assert "Start-ResourceSampler" in script
     assert "Stop-ResourceSampler" in script
     assert "Start-Job" in script
+    assert "function Get-EffectiveStorageBackend" in script
+    assert "function Wait-MinioBucketReady" in script
+    assert '--entrypoint python pytest' in script
+    assert '$infraServices = @("kafka", "timescaledb")' in script
+    assert '$infraServices += @("minio", "minio-init")' in script
+    assert '$effectiveStorageBackend = Get-EffectiveStorageBackend' in script
+    assert 'if ($effectiveStorageBackend -eq "minio") {' in script
+    assert 'Wait-MinioBucketReady' in script
+    assert "check_bucket = getattr(store, \"check_bucket\")" in script
+    assert "check_bucket()" in script
+    assert "DELETE FROM track_metadata WHERE run_id = %s;" in script
+    assert "DELETE FROM audio_features WHERE run_id = %s;" in script
+    assert "DELETE FROM system_metrics WHERE run_id = %s;" in script
+    assert "DELETE FROM welford_snapshots WHERE run_id = %s;" in script
+    assert "DELETE FROM run_checkpoints WHERE run_id = %s;" in script
     assert "--include-scaling" in script
+    assert script.rindex('Wait-MinioBucketReady') < script.index('docker compose run --rm --no-deps writer preflight')
+    assert script.index('docker compose run --rm --no-deps writer preflight') < script.index('Clear-RunState -RunId $RunId')
 
 
 def test_bash_evaluation_script_contract() -> None:
@@ -45,4 +62,22 @@ def test_bash_evaluation_script_contract() -> None:
     assert "start_resource_sampler" in script
     assert "stop_active_resource_sampler" in script
     assert "active_sampler_pid" in script
+    assert "get_effective_storage_backend()" in script
+    assert "wait_minio_bucket_ready()" in script
+    assert '--entrypoint python pytest' in script
+    assert 'infra_services="kafka timescaledb"' in script
+    assert 'infra_services="$infra_services minio minio-init"' in script
+    assert 'backend_output="$(' in script
+    assert "printf '%s\\n' \"$backend_output\" | tail -n 1 | tr '[:upper:]' '[:lower:]'" in script
+    assert 'effective_storage_backend="$(get_effective_storage_backend)"' in script
+    assert 'if [ "$effective_storage_backend" = "minio" ]; then' in script
+    assert "check_bucket = getattr(store, \"check_bucket\")" in script
+    assert "check_bucket()" in script
+    assert "DELETE FROM track_metadata WHERE run_id = %s;" in script
+    assert "DELETE FROM audio_features WHERE run_id = %s;" in script
+    assert "DELETE FROM system_metrics WHERE run_id = %s;" in script
+    assert "DELETE FROM welford_snapshots WHERE run_id = %s;" in script
+    assert "DELETE FROM run_checkpoints WHERE run_id = %s;" in script
     assert "--include-scaling" in script
+    assert script.rindex('wait_minio_bucket_ready') < script.index('docker compose run --rm --no-deps writer preflight')
+    assert script.index('docker compose run --rm --no-deps writer preflight') < script.index('cleanup_run_state "$run_id"')

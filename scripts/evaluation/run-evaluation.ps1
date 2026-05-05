@@ -17,6 +17,46 @@ $resourceRootContainer = "$evaluationRootContainer/resource-samples"
 $resourceSampleIntervalS = if ($env:EVAL_RESOURCE_SAMPLE_INTERVAL_S) { $env:EVAL_RESOURCE_SAMPLE_INTERVAL_S } else { "2" }
 $artifactReadSampleSize = if ($env:EVAL_ARTIFACT_READ_SAMPLE_SIZE) { $env:EVAL_ARTIFACT_READ_SAMPLE_SIZE } else { "20" }
 
+function Get-EffectiveStorageBackend {
+    $backend = docker compose run --rm --no-deps --entrypoint python pytest `
+        -c "from pathlib import Path; from event_driven_audio_analytics.shared.settings import load_storage_backend_settings; print(load_storage_backend_settings(artifacts_root=Path('/app/artifacts')).normalized_backend())"
+    Assert-LastExitCode "resolve effective storage backend"
+    return ($backend | Select-Object -Last 1).Trim().ToLowerInvariant()
+}
+
+function Wait-MinioBucketReady {
+    $waitScript = @'
+import time
+from pathlib import Path
+from event_driven_audio_analytics.shared.settings import load_storage_backend_settings
+from event_driven_audio_analytics.shared.storage import build_claim_check_store
+
+settings = load_storage_backend_settings(artifacts_root=Path("/app/artifacts"))
+if settings.normalized_backend() != "minio":
+    raise SystemExit(0)
+
+store = build_claim_check_store(settings)
+check_bucket = getattr(store, "check_bucket")
+deadline = time.monotonic() + 60.0
+last_error = None
+while time.monotonic() < deadline:
+    try:
+        check_bucket()
+        raise SystemExit(0)
+    except Exception as exc:  # pragma: no cover - runtime polling only
+        last_error = exc
+        time.sleep(1.0)
+raise SystemExit(f"Timed out waiting for MinIO bucket readiness: {last_error}")
+'@
+    $waitScriptB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($waitScript))
+    $waitEntrypointScript = "import base64, os; exec(base64.b64decode(os.environ['WAIT_MINIO_BUCKET_SCRIPT_B64']).decode())"
+    docker compose run --rm --no-deps `
+        -e "WAIT_MINIO_BUCKET_SCRIPT_B64=$waitScriptB64" `
+        --entrypoint python pytest `
+        -c $waitEntrypointScript | Out-Null
+    Assert-LastExitCode "wait for MinIO bucket readiness"
+}
+
 function Invoke-Collect {
     param(
         [string]$Scenario,
@@ -90,31 +130,93 @@ function Stop-ResourceSampler {
     Remove-Job -Job $SamplerJob -Force -ErrorAction SilentlyContinue
 }
 
-function Clear-RunArtifacts {
+function Clear-RunState {
     param([string]$RunId)
 
-    $cleanupRunArtifactsScript = @'
+    $cleanupRunStateScript = @'
 import os
 import shutil
 from pathlib import Path
+from event_driven_audio_analytics.shared.db import open_database_connection
+from event_driven_audio_analytics.shared.settings import (
+    load_database_settings,
+    load_storage_backend_settings,
+)
 from event_driven_audio_analytics.shared.storage import validate_run_id
 
 run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
-root = Path("/app/artifacts/runs").resolve()
-target = (root / run_id).resolve()
-target.relative_to(root)
-shutil.rmtree(target, ignore_errors=True)
+artifacts_root = Path("/app/artifacts").resolve()
+for relative in (Path("runs") / run_id, Path("datasets") / run_id):
+    target = (artifacts_root / relative).resolve()
+    target.relative_to(artifacts_root)
+    shutil.rmtree(target, ignore_errors=True)
+
+database = load_database_settings()
+with open_database_connection(database) as connection:
+    with connection.cursor() as cursor:
+        for statement in (
+            "DELETE FROM track_metadata WHERE run_id = %s;",
+            "DELETE FROM audio_features WHERE run_id = %s;",
+            "DELETE FROM system_metrics WHERE run_id = %s;",
+            "DELETE FROM welford_snapshots WHERE run_id = %s;",
+            "DELETE FROM run_checkpoints WHERE run_id = %s;",
+        ):
+            cursor.execute(statement, (run_id,))
+    connection.commit()
+
+storage = load_storage_backend_settings(artifacts_root=artifacts_root)
+if storage.normalized_backend() == "minio":
+    import boto3
+
+    client = boto3.client(
+        "s3",
+        endpoint_url=storage.endpoint_url,
+        aws_access_key_id=storage.access_key,
+        aws_secret_access_key=storage.secret_key,
+        region_name=storage.region,
+        use_ssl=storage.secure,
+    )
+    continuation_token = None
+    prefix = f"runs/{run_id}/"
+    while True:
+        request = {"Bucket": storage.bucket, "Prefix": prefix}
+        if continuation_token is not None:
+            request["ContinuationToken"] = continuation_token
+        try:
+            response = client.list_objects_v2(**request)
+        except Exception as exc:
+            error_response = getattr(exc, "response", None)
+            error_code = (
+                str(error_response.get("Error", {}).get("Code", ""))
+                if isinstance(error_response, dict)
+                else ""
+            )
+            if error_code in {"404", "NoSuchBucket", "NotFound"}:
+                break
+            raise
+        objects = response.get("Contents", [])
+        if objects:
+            client.delete_objects(
+                Bucket=storage.bucket,
+                Delete={
+                    "Objects": [{"Key": str(item["Key"])} for item in objects],
+                    "Quiet": True,
+                },
+            )
+        if not response.get("IsTruncated"):
+            break
+        continuation_token = str(response["NextContinuationToken"])
 '@
     $cleanupScriptB64 = [Convert]::ToBase64String(
-        [Text.Encoding]::UTF8.GetBytes($cleanupRunArtifactsScript)
+        [Text.Encoding]::UTF8.GetBytes($cleanupRunStateScript)
     )
-    $cleanupEntrypointScript = "import base64, os; exec(base64.b64decode(os.environ['CLEANUP_RUN_ARTIFACTS_SCRIPT_B64']).decode())"
+    $cleanupEntrypointScript = "import base64, os; exec(base64.b64decode(os.environ['CLEANUP_RUN_STATE_SCRIPT_B64']).decode())"
     docker compose run --rm --no-deps `
         -e "CLEANUP_RUN_ID=$RunId" `
-        -e "CLEANUP_RUN_ARTIFACTS_SCRIPT_B64=$cleanupScriptB64" `
-        --entrypoint python ingestion `
+        -e "CLEANUP_RUN_STATE_SCRIPT_B64=$cleanupScriptB64" `
+        --entrypoint python pytest `
         -c $cleanupEntrypointScript | Out-Null
-    Assert-LastExitCode "cleanup run artifacts"
+    Assert-LastExitCode "cleanup run state"
 }
 
 function Invoke-BoundedRun {
@@ -142,12 +244,19 @@ function Invoke-BoundedRun {
 
     docker compose build ingestion processing writer pytest
     Assert-LastExitCode "docker compose build evaluation services"
-    Clear-RunArtifacts -RunId $RunId
+    $effectiveStorageBackend = Get-EffectiveStorageBackend
 
-    docker compose up --build -d kafka timescaledb
-    Assert-LastExitCode "docker compose up kafka timescaledb"
+    $infraServices = @("kafka", "timescaledb")
+    if ($effectiveStorageBackend -eq "minio") {
+        $infraServices += @("minio", "minio-init")
+    }
+    docker compose up --build -d @infraServices
+    Assert-LastExitCode "docker compose up infrastructure"
     & (Resolve-Path "infra/kafka/create-topics.ps1")
     Assert-LastExitCode "create topics"
+    if ($effectiveStorageBackend -eq "minio") {
+        Wait-MinioBucketReady
+    }
 
     docker compose run --rm --no-deps writer preflight
     Assert-LastExitCode "writer preflight"
@@ -155,6 +264,7 @@ function Invoke-BoundedRun {
     Assert-LastExitCode "processing preflight"
     docker compose run --rm --no-deps ingestion preflight
     Assert-LastExitCode "ingestion preflight"
+    Clear-RunState -RunId $RunId
 
     docker compose up -d --no-deps --scale "processing=$ProcessingReplicas" processing writer
     Assert-LastExitCode "docker compose up processing writer"

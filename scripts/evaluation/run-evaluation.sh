@@ -11,6 +11,41 @@ resource_sample_interval_s="${EVAL_RESOURCE_SAMPLE_INTERVAL_S:-2}"
 artifact_read_sample_size="${EVAL_ARTIFACT_READ_SAMPLE_SIZE:-20}"
 active_sampler_pid=""
 
+get_effective_storage_backend() {
+  backend_output="$(
+    docker compose run --rm --no-deps --entrypoint python pytest \
+      -c "from pathlib import Path; from event_driven_audio_analytics.shared.settings import load_storage_backend_settings; print(load_storage_backend_settings(artifacts_root=Path('/app/artifacts')).normalized_backend())"
+  )"
+  printf '%s\n' "$backend_output" | tail -n 1 | tr '[:upper:]' '[:lower:]'
+}
+
+wait_minio_bucket_ready() {
+  docker compose run --rm --no-deps --entrypoint python pytest \
+    -c '
+import time
+from pathlib import Path
+from event_driven_audio_analytics.shared.settings import load_storage_backend_settings
+from event_driven_audio_analytics.shared.storage import build_claim_check_store
+
+settings = load_storage_backend_settings(artifacts_root=Path("/app/artifacts"))
+if settings.normalized_backend() != "minio":
+    raise SystemExit(0)
+
+store = build_claim_check_store(settings)
+check_bucket = getattr(store, "check_bucket")
+deadline = time.monotonic() + 60.0
+last_error = None
+while time.monotonic() < deadline:
+    try:
+        check_bucket()
+        raise SystemExit(0)
+    except Exception as exc:  # pragma: no cover - runtime polling only
+        last_error = exc
+        time.sleep(1.0)
+raise SystemExit(f"Timed out waiting for MinIO bucket readiness: {last_error}")
+    ' >/dev/null
+}
+
 stop_active_resource_sampler() {
   if [ -n "$active_sampler_pid" ]; then
     kill "$active_sampler_pid" 2>/dev/null || true
@@ -69,22 +104,84 @@ start_resource_sampler() {
   active_sampler_pid="$!"
 }
 
-cleanup_run_artifacts() {
+cleanup_run_state() {
   run_id="$1"
   docker compose run --rm --no-deps \
     -e CLEANUP_RUN_ID="$run_id" \
-    --entrypoint python ingestion \
+    --entrypoint python pytest \
     -c '
 import os
 import shutil
 from pathlib import Path
+from event_driven_audio_analytics.shared.db import open_database_connection
+from event_driven_audio_analytics.shared.settings import (
+    load_database_settings,
+    load_storage_backend_settings,
+)
 from event_driven_audio_analytics.shared.storage import validate_run_id
 
 run_id = validate_run_id(os.environ["CLEANUP_RUN_ID"])
-root = Path("/app/artifacts/runs").resolve()
-target = (root / run_id).resolve()
-target.relative_to(root)
-shutil.rmtree(target, ignore_errors=True)
+artifacts_root = Path("/app/artifacts").resolve()
+for relative in (Path("runs") / run_id, Path("datasets") / run_id):
+    target = (artifacts_root / relative).resolve()
+    target.relative_to(artifacts_root)
+    shutil.rmtree(target, ignore_errors=True)
+
+database = load_database_settings()
+with open_database_connection(database) as connection:
+    with connection.cursor() as cursor:
+        for statement in (
+            "DELETE FROM track_metadata WHERE run_id = %s;",
+            "DELETE FROM audio_features WHERE run_id = %s;",
+            "DELETE FROM system_metrics WHERE run_id = %s;",
+            "DELETE FROM welford_snapshots WHERE run_id = %s;",
+            "DELETE FROM run_checkpoints WHERE run_id = %s;",
+        ):
+            cursor.execute(statement, (run_id,))
+    connection.commit()
+
+storage = load_storage_backend_settings(artifacts_root=artifacts_root)
+if storage.normalized_backend() == "minio":
+    import boto3
+
+    client = boto3.client(
+        "s3",
+        endpoint_url=storage.endpoint_url,
+        aws_access_key_id=storage.access_key,
+        aws_secret_access_key=storage.secret_key,
+        region_name=storage.region,
+        use_ssl=storage.secure,
+    )
+    continuation_token = None
+    prefix = f"runs/{run_id}/"
+    while True:
+        request = {"Bucket": storage.bucket, "Prefix": prefix}
+        if continuation_token is not None:
+            request["ContinuationToken"] = continuation_token
+        try:
+            response = client.list_objects_v2(**request)
+        except Exception as exc:
+            error_response = getattr(exc, "response", None)
+            error_code = (
+                str(error_response.get("Error", {}).get("Code", ""))
+                if isinstance(error_response, dict)
+                else ""
+            )
+            if error_code in {"404", "NoSuchBucket", "NotFound"}:
+                break
+            raise
+        objects = response.get("Contents", [])
+        if objects:
+            client.delete_objects(
+                Bucket=storage.bucket,
+                Delete={
+                    "Objects": [{"Key": str(item["Key"])} for item in objects],
+                    "Quiet": True,
+                },
+            )
+        if not response.get("IsTruncated"):
+            break
+        continuation_token = str(response["NextContinuationToken"])
 ' >/dev/null
 }
 
@@ -106,13 +203,22 @@ run_bounded_scenario() {
   echo "Running evaluation scenario=$scenario run_id=$run_id processing_replicas=$processing_replicas..."
   docker compose down --remove-orphans
   docker compose build ingestion processing writer pytest
-  cleanup_run_artifacts "$run_id"
-  docker compose up --build -d kafka timescaledb
+  effective_storage_backend="$(get_effective_storage_backend)"
+  infra_services="kafka timescaledb"
+  if [ "$effective_storage_backend" = "minio" ]; then
+    infra_services="$infra_services minio minio-init"
+  fi
+  # shellcheck disable=SC2086
+  docker compose up --build -d $infra_services
   sh ./infra/kafka/create-topics.sh
+  if [ "$effective_storage_backend" = "minio" ]; then
+    wait_minio_bucket_ready
+  fi
 
   docker compose run --rm --no-deps writer preflight
   docker compose run --rm --no-deps processing preflight
   docker compose run --rm --no-deps ingestion preflight
+  cleanup_run_state "$run_id"
 
   docker compose up -d --no-deps --scale "processing=$processing_replicas" processing writer
   sleep 5

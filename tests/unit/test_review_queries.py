@@ -523,6 +523,36 @@ def test_lookup_segment_artifact_ref_rejects_cross_run_media_uri(
     assert artifact_ref is None
 
 
+def test_lookup_segment_artifact_ref_returns_checksum_for_valid_media_uri(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "42" / "0.wav"
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_bytes(b"RIFF")
+    cursor = FakeCursor(
+        fetchone_results=[("/artifacts/runs/demo-run/segments/42/0.wav", "sha256:segment")]
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    artifact_ref = lookup_segment_artifact_ref(
+        settings,
+        run_id="demo-run",
+        track_id=42,
+        segment_idx=0,
+    )
+
+    assert artifact_ref is not None
+    assert artifact_ref.uri == "/artifacts/runs/demo-run/segments/42/0.wav"
+    assert artifact_ref.checksum == "sha256:segment"
+    assert artifact_ref.exists is True
+    assert "SELECT artifact_uri, checksum" in cursor.executed[0][0]
+
+
 def test_get_run_detail_prefers_persisted_manifest_uri_for_runtime_proof(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

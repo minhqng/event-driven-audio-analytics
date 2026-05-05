@@ -116,7 +116,7 @@ def lookup_segment_artifact_ref(
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT artifact_uri
+                SELECT artifact_uri, checksum
                 FROM audio_features
                 WHERE run_id = %s
                   AND track_id = %s
