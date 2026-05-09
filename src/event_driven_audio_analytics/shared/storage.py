@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path, PurePosixPath
 from typing import Protocol
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
 
 from event_driven_audio_analytics.shared.checksum import sha256_bytes, sha256_file
 
@@ -117,6 +117,15 @@ def _reject_unsafe_key_parts(key: str) -> None:
         raise ValueError(f"artifact URI key is not safe: {key!r}.")
 
 
+def _is_windows_drive_path_parse(parsed: ParseResult) -> bool:
+    return (
+        len(parsed.scheme) == 1
+        and parsed.scheme.isalpha()
+        and parsed.netloc == ""
+        and parsed.path.startswith(("/", "\\"))
+    )
+
+
 def _logical_relative_path(artifact_uri: str) -> Path | None:
     normalized_uri = artifact_uri.strip().replace("\\", "/")
     logical_root = str(LOGICAL_ARTIFACTS_ROOT)
@@ -189,7 +198,7 @@ def parse_artifact_uri(uri: str, *, bucket: str = DEFAULT_MINIO_BUCKET) -> Parse
         _reject_unsafe_key_parts(key)
         return ParsedArtifactUri(scheme="s3", bucket=parsed.netloc, key=key)
 
-    if parsed.scheme not in {"", "file"}:
+    if parsed.scheme not in {"", "file"} and not _is_windows_drive_path_parse(parsed):
         raise ValueError(f"unsupported artifact_uri scheme: {parsed.scheme}.")
 
     logical_relative = _logical_relative_path(normalized_uri)
@@ -277,7 +286,7 @@ class LocalClaimCheckStore:
 
     def _path(self, uri: str) -> Path:
         parsed = urlparse(uri.strip())
-        if parsed.scheme:
+        if parsed.scheme and not _is_windows_drive_path_parse(parsed):
             raise ValueError(
                 "local claim-check store cannot resolve artifact_uri schemes "
                 f"scheme={parsed.scheme!r}."

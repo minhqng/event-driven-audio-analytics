@@ -155,6 +155,25 @@ def test_local_store_rejects_raw_filesystem_paths_under_artifacts_root(tmp_path:
         store.write_bytes(raw_path.as_posix(), b"payload", content_type="audio/wav")
 
 
+@pytest.mark.parametrize(
+    "raw_path",
+    [
+        "D:/artifacts/runs/demo-run/segments/2/0.wav",
+        "D:\\artifacts\\runs\\demo-run\\segments\\2\\0.wav",
+    ],
+)
+def test_local_store_rejects_windows_drive_paths_with_logical_uri_message(
+    tmp_path: Path,
+    raw_path: str,
+) -> None:
+    store = build_claim_check_store(
+        StorageBackendSettings(backend="local", artifacts_root=tmp_path)
+    )
+
+    with pytest.raises(ValueError, match="logical /artifacts"):
+        store.write_bytes(raw_path, b"payload", content_type="audio/wav")
+
+
 def test_backend_stores_reject_foreign_uri_families(tmp_path: Path) -> None:
     local_store = build_claim_check_store(
         StorageBackendSettings(backend="local", artifacts_root=tmp_path)
