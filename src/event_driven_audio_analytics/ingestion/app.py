@@ -58,7 +58,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         settings.audio_root_path,
         settings.base.kafka_bootstrap_servers,
     )
-    pipeline.run()
+    pipeline.run(retain_results=False)
 
 
 if __name__ == "__main__":

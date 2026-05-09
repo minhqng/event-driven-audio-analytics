@@ -286,7 +286,12 @@ class IngestionPipeline:
             artifact_write_ms=artifact_write_ms,
         )
 
-    def run(self, producer: ProducerLike | None = None) -> list[TrackIngestionResult]:
+    def run(
+        self,
+        producer: ProducerLike | None = None,
+        *,
+        retain_results: bool = True,
+    ) -> list[TrackIngestionResult]:
         """Execute the ingestion path for the configured sample set."""
 
         own_producer = producer is None
@@ -323,7 +328,8 @@ class IngestionPipeline:
                     validation_failed=result.validation.validation_status != VALIDATION_STATUS_VALIDATED,
                     artifact_write_ms=result.artifact_write_ms,
                 )
-                results.append(result)
+                if retain_results:
+                    results.append(result)
 
             try:
                 for payload in metrics.as_payloads(

@@ -854,6 +854,31 @@ def test_ingestion_run_metrics_render_expected_payloads() -> None:
     assert payloads[-1].unit == "ms"
 
 
+def test_pipeline_run_can_stream_without_retaining_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.ingestion.pipeline.wait_for_runtime_dependencies",
+        lambda settings, logger: None,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = _ingestion_settings(tmp_dir, max_tracks=1)
+
+        class StubbedPipeline(IngestionPipeline):
+            def load_metadata_records(self) -> list[MetadataRecord]:
+                return [_metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3")]
+
+        pipeline = StubbedPipeline(settings=settings)
+        producer = RecordingProducer()
+
+        results = pipeline.run(producer=producer, retain_results=False)
+
+        assert results == []
+        assert any(message["topic"] == "audio.metadata" for message in producer.messages)
+        assert any(message["topic"] == "system.metrics" for message in producer.messages)
+
+
 def test_ingestion_run_total_metrics_keep_stable_identity_across_ts_refresh() -> None:
     metrics = IngestionRunMetrics()
     metrics.record_track(segment_count=3, validation_failed=False, artifact_write_ms=12.5)
