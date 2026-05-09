@@ -21,6 +21,12 @@ def _getenv_with_fallback(primary: str, fallback: str | None, default: str) -> s
     return default
 
 
+def _parse_bool_env(raw_value: str) -> bool:
+    """Parse one conventional boolean environment value."""
+
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass(slots=True)
 class ProcessingSettings:
     """Runtime settings for feature extraction."""
@@ -50,6 +56,7 @@ class ProcessingSettings:
     producer_retry_backoff_ms: int
     producer_retry_backoff_max_ms: int
     producer_delivery_timeout_ms: int
+    probe_s3_replay_readiness: bool = False
 
     @classmethod
     def from_env(cls) -> "ProcessingSettings":
@@ -109,5 +116,8 @@ class ProcessingSettings:
                     "PRODUCER_DELIVERY_TIMEOUT_MS",
                     "120000",
                 )
+            ),
+            probe_s3_replay_readiness=_parse_bool_env(
+                os.getenv("PROCESSING_PROBE_S3_REPLAY_READINESS", "false")
             ),
         )

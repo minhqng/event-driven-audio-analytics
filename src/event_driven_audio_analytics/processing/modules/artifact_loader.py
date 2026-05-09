@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 import wave
 
 import numpy as np
 
-from event_driven_audio_analytics.shared.checksum import sha256_file
-from event_driven_audio_analytics.shared.storage import resolve_artifact_uri
+from event_driven_audio_analytics.shared.checksum import sha256_bytes
+from event_driven_audio_analytics.shared.storage import (
+    ClaimCheckStore,
+    build_claim_check_store,
+    storage_settings_for_local,
+    validate_segment_artifact_uri,
+)
 
 
 class ArtifactLoadError(RuntimeError):
@@ -25,7 +31,7 @@ class LoadedSegmentArtifact:
     """Decoded claim-check artifact ready for DSP work."""
 
     artifact_uri: str
-    artifact_path: Path
+    artifact_path: Path | None
     checksum: str
     waveform: np.ndarray
     sample_rate_hz: int
@@ -56,22 +62,40 @@ def load_segment_artifact(
     *,
     artifacts_root: Path,
     expected_sample_rate_hz: int | None = None,
+    expected_run_id: str | None = None,
+    expected_track_id: int | None = None,
+    expected_segment_idx: int | None = None,
+    store: ClaimCheckStore | None = None,
 ) -> LoadedSegmentArtifact:
     """Load a mono WAV segment artifact and verify its checksum first."""
 
-    artifact_path = resolve_artifact_uri(artifacts_root, artifact_uri)
-    if not artifact_path.exists():
-        raise FileNotFoundError(f"Segment artifact does not exist: {artifact_path.as_posix()}")
+    if store is None:
+        store = build_claim_check_store(storage_settings_for_local(artifacts_root))
+    expected_parts = (expected_run_id, expected_track_id, expected_segment_idx)
+    if any(part is not None for part in expected_parts):
+        if any(part is None for part in expected_parts):
+            raise ValueError(
+                "expected_run_id, expected_track_id, and expected_segment_idx "
+                "must be provided together."
+            )
+        validate_segment_artifact_uri(
+            artifact_uri,
+            run_id=str(expected_run_id),
+            track_id=int(expected_track_id),
+            segment_idx=int(expected_segment_idx),
+            bucket=store.settings.bucket,
+        )
 
-    actual_checksum = sha256_file(artifact_path)
+    payload = store.read_bytes(artifact_uri)
+    actual_checksum = sha256_bytes(payload)
     if actual_checksum != checksum:
         raise ArtifactChecksumMismatch(
             "Segment artifact checksum mismatch "
             f"expected={checksum} actual={actual_checksum} "
-            f"path={artifact_path.as_posix()}"
+            f"uri={artifact_uri}"
         )
 
-    with wave.open(str(artifact_path), "rb") as handle:
+    with wave.open(BytesIO(payload), "rb") as handle:
         if handle.getnchannels() != 1:
             raise ArtifactLoadError(
                 "Segment artifact must be mono after ingestion normalization."
@@ -97,7 +121,7 @@ def load_segment_artifact(
     duration_s = frame_count / float(sample_rate_hz)
     return LoadedSegmentArtifact(
         artifact_uri=artifact_uri,
-        artifact_path=artifact_path,
+        artifact_path=store.local_path(artifact_uri),
         checksum=actual_checksum,
         waveform=waveform,
         sample_rate_hz=sample_rate_hz,

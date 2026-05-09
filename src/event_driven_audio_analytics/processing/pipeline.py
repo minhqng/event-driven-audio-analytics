@@ -55,6 +55,7 @@ from event_driven_audio_analytics.shared.models.envelope import (
     validate_envelope_dict,
 )
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
+from event_driven_audio_analytics.shared.storage import build_claim_check_store_for_uri
 
 if TYPE_CHECKING:
     from confluent_kafka import Consumer, Message
@@ -448,11 +449,19 @@ class ProcessingPipeline:
 
         started_at = perf_counter()
         try:
+            artifact_store = build_claim_check_store_for_uri(
+                self.settings.base.storage,
+                payload.artifact_uri,
+            )
             artifact = load_segment_artifact(
                 payload.artifact_uri,
                 payload.checksum,
                 artifacts_root=self.settings.base.artifacts_root,
                 expected_sample_rate_hz=self.settings.target_sample_rate_hz,
+                expected_run_id=payload.run_id,
+                expected_track_id=payload.track_id,
+                expected_segment_idx=payload.segment_idx,
+                store=artifact_store,
             )
             self._validate_loaded_artifact(payload, artifact)
         except (FileNotFoundError, ArtifactChecksumMismatch):

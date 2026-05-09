@@ -1,0 +1,45 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fma-small-analytics
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - artifacts-pvc.yaml
+  - kafka/headless-service.yaml
+  - kafka/service.yaml
+  - kafka/statefulset.yaml
+  - timescaledb/pvc.yaml
+  - timescaledb/service.yaml
+  - timescaledb/statefulset.yaml
+  - minio/pvc.yaml
+  - minio/service.yaml
+  - minio/statefulset.yaml
+  - grafana/service.yaml
+  - grafana/deployment.yaml
+  - processing/deployment.yaml
+  - writer/deployment.yaml
+  - review/service.yaml
+  - review/deployment.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: timescaledb-init-sql
+    files:
+      - 001_extensions.sql=./timescaledb/config/001_extensions.sql
+      - 002_core_tables.sql=./timescaledb/config/002_core_tables.sql
+      - 003_operational_views.sql=./timescaledb/config/003_operational_views.sql
+      - 004_review_views.sql=./timescaledb/config/004_review_views.sql
+  - name: grafana-datasource-config
+    files:
+      - timescaledb.yaml=./grafana/config/provisioning/datasources/timescaledb.yaml
+  - name: grafana-dashboard-provider-config
+    files:
+      - dashboards.yaml=./grafana/config/provisioning/dashboards/dashboards.yaml
+  - name: grafana-dashboard-json
+    files:
+      - audio_quality.json=./grafana/config/dashboards/audio_quality.json
+      - system_health.json=./grafana/config/dashboards/system_health.json

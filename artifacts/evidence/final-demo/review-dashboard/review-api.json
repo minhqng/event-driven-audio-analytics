@@ -1,0 +1,568 @@
+﻿{
+  "expected_run_ids": [
+    "demo-high-energy",
+    "demo-silent-oriented",
+    "demo-validation-failure"
+  ],
+  "healthz": {
+    "authoritative_truth": "db_views_and_artifacts",
+    "provenance": {
+      "source": "derived"
+    },
+    "service": "review",
+    "status": "ok"
+  },
+  "high_energy": {
+    "links": {
+      "tracks_url": "/api/runs/demo-high-energy/tracks"
+    },
+    "run": {
+      "artifact_write_ms": 861.258,
+      "avg_processing_ms": 61.84229025029708,
+      "avg_rms": -8.955863509685088,
+      "error_rate": 0.0,
+      "first_seen_at": "2026-05-09T09:33:19.998924Z",
+      "last_seen_at": "2026-05-09T09:33:22.845685Z",
+      "links": {
+        "detail_url": "/api/runs/demo-high-energy",
+        "tracks_url": "/api/runs/demo-high-energy/tracks"
+      },
+      "processing_error_count": 0,
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-high-energy",
+      "segments_persisted": 4,
+      "segments_total": 4.0,
+      "silent_ratio": 0.0,
+      "state": {
+        "label": "Persisted",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "Run reached TimescaleDB without downstream errors.",
+        "value": "persisted"
+      },
+      "total_error_events": 0.0,
+      "tracks_total": 1.0,
+      "validation_failures": 0.0,
+      "writer_error_count": 0
+    },
+    "runtime_proof": {
+      "checkpoints": {
+        "items": [],
+        "provenance": {
+          "source": "db"
+        }
+      },
+      "emphasis": "secondary",
+      "manifest": {
+        "exists": true,
+        "path": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+        "provenance": {
+          "exists": "fs",
+          "path": "claim_check_uri"
+        }
+      },
+      "processing_state": {
+        "exists": true,
+        "path": "/app/artifacts/runs/demo-high-energy/state/processing_metrics.json",
+        "provenance": {
+          "exists": "fs",
+          "path": "fs",
+          "state": "fs"
+        },
+        "read_error": null,
+        "state": {
+          "provenance": {
+            "source": "fs"
+          },
+          "run_id": "demo-high-energy",
+          "segment_count": 4,
+          "silent_ratio": 0.0,
+          "silent_segments": 0
+        }
+      },
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "validation_outcomes": {
+      "items": [
+        {
+          "provenance": {
+            "source": "db"
+          },
+          "track_count": 1,
+          "validation_status": "validated"
+        }
+      ],
+      "provenance": {
+        "source": "db"
+      }
+    }
+  },
+  "high_energy_track_detail": {
+    "run_id": "demo-high-energy",
+    "segments": {
+      "has_more": false,
+      "items": [
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-high-energy/segments/910001/0.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-high-energy/segments/910001/0.wav"
+          },
+          "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
+          "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+          "processing_ms": 63.43764900066162,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -8.203288520525135,
+          "segment_idx": 0,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:20.776168Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-high-energy/segments/910001/1.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-high-energy/segments/910001/1.wav"
+          },
+          "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
+          "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+          "processing_ms": 71.8990200002736,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -8.203288520525135,
+          "segment_idx": 1,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:22.625935Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-high-energy/segments/910001/2.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-high-energy/segments/910001/2.wav"
+          },
+          "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
+          "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+          "processing_ms": 56.03877000066859,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -8.203288520525135,
+          "segment_idx": 2,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:22.714863Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-high-energy/segments/910001/3.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-high-energy/segments/910001/3.wav"
+          },
+          "checksum": "sha256:049cbbc20cdeed64574f1b9ff11b1408b1cb431de87426576c1d1e47811989e6",
+          "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+          "processing_ms": 55.99372199958452,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -11.213588477164947,
+          "segment_idx": 3,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:22.805750Z"
+        }
+      ],
+      "limit": 10,
+      "offset": 0,
+      "total": 4
+    },
+    "track": {
+      "artist_id": 9101,
+      "avg_processing_ms": 61.84229025029708,
+      "avg_rms": -8.955863509685088,
+      "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
+      "duration_s": 6.0,
+      "genre": "Synthetic-High-Energy",
+      "links": {
+        "detail_url": "/api/runs/demo-high-energy/tracks/910001"
+      },
+      "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-high-energy",
+      "segments_persisted": 4,
+      "silent_ratio": 0.0,
+      "silent_segments": 0,
+      "source_audio_uri": "/app/artifacts/demo-inputs/review-demo/fma_small/910/910001.mp3",
+      "subset": "small",
+      "track_id": 910001,
+      "track_state": {
+        "label": "Persisted",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "This track produced persisted segment summaries.",
+        "value": "persisted"
+      },
+      "track_state_value": "persisted",
+      "validation_status": "validated"
+    }
+  },
+  "high_energy_tracks": {
+    "has_more": false,
+    "items": [
+      {
+        "artist_id": 9101,
+        "avg_processing_ms": 61.84229025029708,
+        "avg_rms": -8.955863509685088,
+        "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
+        "duration_s": 6.0,
+        "genre": "Synthetic-High-Energy",
+        "links": {
+          "detail_url": "/api/runs/demo-high-energy/tracks/910001"
+        },
+        "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+        "provenance": {
+          "source": "db"
+        },
+        "run_id": "demo-high-energy",
+        "segments_persisted": 4,
+        "silent_ratio": 0.0,
+        "silent_segments": 0,
+        "source_audio_uri": "/app/artifacts/demo-inputs/review-demo/fma_small/910/910001.mp3",
+        "subset": "small",
+        "track_id": 910001,
+        "track_state": {
+          "label": "Persisted",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "This track produced persisted segment summaries.",
+          "value": "persisted"
+        },
+        "track_state_value": "persisted",
+        "validation_status": "validated"
+      }
+    ],
+    "limit": 10,
+    "offset": 0,
+    "provenance": {
+      "source": "db"
+    },
+    "run_id": "demo-high-energy",
+    "total": 1
+  },
+  "runs": {
+    "has_more": false,
+    "items": [
+      {
+        "artifact_write_ms": 861.258,
+        "avg_processing_ms": 61.84229025029708,
+        "avg_rms": -8.955863509685088,
+        "error_rate": 0.0,
+        "first_seen_at": "2026-05-09T09:33:19.998924Z",
+        "last_seen_at": "2026-05-09T09:33:22.845685Z",
+        "links": {
+          "detail_url": "/api/runs/demo-high-energy",
+          "tracks_url": "/api/runs/demo-high-energy/tracks"
+        },
+        "processing_error_count": 0,
+        "provenance": {
+          "source": "db"
+        },
+        "run_id": "demo-high-energy",
+        "segments_persisted": 4,
+        "segments_total": 4.0,
+        "silent_ratio": 0.0,
+        "state": {
+          "label": "Persisted",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Run reached TimescaleDB without downstream errors.",
+          "value": "persisted"
+        },
+        "total_error_events": 0.0,
+        "tracks_total": 1.0,
+        "validation_failures": 0.0,
+        "writer_error_count": 0
+      },
+      {
+        "artifact_write_ms": 1046.117,
+        "avg_processing_ms": 64.7230000001855,
+        "avg_rms": -25.60186305140538,
+        "error_rate": 0.0,
+        "first_seen_at": "2026-05-09T09:33:29.317434Z",
+        "last_seen_at": "2026-05-09T09:33:31.373171Z",
+        "links": {
+          "detail_url": "/api/runs/demo-silent-oriented",
+          "tracks_url": "/api/runs/demo-silent-oriented/tracks"
+        },
+        "processing_error_count": 0,
+        "provenance": {
+          "source": "db"
+        },
+        "run_id": "demo-silent-oriented",
+        "segments_persisted": 4,
+        "segments_total": 4.0,
+        "silent_ratio": 0.25,
+        "state": {
+          "label": "Persisted",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Run reached TimescaleDB without downstream errors.",
+          "value": "persisted"
+        },
+        "total_error_events": 0.0,
+        "tracks_total": 1.0,
+        "validation_failures": 0.0,
+        "writer_error_count": 0
+      },
+      {
+        "artifact_write_ms": 0.0,
+        "avg_processing_ms": null,
+        "avg_rms": null,
+        "error_rate": 1.0,
+        "first_seen_at": "2026-05-09T09:33:38.145749Z",
+        "last_seen_at": "2026-05-09T09:33:39.207068Z",
+        "links": {
+          "detail_url": "/api/runs/demo-validation-failure",
+          "tracks_url": "/api/runs/demo-validation-failure/tracks"
+        },
+        "processing_error_count": 0,
+        "provenance": {
+          "source": "db"
+        },
+        "run_id": "demo-validation-failure",
+        "segments_persisted": 0,
+        "segments_total": 0.0,
+        "silent_ratio": 0.0,
+        "state": {
+          "label": "Metadata-only",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Tracks are present in metadata, but no segments reached persisted features.",
+          "value": "metadata_only"
+        },
+        "total_error_events": 1.0,
+        "tracks_total": 1.0,
+        "validation_failures": 1.0,
+        "writer_error_count": 0
+      }
+    ],
+    "limit": 10,
+    "mode": {
+      "demo_mode": true,
+      "pinned_run_ids": [
+        "demo-high-energy",
+        "demo-silent-oriented",
+        "demo-validation-failure"
+      ],
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "offset": 0,
+    "total": 3
+  },
+  "silent_oriented_track_detail": {
+    "run_id": "demo-silent-oriented",
+    "segments": {
+      "has_more": false,
+      "items": [
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-silent-oriented/segments/910002/0.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-silent-oriented/segments/910002/0.wav"
+          },
+          "checksum": "sha256:d4bd3ca1a3e5de733841da6c55adebbafd4f05fcc7fdf2023b1db4f151508a1b",
+          "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+          "processing_ms": 83.99736000046687,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -60.0,
+          "segment_idx": 0,
+          "silent_flag": true,
+          "ts": "2026-05-09T09:33:30.413213Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-silent-oriented/segments/910002/1.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-silent-oriented/segments/910002/1.wav"
+          },
+          "checksum": "sha256:ebc75223033ab6c612278f165c0413400ef4544e790258dd3459c1f2f2062df6",
+          "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+          "processing_ms": 64.42232100016554,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -15.139250720753786,
+          "segment_idx": 1,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:30.506762Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-silent-oriented/segments/910002/2.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-silent-oriented/segments/910002/2.wav"
+          },
+          "checksum": "sha256:6a324380d1c4332f0759b6dd88126319f8c790b0e33b06c1597b6c4bcd8392ca",
+          "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+          "processing_ms": 52.88204499993299,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -12.128950764113974,
+          "segment_idx": 2,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:30.593759Z"
+        },
+        {
+          "artifact": {
+            "exists": true,
+            "media_url": "/media/runs/demo-silent-oriented/segments/910002/3.wav",
+            "provenance": {
+              "exists": "fs",
+              "media_url": "derived",
+              "uri": "db"
+            },
+            "uri": "/artifacts/runs/demo-silent-oriented/segments/910002/3.wav"
+          },
+          "checksum": "sha256:95be5110cbee9d1892427f6d0da708439a9055e8ba76746a91920fcfb83675cf",
+          "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+          "processing_ms": 57.59027400017658,
+          "provenance": {
+            "source": "db"
+          },
+          "rms": -15.139250720753786,
+          "segment_idx": 3,
+          "silent_flag": false,
+          "ts": "2026-05-09T09:33:30.683452Z"
+        }
+      ],
+      "limit": 10,
+      "offset": 0,
+      "total": 4
+    },
+    "track": {
+      "artist_id": 9102,
+      "avg_processing_ms": 64.7230000001855,
+      "avg_rms": -25.60186305140538,
+      "checksum": "sha256:74821199a072e5dc590e976b6f3a9b487909399e54c550c4e3e266cf5068b7a7",
+      "duration_s": 6.0,
+      "genre": "Synthetic-Silent-Oriented",
+      "links": {
+        "detail_url": "/api/runs/demo-silent-oriented/tracks/910002"
+      },
+      "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-silent-oriented",
+      "segments_persisted": 4,
+      "silent_ratio": 0.25,
+      "silent_segments": 1,
+      "source_audio_uri": "/app/artifacts/demo-inputs/review-demo/fma_small/910/910002.mp3",
+      "subset": "small",
+      "track_id": 910002,
+      "track_state": {
+        "label": "Persisted",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "This track produced persisted segment summaries.",
+        "value": "persisted"
+      },
+      "track_state_value": "persisted",
+      "validation_status": "validated"
+    }
+  },
+  "validation_failure_track_detail": {
+    "run_id": "demo-validation-failure",
+    "segments": {
+      "has_more": false,
+      "items": [],
+      "limit": 10,
+      "offset": 0,
+      "total": 0
+    },
+    "track": {
+      "artist_id": 9103,
+      "avg_processing_ms": null,
+      "avg_rms": null,
+      "checksum": "sha256:d4bd3ca1a3e5de733841da6c55adebbafd4f05fcc7fdf2023b1db4f151508a1b",
+      "duration_s": 3.0,
+      "genre": "Synthetic-Validation-Failure",
+      "links": {
+        "detail_url": "/api/runs/demo-validation-failure/tracks/910003"
+      },
+      "manifest_uri": null,
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-validation-failure",
+      "segments_persisted": 0,
+      "silent_ratio": null,
+      "silent_segments": 0,
+      "source_audio_uri": "/app/artifacts/demo-inputs/review-demo/fma_small/910/910003.mp3",
+      "subset": "small",
+      "track_id": 910003,
+      "track_state": {
+        "label": "Metadata-only",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "This track exists only as metadata for the current run. validation_status=silent.",
+        "value": "metadata_only"
+      },
+      "track_state_value": "metadata_only",
+      "validation_status": "silent"
+    }
+  }
+}

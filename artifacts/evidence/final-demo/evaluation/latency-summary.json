@@ -1,0 +1,280 @@
+{
+  "format_version": 1,
+  "generated_at": "2026-05-09T10:00:22.800703Z",
+  "scenarios": [
+    {
+      "artifact_read_ms": {
+        "count": 3,
+        "max": 42.703414,
+        "mean": 39.450698,
+        "min": 37.290249,
+        "p50": 38.358431,
+        "p95": 42.268916
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 881.498,
+        "sum": 881.498
+      },
+      "db_activity_span_ms": 2858.931,
+      "processing_ms": {
+        "count": 3,
+        "max": 66.621696,
+        "mean": 63.925094,
+        "min": 59.675143,
+        "p50": 65.478444,
+        "p95": 66.507371
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 2,
+      "run_id": "eval-deterministic-review-demo",
+      "scenario": "deterministic-review-demo",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 9815.418,
+      "writer_write_ms": {
+        "count": 15,
+        "max": 54.918367,
+        "mean": 8.936565,
+        "min": 2.77338,
+        "p50": 4.479279,
+        "p95": 30.938787
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 20,
+        "max": 79.314047,
+        "mean": 38.218477,
+        "min": 32.160704,
+        "p50": 36.487816,
+        "p95": 42.808691
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 12119.048,
+        "sum": 12119.048
+      },
+      "db_activity_span_ms": 14110.854,
+      "processing_ms": {
+        "count": 96,
+        "max": 117.551095,
+        "mean": 56.514194,
+        "min": 36.464188,
+        "p50": 49.522764,
+        "p95": 92.367003
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 5,
+      "run_id": "eval-fma-5",
+      "scenario": "fma-small-burst-5",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 36382.111,
+      "writer_write_ms": {
+        "count": 297,
+        "max": 67.392604,
+        "mean": 4.215509,
+        "min": 1.98621,
+        "p50": 3.858136,
+        "p95": 6.142174
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 20,
+        "max": 36.246404,
+        "mean": 30.684556,
+        "min": 26.115146,
+        "p50": 30.332998,
+        "p95": 34.692735
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 237881.214,
+        "sum": 237881.214
+      },
+      "db_activity_span_ms": 273206.506,
+      "processing_ms": {
+        "count": 1933,
+        "max": 315.470584,
+        "mean": 52.477751,
+        "min": 28.516537,
+        "p50": 44.83844,
+        "p95": 89.957066
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 100,
+      "run_id": "eval-fma-100",
+      "scenario": "fma-small-burst-100",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 320213.681,
+      "writer_write_ms": {
+        "count": 5903,
+        "max": 82.754972,
+        "mean": 4.436406,
+        "min": 1.668989,
+        "p50": 3.873156,
+        "p95": 8.598955
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 20,
+        "max": 31.756938,
+        "mean": 29.536151,
+        "min": 27.767074,
+        "p50": 29.550038,
+        "p95": 31.312246
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 12542.061,
+        "sum": 12542.061
+      },
+      "db_activity_span_ms": 14509.5,
+      "processing_ms": {
+        "count": 96,
+        "max": 142.393366,
+        "mean": 56.985496,
+        "min": 33.692547,
+        "p50": 51.668672,
+        "p95": 97.549098
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r1",
+      "scenario": "fma-small-scaling-r1",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 36896.803,
+      "writer_write_ms": {
+        "count": 297,
+        "max": 53.591463,
+        "mean": 4.326678,
+        "min": 1.865508,
+        "p50": 3.95058,
+        "p95": 7.06964
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 20,
+        "max": 40.671247,
+        "mean": 30.519578,
+        "min": 26.598717,
+        "p50": 29.099047,
+        "p95": 37.251068
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 12171.594,
+        "sum": 12171.594
+      },
+      "db_activity_span_ms": 14739.794,
+      "processing_ms": {
+        "count": 96,
+        "max": 179.913115,
+        "mean": 58.743191,
+        "min": 31.569955,
+        "p50": 50.059543,
+        "p95": 116.47388
+      },
+      "processing_replicas": 2,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r2",
+      "scenario": "fma-small-scaling-r2",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 39621.155,
+      "writer_write_ms": {
+        "count": 297,
+        "max": 76.930195,
+        "mean": 4.161697,
+        "min": 1.955126,
+        "p50": 3.77721,
+        "p95": 6.649321
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 20,
+        "max": 49.526291,
+        "mean": 38.519879,
+        "min": 34.142227,
+        "p50": 37.404193,
+        "p95": 47.465044
+      },
+      "artifact_write_ms": {
+        "count": 1,
+        "mean": 11860.5,
+        "sum": 11860.5
+      },
+      "db_activity_span_ms": 14755.789,
+      "processing_ms": {
+        "count": 96,
+        "max": 161.460985,
+        "mean": 61.154678,
+        "min": 34.132759,
+        "p50": 45.852538,
+        "p95": 151.244074
+      },
+      "processing_replicas": 3,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r3",
+      "scenario": "fma-small-scaling-r3",
+      "status": "passed",
+      "storage_backend": "local",
+      "wall_clock_ms": 37521.533,
+      "writer_write_ms": {
+        "count": 297,
+        "max": 68.14935,
+        "mean": 4.185669,
+        "min": 2.001372,
+        "p50": 3.866449,
+        "p95": 7.299192
+      }
+    },
+    {
+      "artifact_read_ms": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "p50": null,
+        "p95": null
+      },
+      "artifact_write_ms": {
+        "count": 0,
+        "mean": null,
+        "sum": 0
+      },
+      "db_activity_span_ms": null,
+      "processing_ms": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "p50": null,
+        "p95": null
+      },
+      "processing_replicas": 1,
+      "requested_tracks": null,
+      "run_id": "eval-fma-full-local",
+      "scenario": "fma-small-full-local-experiment",
+      "skip_reason": "EVAL_ENABLE_FULL_FMA_SMALL is not true",
+      "status": "skipped",
+      "storage_backend": "local",
+      "wall_clock_ms": 0.0,
+      "writer_write_ms": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "p50": null,
+        "p95": null
+      }
+    }
+  ]
+}

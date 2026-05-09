@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataset-export-demo-validation-failure
+  namespace: fma-small-analytics
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dataset-export-demo-validation-failure
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: dataset-exporter
+          image: event-driven-audio-analytics-dataset-exporter:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - export
+            - --run-id
+            - demo-validation-failure
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc

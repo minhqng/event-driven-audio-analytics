@@ -1,6 +1,6 @@
 # Final Demo Runbook
 
-Use this runbook for the release-ready bounded demo.
+Use this runbook for the thesis-aligned bounded demo. It demonstrates the FMA-Small event-driven microservices pipeline, claim-check artifacts, persisted analytics truth, review-first inspection, Grafana corroboration, restart/replay evidence, and dataset/analytics outputs.
 
 ## Primary Command
 
@@ -30,6 +30,8 @@ Use Grafana after the review story is clear:
 http://localhost:3000
 ```
 
+The intended reading order is: review console, Grafana corroboration, dataset bundles, restart/replay artifacts, then separate evaluation evidence from `docs/runbooks/validation.md`.
+
 ## Deterministic Review Runs
 
 - `demo-high-energy`: validated high-energy track with persisted segments.
@@ -51,6 +53,64 @@ The final command writes:
 - `artifacts/evidence/final-demo/restart-replay/restart-replay-baseline.json`
 - `artifacts/evidence/final-demo/restart-replay/restart-replay-summary.json`
 - `artifacts/evidence/final-demo/restart-replay/preflight-fail-fast.txt`
+- `artifacts/evidence/final-demo/dataset-exports/dataset-export-summary.json`
+- `artifacts/datasets/demo-high-energy/`
+- `artifacts/datasets/demo-silent-oriented/`
+- `artifacts/datasets/demo-validation-failure/`
+
+## Dataset Output
+
+The final demo/evidence command already exports and verifies the deterministic
+FMA-Small dataset/analytics bundles for:
+
+- `demo-high-energy`
+- `demo-silent-oriented`
+- `demo-validation-failure`
+
+The exporter writes:
+
+```text
+artifacts/datasets/<run_id>/
+|-- dataset-build-manifest.json
+|-- run-summary.json
+|-- quality-verdict.json
+|-- accepted-tracks.csv
+|-- rejected-tracks.csv
+|-- accepted-segments.csv
+|-- rejected-segments.csv
+|-- anomaly-summary.json
+|-- label-map.json
+|-- splits/
+|   |-- split-manifest.json
+|   |-- train.parquet
+|   |-- validation.parquet
+|   `-- test.parquet
+|-- stats/
+|   `-- normalization-stats.json
+`-- dataset-card.md
+```
+
+The split Parquet files are training-oriented reference tables with labels,
+artifact URIs, FMA-Small metadata, and persisted scalar summaries. They do not
+contain log-mel tensors because those tensors are not persisted by the current
+pipeline.
+
+Standalone export remains available for any completed run:
+
+```powershell
+docker compose run --rm dataset-exporter export --run-id demo-high-energy
+```
+
+```sh
+docker compose run --rm dataset-exporter export --run-id demo-high-energy
+```
+
+For a repo-local FMA burst, replace `demo-high-energy` with the burst `RUN_ID`
+such as `fma-small-live`.
+
+The dataset bundle is the final product output. The review console and Grafana
+remain read-only inspection and corroboration surfaces over the same persisted
+truth.
 
 ## Bootstrap Only
 
@@ -71,7 +131,10 @@ This starts Kafka, TimescaleDB, Grafana, processing, writer, and the read-only r
 ## Honest Limits
 
 - Bounded demo evidence, not benchmark-scale proof.
+- FMA-Small only; no new dataset scope is implied.
+- No model training or serving is part of this demo.
 - Same-`run_id` replay/restart behavior is verified on committed smoke fixtures.
 - The review layer is read-only and non-authoritative.
 - Grafana is supporting corroboration, not the primary product surface.
+- Log-mel tensors are not exported because they are not persisted.
 - `audio.dlq` remains reserved only.

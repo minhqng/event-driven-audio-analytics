@@ -1,0 +1,26 @@
+﻿{
+  "bucket": "fma-small-artifacts",
+  "dataset_bundle": {
+    "accepted_segment_count": 3,
+    "manifest_reference": "s3://fma-small-artifacts/runs/minio-smoke/manifests/segments.parquet",
+    "output_dir": "/app/artifacts/datasets/minio-smoke"
+  },
+  "feature_artifacts": {
+    "artifact_count": 3,
+    "manifest_count": 1,
+    "manifest_rows": {
+      "s3://fma-small-artifacts/runs/minio-smoke/manifests/segments.parquet": 3
+    }
+  },
+  "review_media": {
+    "segment_count": 3,
+    "segment_idx": 0,
+    "stream": {
+      "content_type": "audio/wav",
+      "preview_size": 32
+    },
+    "track_id": 2
+  },
+  "run_id": "minio-smoke",
+  "storage_backend": "minio"
+}

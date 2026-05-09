@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingestion-fma-burst-5
+  namespace: fma-small-analytics
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingestion-fma-burst-5
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ingestion
+          image: event-driven-audio-analytics-ingestion:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets
+          env:
+            - name: SERVICE_NAME
+              value: ingestion
+            - name: RUN_ID
+              value: k3s-fma-5
+            - name: TRACK_ID_ALLOWLIST
+              value: ""
+            - name: INGESTION_MAX_TRACKS
+              value: "5"
+            - name: METADATA_CSV_PATH
+              value: /app/data/local/fma_metadata/tracks.csv
+            - name: AUDIO_ROOT_PATH
+              value: /app/data/local/fma_small
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+            - name: fma-input
+              mountPath: /app/data/local
+              readOnly: true
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc
+        - name: fma-input
+          persistentVolumeClaim:
+            claimName: fma-input-pvc

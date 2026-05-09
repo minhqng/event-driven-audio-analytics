@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from event_driven_audio_analytics.shared.db import open_database_connection
+from event_driven_audio_analytics.shared.storage import build_claim_check_store
 
 if TYPE_CHECKING:
     from event_driven_audio_analytics.review.config import ReviewSettings
@@ -59,6 +60,11 @@ def check_runtime_dependencies(settings: "ReviewSettings") -> None:
             "Artifacts root is not a directory: "
             f"{settings.base.artifacts_root.as_posix()}."
         )
+
+    if settings.base.storage.normalized_backend() != "local":
+        store = build_claim_check_store(settings.base.storage)
+        check_bucket = getattr(store, "check_bucket")
+        check_bucket()
 
     visible_relations = _list_database_relations(settings)
     missing_relations = sorted(set(REQUIRED_REVIEW_RELATIONS) - visible_relations)

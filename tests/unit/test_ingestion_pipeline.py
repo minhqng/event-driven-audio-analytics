@@ -50,7 +50,12 @@ from event_driven_audio_analytics.shared.models.envelope import (
 )
 from event_driven_audio_analytics.shared.models.system_metrics import SystemMetricsPayload
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings
-from event_driven_audio_analytics.shared.storage import resolve_artifact_uri
+from event_driven_audio_analytics.shared.storage import (
+    S3ClaimCheckStore,
+    StorageBackendSettings,
+    resolve_artifact_uri,
+)
+from tests.unit.test_claim_check_storage import FakeS3Client
 from tests.unit.test_event_contract_validation import load_validator
 from event_driven_audio_analytics.writer.modules.upsert_metadata import TRACK_METADATA_UPSERT
 
@@ -475,6 +480,36 @@ def test_artifact_writer_creates_wavs_checksums_and_manifest() -> None:
         manifest = pl.read_parquet(_artifact_path(tmp_dir, descriptor.manifest_uri))
         assert manifest.shape == (1, 9)
         assert manifest["artifact_uri"][0] == descriptor.artifact_uri
+
+
+def test_artifact_writer_uploads_wavs_and_manifest_to_minio_store(tmp_path: Path) -> None:
+    store = S3ClaimCheckStore(
+        StorageBackendSettings(backend="minio", bucket="fma-small-artifacts"),
+        client=FakeS3Client(),
+    )
+    segments = [
+        AudioSegment(
+            run_id="demo-run",
+            track_id=2,
+            segment_idx=0,
+            waveform=np.zeros((1, 32000 * 3), dtype=np.float32),
+            sample_rate=32000,
+            duration_s=3.0,
+            is_last_segment=True,
+        )
+    ]
+
+    descriptors = write_segment_artifacts(tmp_path, segments, store=store)
+
+    assert len(descriptors) == 1
+    descriptor = descriptors[0]
+    assert descriptor.artifact_uri == "s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav"
+    assert descriptor.manifest_uri == (
+        "s3://fma-small-artifacts/runs/demo-run/manifests/segments.parquet"
+    )
+    assert store.exists(descriptor.artifact_uri)
+    manifest = store.read_parquet(descriptor.manifest_uri)
+    assert manifest["artifact_uri"][0] == descriptor.artifact_uri
 
 
 def test_manifest_emits_week4_required_fields_only() -> None:
@@ -919,4 +954,3 @@ def test_process_record_raises_when_kafka_delivery_reports_error() -> None:
                 DeliveryErrorProducer(),
                 _metadata_record_for_fixture("valid_synthetic_stereo_44k1.mp3"),
             )
-

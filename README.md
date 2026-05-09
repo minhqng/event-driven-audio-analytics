@@ -1,20 +1,30 @@
 # event-driven-audio-analytics
 
-`event-driven-audio-analytics` is an academic proof of concept for event-driven real-time audio analytics on FMA-small. It demonstrates a claim-check architecture end to end: Kafka carries small events, shared storage carries audio artifacts, TimescaleDB stores summaries and operational metrics, a read-only review console presents run/track/segment outcomes, and Grafana provides the supporting observability story from file-provisioned dashboards.
+`event-driven-audio-analytics` is a bounded research system for near-real-time FMA-Small audio analytics using event-driven microservices. Kafka carries small events, local or MinIO-backed claim-check storage carries audio artifacts, TimescaleDB stores persisted analytics truth, the review console is the primary inspection surface, Grafana corroborates observability from the same persisted rows, and the dataset exporter materializes reusable FMA-Small analytics/dataset bundles.
+
+## Topic Alignment
+
+Đề tài: **"Nghiên cứu kiến trúc Event-Driven Microservices và Xây dựng hệ thống phân tích dữ liệu lớn âm thanh thời gian thực trên nền tảng Private Cloud"**.
+
+Repository này giới hạn phạm vi vào FMA-Small và hiện thực hóa đề tài bằng một pipeline microservices hướng sự kiện: ingestion, processing, writer, review, dataset-exporter, Kafka, TimescaleDB, MinIO/S3-compatible claim-check storage, Grafana, evidence scripts, evaluation outputs, và một biến thể triển khai K3s bounded cho bối cảnh private cloud. Hệ thống là bằng chứng nghiên cứu có giới hạn, không phải tuyên bố production-ready hay benchmark-scale.
 
 ## What This Repository Demonstrates
 
-- Event-driven decoupling across `ingestion`, `processing`, and `writer`
-- Claim-check handling for audio segments and run manifests under `artifacts/`
+- Event-driven microservices decoupling across `ingestion`, `processing`, `writer`, review, and export paths
+- Near-real-time FMA-Small audio analytics with Kafka small events and claim-check audio artifacts
+- Claim-check handling for audio segments and run manifests under logical `/artifacts/...` or `s3://<bucket>/...`
 - At-least-once delivery with checkpoint-aware, idempotent persistence
-- A read-only review surface over persisted run, track, and segment outcomes
+- A read-only review console as the primary surface over persisted run, track, and segment outcomes
+- Deterministic dataset/analytics bundle generation from completed persisted runs
+- Bounded MinIO/private-cloud object storage and K3s deployment variants
+- Evaluation evidence for latency, throughput, resource usage, scaling, and restart/replay behavior
 - Bounded restart/replay verification for the same `run_id`
-- Dashboard-backed observability over real persisted PoC data
+- Grafana-backed observability that corroborates persisted truth without becoming the product front door
 
 ## Scope
 
-- In scope: Docker Compose, Kafka KRaft, shared-volume claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style monitoring output, and bounded demo/evidence flows
-- Out of scope: Kubernetes, service mesh, HA/DR, multi-node Kafka, production object storage/IAM, model serving, full MLOps, and benchmark-scale claims beyond the documented bounded runs
+- In scope: FMA-Small only, Docker Compose, a bounded K3s manifest variant, Kafka KRaft, local and MinIO/S3-compatible claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style operational metrics, dataset/analytics exports, and bounded demo/evaluation evidence flows
+- Out of scope: service mesh, GitOps/Terraform, HA/DR, multi-node Kafka, production object storage/IAM, model serving, full MLOps, and benchmark-scale claims beyond the documented bounded runs
 - Kafka remains small-event transport only. Raw waveform payloads and large tensors do not belong on the broker.
 
 ## Recommended Reader Path
@@ -23,7 +33,8 @@
 2. Read `docs/architecture/system-overview.md`.
 3. Run the final demo/evidence path from `docs/runbooks/demo.md`.
 4. Use `docs/runbooks/validation.md` for smoke checks and the official containerized `pytest` path.
-5. Use `artifacts/README.md` and `data/README.md` for generated output and local dataset boundaries.
+5. Use `docs/runbooks/final-release-validation-scenarios.md` for the P0/P1/P2 final release scenario scan.
+6. Use `artifacts/README.md` and `data/README.md` for generated output and local dataset boundaries.
 
 ## Recommended Commands
 
@@ -36,6 +47,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo\generate-demo-evidence.p
 ```sh
 bash ./scripts/demo/generate-demo-evidence.sh
 ```
+
+This is the front-door productization path: it produces review console evidence, Grafana corroboration, restart/replay proof, and the final deterministic FMA-Small dataset bundles under `artifacts/datasets/`. Read the review outputs first, use Grafana as supporting corroboration, and treat the dataset bundles as the productized output layer from persisted truth.
 
 Review/dashboard evidence:
 
@@ -67,7 +80,44 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-pytest.ps1
 bash ./scripts/smoke/check-pytest.sh
 ```
 
-Bounded local FMA-small burst after placing the dataset under `data/local/`:
+Optional MinIO claim-check smoke and evidence path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke\check-minio-claim-check-flow.ps1
+```
+
+```sh
+bash ./scripts/smoke/check-minio-claim-check-flow.sh
+```
+
+This path keeps the default deterministic demo on `STORAGE_BACKEND=local`, then exercises the bounded MinIO variant separately. Canonical storage env vars live in `.env.example`, and the full manual/acceptance steps are in `docs/runbooks/validation.md`.
+
+Optional bounded K3s variant:
+
+- Manifests live under `deploy/k3s/`
+- The K3s operator runbook lives in `docs/runbooks/k3s.md`
+- This variant maps the same bounded FMA-Small pipeline to K3s runtime primitives without replacing Docker Compose
+
+When `MINIO_ENDPOINT_URL` is left unset, the services derive `http://minio:9000`
+or `https://minio:9000` from `MINIO_SECURE`. If a local processing deployment
+must also fail fast on historical `s3://...` replay readiness, set
+`PROCESSING_PROBE_S3_REPLAY_READINESS=true`.
+
+Bounded FMA-Small evaluation evidence:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\evaluation\run-evaluation.ps1
+```
+
+```sh
+bash ./scripts/evaluation/run-evaluation.sh
+```
+
+This writes latency, throughput, resource usage, scaling, and markdown report
+artifacts under `artifacts/evidence/final-demo/evaluation/`. Treat these as
+bounded local measurements, not benchmark-scale performance claims.
+
+Bounded local FMA-Small burst after placing the dataset under `data/local/`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-local-fma-burst.ps1
@@ -96,7 +146,7 @@ bash ./scripts/demo/run-local-fma-burst.sh
 - `system.metrics`
 - `audio.dlq`
 
-`audio.dlq` is reserved in bootstrap/constants but is not yet a fully modeled or exercised runtime path in this PoC.
+`audio.dlq` is reserved in bootstrap/constants but is not yet a fully modeled or exercised runtime path in this bounded system.
 
 ## Runtime Notes
 
@@ -107,4 +157,4 @@ bash ./scripts/demo/run-local-fma-burst.sh
 - `processing` and `writer` are long-lived consumers with graceful shutdown handling for bounded restart/replay checks.
 - The official `pytest` path runs in a dedicated Compose service against image-bundled repo contents.
 - Generated evidence lives under `artifacts/evidence/`, with final demo output under `artifacts/evidence/final-demo/`.
-- Full FMA-small data is a local runtime input under `data/local/`, not a tracked test fixture.
+- Full FMA-Small data is a local runtime input under `data/local/`, not a tracked test fixture.

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingestion-demo-high-energy
+  namespace: fma-small-analytics
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingestion-demo-high-energy
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ingestion
+          image: event-driven-audio-analytics-ingestion:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets
+          env:
+            - name: SERVICE_NAME
+              value: ingestion
+            - name: RUN_ID
+              value: demo-high-energy
+            - name: TRACK_ID_ALLOWLIST
+              value: "910001"
+            - name: INGESTION_MAX_TRACKS
+              value: "1"
+            - name: METADATA_CSV_PATH
+              value: /app/artifacts/demo-inputs/review-demo/metadata.csv
+            - name: AUDIO_ROOT_PATH
+              value: /app/artifacts/demo-inputs/review-demo/fma_small
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc

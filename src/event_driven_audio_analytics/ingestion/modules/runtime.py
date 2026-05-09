@@ -17,6 +17,7 @@ from event_driven_audio_analytics.shared.contracts.topics import (
 )
 from event_driven_audio_analytics.shared.models.envelope import build_trace_id
 from event_driven_audio_analytics.shared.storage import (
+    build_claim_check_store,
     manifest_uri,
     resolve_artifact_uri,
     run_root,
@@ -227,16 +228,24 @@ def check_runtime_dependencies(settings: "IngestionSettings") -> None:
             f"{', '.join(missing_topics)}."
         )
 
-    _assert_writable_directory(settings.base.artifacts_root, label="ARTIFACTS_ROOT")
     _assert_readable_file(Path(settings.metadata_csv_path), label="METADATA_CSV_PATH")
     _assert_readable_directory(Path(settings.audio_root_path), label="AUDIO_ROOT_PATH")
-    segments_dir, _ = _prepare_run_artifact_targets(settings.base.artifacts_root, settings.base.run_id)
-    _assert_manifest_target_ready(settings.base.artifacts_root, settings.base.run_id)
-    _prepare_track_segment_targets(
-        segments_dir,
-        _selected_track_ids(settings),
-        run_id=settings.base.run_id,
-    )
+    if settings.base.storage.normalized_backend() == "local":
+        _assert_writable_directory(settings.base.artifacts_root, label="ARTIFACTS_ROOT")
+        segments_dir, _ = _prepare_run_artifact_targets(
+            settings.base.artifacts_root,
+            settings.base.run_id,
+        )
+        _assert_manifest_target_ready(settings.base.artifacts_root, settings.base.run_id)
+        _prepare_track_segment_targets(
+            segments_dir,
+            _selected_track_ids(settings),
+            run_id=settings.base.run_id,
+        )
+    else:
+        store = build_claim_check_store(settings.base.storage)
+        probe = getattr(store, "probe")
+        probe(settings.base.run_id)
 
 
 def wait_for_runtime_dependencies(

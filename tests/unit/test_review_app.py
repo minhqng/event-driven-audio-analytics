@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 
 from event_driven_audio_analytics.review.app import create_app
 from event_driven_audio_analytics.review.config import ReviewSettings
+from event_driven_audio_analytics.review.queries import SegmentArtifactRef
+from event_driven_audio_analytics.shared.checksum import sha256_bytes
 from event_driven_audio_analytics.shared.settings import BaseServiceSettings, DatabaseSettings
 
 
@@ -67,14 +69,19 @@ def test_media_endpoint_streams_existing_segment(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
-    artifact_path = tmp_path / "runs" / "demo-run" / "review-media" / "segment-0.wav"
+    artifact_path = tmp_path / "runs" / "demo-run" / "segments" / "2" / "0.wav"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_bytes(b"RIFF")
 
     client = TestClient(create_app(build_settings(tmp_path)))
     monkeypatch.setattr(
-        "event_driven_audio_analytics.review.app.lookup_segment_artifact_path",
-        lambda *args, **kwargs: artifact_path,
+        "event_driven_audio_analytics.review.app.lookup_segment_artifact_ref",
+        lambda *args, **kwargs: SegmentArtifactRef(
+            uri="/artifacts/runs/demo-run/segments/2/0.wav",
+            checksum=sha256_bytes(b"RIFF"),
+            exists=True,
+            local_path=artifact_path,
+        ),
     )
     response = client.get("/media/runs/demo-run/segments/2/0.wav")
 
@@ -106,7 +113,7 @@ def test_media_endpoint_returns_404_when_artifact_uri_is_unresolvable(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(
-        "event_driven_audio_analytics.review.app.lookup_segment_artifact_path",
+        "event_driven_audio_analytics.review.app.lookup_segment_artifact_ref",
         lambda *args, **kwargs: None,
     )
     client = TestClient(create_app(build_settings(tmp_path)))
@@ -114,3 +121,74 @@ def test_media_endpoint_returns_404_when_artifact_uri_is_unresolvable(
     response = client.get("/media/runs/demo-run/segments/2/0.wav")
 
     assert response.status_code == 404
+
+
+def test_media_endpoint_streams_minio_segment_bytes(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class FakeStore:
+        def checksum(self, uri: str) -> str:
+            assert uri == "s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav"
+            return sha256_bytes(b"RIFF")
+
+        def read_bytes(self, uri: str) -> bytes:
+            raise AssertionError("review media endpoint should stream chunked bytes")
+
+        def read_bytes_chunked(self, uri: str, *, chunk_size: int = 64 * 1024):
+            assert uri == "s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav"
+            assert chunk_size == 64 * 1024
+            yield b"RI"
+            yield b"FF"
+
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.app.lookup_segment_artifact_ref",
+        lambda *args, **kwargs: SegmentArtifactRef(
+            uri="s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav",
+            checksum=sha256_bytes(b"RIFF"),
+            exists=True,
+            local_path=None,
+        ),
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.app.build_claim_check_store_for_uri",
+        lambda *args, **kwargs: FakeStore(),
+    )
+    client = TestClient(create_app(build_settings(tmp_path)))
+
+    response = client.get("/media/runs/demo-run/segments/2/0.wav")
+
+    assert response.status_code == 200
+    assert response.content == b"RIFF"
+    assert response.headers["content-type"].startswith("audio/wav")
+
+
+def test_media_endpoint_rejects_checksum_mismatch_before_streaming(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class FakeStore:
+        def checksum(self, uri: str) -> str:
+            return sha256_bytes(b"corrupted")
+
+        def read_bytes_chunked(self, uri: str, *, chunk_size: int = 64 * 1024):
+            raise AssertionError("checksum mismatch must block media streaming")
+
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.app.lookup_segment_artifact_ref",
+        lambda *args, **kwargs: SegmentArtifactRef(
+            uri="s3://fma-small-artifacts/runs/demo-run/segments/2/0.wav",
+            checksum=sha256_bytes(b"RIFF"),
+            exists=True,
+            local_path=None,
+        ),
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.app.build_claim_check_store_for_uri",
+        lambda *args, **kwargs: FakeStore(),
+    )
+    client = TestClient(create_app(build_settings(tmp_path)))
+
+    response = client.get("/media/runs/demo-run/segments/2/0.wav")
+
+    assert response.status_code == 409

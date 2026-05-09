@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: review-demo-input-prep
+  namespace: fma-small-analytics
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: review-demo-input-prep
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: review-demo-input-prep
+          image: event-driven-audio-analytics-ingestion:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -m
+            - event_driven_audio_analytics.smoke.prepare_review_demo_inputs
+            - --output-root
+            - /app/artifacts/demo-inputs/review-demo
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc

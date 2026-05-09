@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: processing
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: processing
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      containers:
+        - name: processing
+          image: event-driven-audio-analytics-processing:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets
+          env:
+            - name: SERVICE_NAME
+              value: processing
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -m
+                - event_driven_audio_analytics.processing.app
+                - preflight
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 15
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc

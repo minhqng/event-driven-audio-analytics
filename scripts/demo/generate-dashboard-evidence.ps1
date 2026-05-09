@@ -128,15 +128,21 @@ function Capture-DashboardScreenshot {
         [string]$OutputPath
     )
 
-    & $BrowserPath `
-        "--headless=new" `
-        "--disable-gpu" `
-        "--hide-scrollbars" `
-        "--window-size=1600,1250" `
-        "--run-all-compositor-stages-before-draw" `
-        "--virtual-time-budget=15000" `
-        "--screenshot=$OutputPath" `
-        $Url | Out-Null
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $BrowserPath `
+            "--headless=new" `
+            "--disable-gpu" `
+            "--hide-scrollbars" `
+            "--window-size=1600,1250" `
+            "--run-all-compositor-stages-before-draw" `
+            "--virtual-time-budget=15000" `
+            "--screenshot=$OutputPath" `
+            $Url 2>$null | Out-Null
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     Assert-LastExitCode "Capturing screenshot for $Url"
 }
 
@@ -146,15 +152,21 @@ function Get-PageDom {
         [string]$Url
     )
 
-    & $BrowserPath `
-        "--headless=new" `
-        "--disable-gpu" `
-        "--hide-scrollbars" `
-        "--window-size=1600,1250" `
-        "--run-all-compositor-stages-before-draw" `
-        "--virtual-time-budget=15000" `
-        "--dump-dom" `
-        $Url 2>$null | Out-String
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $BrowserPath `
+            "--headless=new" `
+            "--disable-gpu" `
+            "--hide-scrollbars" `
+            "--window-size=1600,1250" `
+            "--run-all-compositor-stages-before-draw" `
+            "--virtual-time-budget=15000" `
+            "--dump-dom" `
+            $Url 2>$null | Out-String
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
 }
 
 function Wait-ReviewDomReady {
@@ -188,11 +200,13 @@ function Write-DemoArtifactNotes {
     @'
 # Demo Artifact Notes
 
+This review/Grafana artifact pack supports the thesis evidence story for a bounded FMA-Small event-driven microservices system. The review console is the primary inspection surface; Grafana corroborates persisted TimescaleDB truth.
+
 ## Run Review Console
 
 - `review-console.png` captures the read-only `Run Review Console` in demo mode, pinned to `demo-high-energy`.
 - The review console is the primary demo surface: it shows run state, validation outcomes, track summaries, segment artifacts, and secondary runtime proof without forcing the audience into Grafana first.
-- `review-api.json` is the authoritative machine-readable verification output from `verify_review_api`.
+- `review-api.json` is the authoritative machine-readable verification output from `verify_review_api` for the review surface.
 
 ## Audio Quality Dashboard
 
@@ -213,7 +227,7 @@ function Write-DemoArtifactNotes {
 
 ## Supporting Files
 
-- `review-dashboard-summary.json` is the authoritative machine-readable verification output from `verify_dashboard_demo`.
+- `review-dashboard-summary.json` is the machine-readable verification output from `verify_dashboard_demo`.
 - `grafana-api.json` proves the dashboards were auto-loaded through Grafana provisioning rather than click-ops.
 - `review-api.json` proves the new review surface is reachable and exposes the deterministic demo runs with track/segment detail.
 '@ | Set-Content -LiteralPath $OutputPath -Encoding utf8

@@ -1,0 +1,856 @@
+{
+  "format_version": 1,
+  "generated_at": "2026-05-09T10:00:22.800703Z",
+  "sample_interval_s": 2.0,
+  "scenarios": [
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 480.62,
+            "mean": 240.395,
+            "min": 0.17,
+            "p50": 240.395,
+            "p95": 456.5975
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 171.4,
+            "mean": 170.3,
+            "min": 169.2,
+            "p50": 170.3,
+            "p95": 171.29
+          },
+          "samples": 2
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 1,
+            "max": 146.02,
+            "mean": 146.02,
+            "min": 146.02,
+            "p50": 146.02,
+            "p95": 146.02
+          },
+          "memory_mb": {
+            "count": 1,
+            "max": 42.52,
+            "mean": 42.52,
+            "min": 42.52,
+            "p50": 42.52,
+            "p95": 42.52
+          },
+          "samples": 1
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 90.1,
+            "mean": 60.68,
+            "min": 31.26,
+            "p50": 60.68,
+            "p95": 87.158
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 405.7,
+            "mean": 401.35,
+            "min": 397.0,
+            "p50": 401.35,
+            "p95": 405.265
+          },
+          "samples": 2
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 23.44,
+            "mean": 11.76,
+            "min": 0.08,
+            "p50": 11.76,
+            "p95": 22.272
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 160.5,
+            "mean": 158.8,
+            "min": 157.1,
+            "p50": 158.8,
+            "p95": 160.33
+          },
+          "samples": 2
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 14.62,
+            "mean": 7.33,
+            "min": 0.04,
+            "p50": 7.33,
+            "p95": 13.891
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 41.83,
+            "mean": 40.35,
+            "min": 38.87,
+            "p50": 40.35,
+            "p95": 41.682
+          },
+          "samples": 2
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 3.59,
+            "mean": 1.97,
+            "min": 0.35,
+            "p50": 1.97,
+            "p95": 3.428
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 26.85,
+            "mean": 26.835,
+            "min": 26.82,
+            "p50": 26.835,
+            "p95": 26.8485
+          },
+          "samples": 2
+        }
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 2,
+      "run_id": "eval-deterministic-review-demo",
+      "scenario": "deterministic-review-demo",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 385.25,
+            "mean": 168.072857,
+            "min": 0.16,
+            "p50": 89.0,
+            "p95": 383.216
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 188.1,
+            "mean": 141.222857,
+            "min": 92.16,
+            "p50": 147.5,
+            "p95": 179.88
+          },
+          "samples": 7
+        },
+        "event-driven-audio-analytics-pytest-run-c635ade7d53a": {
+          "cpu_percent": {
+            "count": 1,
+            "max": 54.15,
+            "mean": 54.15,
+            "min": 54.15,
+            "p50": 54.15,
+            "p95": 54.15
+          },
+          "memory_mb": {
+            "count": 1,
+            "max": 194.7,
+            "mean": 194.7,
+            "min": 194.7,
+            "p50": 194.7,
+            "p95": 194.7
+          },
+          "samples": 1
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 6,
+            "max": 201.72,
+            "mean": 97.131667,
+            "min": 5.11,
+            "p50": 75.29,
+            "p95": 197.415
+          },
+          "memory_mb": {
+            "count": 6,
+            "max": 589.0,
+            "mean": 307.37,
+            "min": 78.02,
+            "p50": 291.25,
+            "p95": 534.9
+          },
+          "samples": 6
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 180.05,
+            "mean": 65.068571,
+            "min": 2.85,
+            "p50": 50.93,
+            "p95": 171.221
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 433.7,
+            "mean": 407.728571,
+            "min": 393.0,
+            "p50": 403.7,
+            "p95": 430.67
+          },
+          "samples": 7
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 153.12,
+            "mean": 65.051429,
+            "min": 0.08,
+            "p50": 78.65,
+            "p95": 143.727
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 294.0,
+            "mean": 183.242857,
+            "min": 157.1,
+            "p50": 160.3,
+            "p95": 263.76
+          },
+          "samples": 7
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 18.99,
+            "mean": 6.922857,
+            "min": 0.03,
+            "p50": 0.05,
+            "p95": 17.943
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 42.62,
+            "mean": 40.972857,
+            "min": 38.96,
+            "p50": 42.23,
+            "p95": 42.611
+          },
+          "samples": 7
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 83.0,
+            "mean": 17.117143,
+            "min": 0.03,
+            "p50": 0.13,
+            "p95": 64.31
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 44.45,
+            "mean": 29.548571,
+            "min": 26.81,
+            "p50": 26.91,
+            "p95": 39.524
+          },
+          "samples": 7
+        }
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 5,
+      "run_id": "eval-fma-5",
+      "scenario": "fma-small-burst-5",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 57,
+            "max": 480.8,
+            "mean": 236.771053,
+            "min": 0.13,
+            "p50": 309.27,
+            "p95": 450.072
+          },
+          "memory_mb": {
+            "count": 57,
+            "max": 196.2,
+            "mean": 144.315789,
+            "min": 62.04,
+            "p50": 157.3,
+            "p95": 186.78
+          },
+          "samples": 57
+        },
+        "event-driven-audio-analytics-pytest-run-edd3c3daa477": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 173.19,
+            "mean": 95.477143,
+            "min": 77.28,
+            "p50": 82.74,
+            "p95": 147.867
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 224.6,
+            "mean": 196.717143,
+            "min": 75.72,
+            "p50": 218.8,
+            "p95": 224.06
+          },
+          "samples": 7
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 60,
+            "max": 236.97,
+            "mean": 58.507333,
+            "min": 14.51,
+            "p50": 46.945,
+            "p95": 114.4465
+          },
+          "memory_mb": {
+            "count": 60,
+            "max": 785.0,
+            "mean": 352.371667,
+            "min": 107.2,
+            "p50": 340.35,
+            "p95": 655.555
+          },
+          "samples": 60
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 67,
+            "max": 232.29,
+            "mean": 63.931493,
+            "min": 1.84,
+            "p50": 25.68,
+            "p95": 205.523
+          },
+          "memory_mb": {
+            "count": 67,
+            "max": 633.2,
+            "mean": 487.358209,
+            "min": 380.0,
+            "p50": 490.3,
+            "p95": 594.23
+          },
+          "samples": 67
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 67,
+            "max": 378.75,
+            "mean": 114.102537,
+            "min": 0.04,
+            "p50": 124.63,
+            "p95": 206.839
+          },
+          "memory_mb": {
+            "count": 67,
+            "max": 324.0,
+            "mean": 194.470149,
+            "min": 157.1,
+            "p50": 169.4,
+            "p95": 315.89
+          },
+          "samples": 67
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 67,
+            "max": 82.77,
+            "mean": 27.357463,
+            "min": 0.04,
+            "p50": 24.14,
+            "p95": 66.469
+          },
+          "memory_mb": {
+            "count": 67,
+            "max": 47.06,
+            "mean": 44.615821,
+            "min": 38.66,
+            "p50": 44.81,
+            "p95": 47.04
+          },
+          "samples": 67
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 67,
+            "max": 107.75,
+            "mean": 18.768955,
+            "min": 0.02,
+            "p50": 13.95,
+            "p95": 79.408
+          },
+          "memory_mb": {
+            "count": 67,
+            "max": 48.91,
+            "mean": 28.273582,
+            "min": 26.82,
+            "p50": 27.27,
+            "p95": 35.981
+          },
+          "samples": 67
+        }
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 100,
+      "run_id": "eval-fma-100",
+      "scenario": "fma-small-burst-100",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 398.07,
+            "mean": 242.034286,
+            "min": 0.14,
+            "p50": 385.45,
+            "p95": 395.856
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 163.8,
+            "mean": 131.425714,
+            "min": 97.4,
+            "p50": 143.1,
+            "p95": 163.8
+          },
+          "samples": 7
+        },
+        "event-driven-audio-analytics-pytest-run-da03b7da28d5": {
+          "cpu_percent": {
+            "count": 1,
+            "max": 85.57,
+            "mean": 85.57,
+            "min": 85.57,
+            "p50": 85.57,
+            "p95": 85.57
+          },
+          "memory_mb": {
+            "count": 1,
+            "max": 159.7,
+            "mean": 159.7,
+            "min": 159.7,
+            "p50": 159.7,
+            "p95": 159.7
+          },
+          "samples": 1
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 5,
+            "max": 183.91,
+            "mean": 75.93,
+            "min": 15.48,
+            "p50": 53.76,
+            "p95": 162.844
+          },
+          "memory_mb": {
+            "count": 5,
+            "max": 288.2,
+            "mean": 213.18,
+            "min": 86.5,
+            "p50": 237.4,
+            "p95": 280.52
+          },
+          "samples": 5
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 199.33,
+            "mean": 70.241429,
+            "min": 3.76,
+            "p50": 49.86,
+            "p95": 185.749
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 451.7,
+            "mean": 405.228571,
+            "min": 391.8,
+            "p50": 398.1,
+            "p95": 438.53
+          },
+          "samples": 7
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 153.88,
+            "mean": 81.215714,
+            "min": 0.08,
+            "p50": 99.02,
+            "p95": 150.379
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 309.5,
+            "mean": 199.114286,
+            "min": 157.1,
+            "p50": 161.1,
+            "p95": 302.63
+          },
+          "samples": 7
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 19.9,
+            "mean": 6.524286,
+            "min": 0.02,
+            "p50": 0.05,
+            "p95": 18.859
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 42.6,
+            "mean": 40.931429,
+            "min": 38.87,
+            "p50": 42.38,
+            "p95": 42.582
+          },
+          "samples": 7
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 92.52,
+            "mean": 17.915714,
+            "min": 0.07,
+            "p50": 0.08,
+            "p95": 71.418
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 26.93,
+            "mean": 26.891429,
+            "min": 26.84,
+            "p50": 26.92,
+            "p95": 26.927
+          },
+          "samples": 7
+        }
+      },
+      "processing_replicas": 1,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r1",
+      "scenario": "fma-small-scaling-r1",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 7,
+            "max": 483.0,
+            "mean": 244.367143,
+            "min": 0.12,
+            "p50": 388.93,
+            "p95": 464.094
+          },
+          "memory_mb": {
+            "count": 7,
+            "max": 176.6,
+            "mean": 143.971429,
+            "min": 103.6,
+            "p50": 144.4,
+            "p95": 175.61
+          },
+          "samples": 7
+        },
+        "event-driven-audio-analytics-pytest-run-573a5fd99408": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 89.66,
+            "mean": 68.67,
+            "min": 47.68,
+            "p50": 68.67,
+            "p95": 87.561
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 234.0,
+            "mean": 216.75,
+            "min": 199.5,
+            "p50": 216.75,
+            "p95": 232.275
+          },
+          "samples": 2
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 6,
+            "max": 149.86,
+            "mean": 67.078333,
+            "min": 40.56,
+            "p50": 50.47,
+            "p95": 129.71
+          },
+          "memory_mb": {
+            "count": 6,
+            "max": 383.8,
+            "mean": 222.508333,
+            "min": 36.85,
+            "p50": 230.35,
+            "p95": 354.825
+          },
+          "samples": 6
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 9,
+            "max": 233.06,
+            "mean": 51.353333,
+            "min": 4.19,
+            "p50": 13.11,
+            "p95": 195.308
+          },
+          "memory_mb": {
+            "count": 9,
+            "max": 450.2,
+            "mean": 393.866667,
+            "min": 375.1,
+            "p50": 389.4,
+            "p95": 432.08
+          },
+          "samples": 9
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 18,
+            "max": 181.06,
+            "mean": 42.929444,
+            "min": 0.03,
+            "p50": 9.365,
+            "p95": 175.994
+          },
+          "memory_mb": {
+            "count": 18,
+            "max": 262.9,
+            "mean": 179.222222,
+            "min": 157.1,
+            "p50": 157.2,
+            "p95": 259.075
+          },
+          "samples": 18
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 9,
+            "max": 15.57,
+            "mean": 4.038889,
+            "min": 0.03,
+            "p50": 2.23,
+            "p95": 13.054
+          },
+          "memory_mb": {
+            "count": 9,
+            "max": 42.19,
+            "mean": 40.595556,
+            "min": 38.65,
+            "p50": 41.88,
+            "p95": 42.186
+          },
+          "samples": 9
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 9,
+            "max": 20.09,
+            "mean": 5.614444,
+            "min": 0.1,
+            "p50": 0.41,
+            "p95": 17.702
+          },
+          "memory_mb": {
+            "count": 9,
+            "max": 27.15,
+            "mean": 26.915556,
+            "min": 26.84,
+            "p50": 26.91,
+            "p95": 27.058
+          },
+          "samples": 9
+        }
+      },
+      "processing_replicas": 2,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r2",
+      "scenario": "fma-small-scaling-r2",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {
+        "cinema_app": {
+          "cpu_percent": {
+            "count": 8,
+            "max": 396.18,
+            "mean": 216.05,
+            "min": 0.14,
+            "p50": 301.43,
+            "p95": 385.8655
+          },
+          "memory_mb": {
+            "count": 8,
+            "max": 186.1,
+            "mean": 139.08,
+            "min": 70.67,
+            "p50": 146.4,
+            "p95": 184.665
+          },
+          "samples": 8
+        },
+        "event-driven-audio-analytics-pytest-run-6502018db38f": {
+          "cpu_percent": {
+            "count": 2,
+            "max": 111.04,
+            "mean": 88.095,
+            "min": 65.15,
+            "p50": 88.095,
+            "p95": 108.7455
+          },
+          "memory_mb": {
+            "count": 2,
+            "max": 372.4,
+            "mean": 248.75,
+            "min": 125.1,
+            "p50": 248.75,
+            "p95": 360.035
+          },
+          "samples": 2
+        },
+        "ingestion": {
+          "cpu_percent": {
+            "count": 6,
+            "max": 160.99,
+            "mean": 74.318333,
+            "min": 16.89,
+            "p50": 64.14,
+            "p95": 142.4675
+          },
+          "memory_mb": {
+            "count": 6,
+            "max": 384.0,
+            "mean": 211.745,
+            "min": 63.57,
+            "p50": 168.65,
+            "p95": 382.775
+          },
+          "samples": 6
+        },
+        "kafka": {
+          "cpu_percent": {
+            "count": 8,
+            "max": 244.12,
+            "mean": 87.075,
+            "min": 4.74,
+            "p50": 56.89,
+            "p95": 225.192
+          },
+          "memory_mb": {
+            "count": 8,
+            "max": 482.8,
+            "mean": 430.875,
+            "min": 403.0,
+            "p50": 414.1,
+            "p95": 482.065
+          },
+          "samples": 8
+        },
+        "processing": {
+          "cpu_percent": {
+            "count": 24,
+            "max": 175.01,
+            "mean": 42.977083,
+            "min": 0.03,
+            "p50": 9.46,
+            "p95": 151.881
+          },
+          "memory_mb": {
+            "count": 24,
+            "max": 309.7,
+            "mean": 175.383333,
+            "min": 157.1,
+            "p50": 157.35,
+            "p95": 252.64
+          },
+          "samples": 24
+        },
+        "timescaledb": {
+          "cpu_percent": {
+            "count": 8,
+            "max": 27.02,
+            "mean": 5.88875,
+            "min": 0.04,
+            "p50": 2.23,
+            "p95": 21.203
+          },
+          "memory_mb": {
+            "count": 8,
+            "max": 42.46,
+            "mean": 40.9175,
+            "min": 38.75,
+            "p50": 41.99,
+            "p95": 42.4215
+          },
+          "samples": 8
+        },
+        "writer": {
+          "cpu_percent": {
+            "count": 8,
+            "max": 22.03,
+            "mean": 6.6325,
+            "min": 0.08,
+            "p50": 0.535,
+            "p95": 20.714
+          },
+          "memory_mb": {
+            "count": 8,
+            "max": 27.16,
+            "mean": 26.91375,
+            "min": 26.83,
+            "p50": 26.895,
+            "p95": 27.0795
+          },
+          "samples": 8
+        }
+      },
+      "processing_replicas": 3,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r3",
+      "scenario": "fma-small-scaling-r3",
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "containers": {},
+      "processing_replicas": 1,
+      "requested_tracks": null,
+      "run_id": "eval-fma-full-local",
+      "scenario": "fma-small-full-local-experiment",
+      "skip_reason": "EVAL_ENABLE_FULL_FMA_SMALL is not true",
+      "status": "skipped",
+      "storage_backend": "local"
+    }
+  ]
+}
