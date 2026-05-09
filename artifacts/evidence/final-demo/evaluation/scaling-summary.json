@@ -1,0 +1,41 @@
+{
+  "format_version": 1,
+  "generated_at": "2026-05-09T10:00:22.800703Z",
+  "runs": [
+    {
+      "cpu_processing_mean_percent": 81.215714,
+      "processing_ms_p95": 97.549098,
+      "processing_replicas": 1,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r1",
+      "scenario": "fma-small-scaling-r1",
+      "segments_per_minute": 156.111086,
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "cpu_processing_mean_percent": 42.929444,
+      "processing_ms_p95": 116.47388,
+      "processing_replicas": 2,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r2",
+      "scenario": "fma-small-scaling-r2",
+      "segments_per_minute": 145.376883,
+      "status": "passed",
+      "storage_backend": "local"
+    },
+    {
+      "cpu_processing_mean_percent": 42.977083,
+      "processing_ms_p95": 151.244074,
+      "processing_replicas": 3,
+      "requested_tracks": 5,
+      "run_id": "eval-scale-r3",
+      "scenario": "fma-small-scaling-r3",
+      "segments_per_minute": 153.511851,
+      "status": "passed",
+      "storage_backend": "local"
+    }
+  ],
+  "topic_partition_note": "audio.segment.ready is currently created with 1 partition; processing replica scaling is partition-bound.",
+  "verdict": "bounded_partition_limited_evidence"
+}
