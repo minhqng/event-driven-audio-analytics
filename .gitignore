@@ -45,6 +45,7 @@ Thumbs.db
 *.code-workspace
 .env.*
 !.env.example
+deploy/k8s/secrets.yaml
 node_modules/
 .next/
 venv/

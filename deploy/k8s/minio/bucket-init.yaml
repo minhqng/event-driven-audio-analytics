@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-bucket-init
+  namespace: fma-small-analytics
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio-bucket-init
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: minio-bucket-init
+          image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              for attempt in $(seq 1 30); do
+                if mc alias set local "$MINIO_ENDPOINT_URL" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" >/dev/null 2>&1 \
+                  && mc ready local >/dev/null 2>&1; then
+                  break
+                fi
+                if [ "$attempt" -eq 30 ]; then
+                  echo "MinIO did not become ready in time." >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+              mc mb --ignore-existing "local/$MINIO_BUCKET"
+              mc ls "local/$MINIO_BUCKET" >/dev/null
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets

@@ -126,11 +126,13 @@ write_demo_artifact_notes() {
   cat >"$output_path" <<'EOF'
 # Demo Artifact Notes
 
+This review/Grafana artifact pack supports the thesis evidence story for a bounded FMA-Small event-driven microservices system. The review console is the primary inspection surface; Grafana corroborates persisted TimescaleDB truth.
+
 ## Run Review Console
 
 - `review-console.png` captures the read-only `Run Review Console` in demo mode, pinned to `demo-high-energy`.
 - The review console is the primary demo surface: it shows run state, validation outcomes, track summaries, segment artifacts, and secondary runtime proof without forcing the audience into Grafana first.
-- `review-api.json` is the authoritative machine-readable verification output from `verify_review_api`.
+- `review-api.json` is the authoritative machine-readable verification output from `verify_review_api` for the review surface.
 
 ## Audio Quality Dashboard
 
@@ -151,7 +153,7 @@ write_demo_artifact_notes() {
 
 ## Supporting Files
 
-- `review-dashboard-summary.json` is the authoritative machine-readable verification output from `verify_dashboard_demo`.
+- `review-dashboard-summary.json` is the machine-readable verification output from `verify_dashboard_demo`.
 - `grafana-api.json` proves the dashboards were auto-loaded through Grafana provisioning rather than click-ops.
 - `review-api.json` proves the new review surface is reachable and exposes the deterministic demo runs with track/segment detail.
 EOF

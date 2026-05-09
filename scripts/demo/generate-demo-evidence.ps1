@@ -20,7 +20,9 @@ function Write-DemoEvidenceIndex {
     @'
 # Final Demo Evidence Index
 
-This directory is the final handoff anchor for the bounded PoC evidence set.
+This directory is the final handoff anchor for the thesis-aligned bounded FMA-Small evidence set.
+
+It demonstrates the event-driven microservices pipeline, claim-check artifact boundary, persisted analytics truth, read-only review inspection, Grafana corroboration, dataset/analytics output generation, and restart/replay behavior. It is bounded research evidence, not production-readiness or benchmark-scale proof.
 
 ## Review/Dashboard Evidence
 
@@ -53,7 +55,8 @@ The review/dashboard artifacts are generated under `artifacts/evidence/final-dem
 - Use the Grafana artifacts next to corroborate TimescaleDB persistence and panel interpretation.
 - Use the dataset export summary and run bundles third to show the final FMA-Small analytics/dataset outputs.
 - Use the restart/replay artifacts last to explain startup gating and replay safety.
-- Treat this as bounded PoC evidence only; it is not benchmark-scale or production-readiness evidence.
+- Use the separate validation runbook for MinIO/private-cloud, K3s, and evaluation evidence paths.
+- Treat this as bounded FMA-Small research evidence only; it is not benchmark-scale or production-readiness evidence.
 '@ | Set-Content -LiteralPath $OutputPath -Encoding utf8
 }
 

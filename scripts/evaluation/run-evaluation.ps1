@@ -286,6 +286,10 @@ function Invoke-BoundedRun {
 
         docker compose run --rm --no-deps `
             -e "RUN_ID=$RunId" `
+            -e "METADATA_CSV_PATH=$MetadataCsvContainer" `
+            -e "AUDIO_ROOT_PATH=$AudioRootContainer" `
+            -e "TRACK_ID_ALLOWLIST=$TrackIdAllowlist" `
+            -e "INGESTION_MAX_TRACKS=$MaxTracks" `
             --entrypoint python `
             pytest `
             -m event_driven_audio_analytics.smoke.verify_writer_flow | Out-Null

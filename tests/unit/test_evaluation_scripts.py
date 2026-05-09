@@ -37,6 +37,9 @@ def test_powershell_evaluation_script_contract() -> None:
     assert 'Wait-MinioBucketReady' in script
     assert "check_bucket = getattr(store, \"check_bucket\")" in script
     assert "check_bucket()" in script
+    assert '-e "METADATA_CSV_PATH=$MetadataCsvContainer"' in script
+    assert '-e "AUDIO_ROOT_PATH=$AudioRootContainer"' in script
+    assert '-e "INGESTION_MAX_TRACKS=$MaxTracks"' in script
     assert "DELETE FROM track_metadata WHERE run_id = %s;" in script
     assert "DELETE FROM audio_features WHERE run_id = %s;" in script
     assert "DELETE FROM system_metrics WHERE run_id = %s;" in script
@@ -73,6 +76,9 @@ def test_bash_evaluation_script_contract() -> None:
     assert 'if [ "$effective_storage_backend" = "minio" ]; then' in script
     assert "check_bucket = getattr(store, \"check_bucket\")" in script
     assert "check_bucket()" in script
+    assert '-e METADATA_CSV_PATH="$metadata_csv_container"' in script
+    assert '-e AUDIO_ROOT_PATH="$audio_root_container"' in script
+    assert '-e INGESTION_MAX_TRACKS="$max_tracks"' in script
     assert "DELETE FROM track_metadata WHERE run_id = %s;" in script
     assert "DELETE FROM audio_features WHERE run_id = %s;" in script
     assert "DELETE FROM system_metrics WHERE run_id = %s;" in script

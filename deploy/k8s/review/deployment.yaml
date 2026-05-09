@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: review
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: review
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: review
+        app.kubernetes.io/part-of: fma-small-analytics
+    spec:
+      containers:
+        - name: review
+          image: event-driven-audio-analytics-review:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: platform-secrets
+          env:
+            - name: SERVICE_NAME
+              value: review
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -m
+                - event_driven_audio_analytics.review.app
+                - preflight
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: artifacts
+              mountPath: /app/artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: artifacts-pvc

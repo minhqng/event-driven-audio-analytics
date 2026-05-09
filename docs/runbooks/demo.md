@@ -1,6 +1,6 @@
 # Final Demo Runbook
 
-Use this runbook for the release-ready bounded demo.
+Use this runbook for the thesis-aligned bounded demo. It demonstrates the FMA-Small event-driven microservices pipeline, claim-check artifacts, persisted analytics truth, review-first inspection, Grafana corroboration, restart/replay evidence, and dataset/analytics outputs.
 
 ## Primary Command
 
@@ -29,6 +29,8 @@ Use Grafana after the review story is clear:
 ```text
 http://localhost:3000
 ```
+
+The intended reading order is: review console, Grafana corroboration, dataset bundles, restart/replay artifacts, then separate evaluation evidence from `docs/runbooks/validation.md`.
 
 ## Deterministic Review Runs
 
@@ -129,7 +131,10 @@ This starts Kafka, TimescaleDB, Grafana, processing, writer, and the read-only r
 ## Honest Limits
 
 - Bounded demo evidence, not benchmark-scale proof.
+- FMA-Small only; no new dataset scope is implied.
+- No model training or serving is part of this demo.
 - Same-`run_id` replay/restart behavior is verified on committed smoke fixtures.
 - The review layer is read-only and non-authoritative.
 - Grafana is supporting corroboration, not the primary product surface.
+- Log-mel tensors are not exported because they are not persisted.
 - `audio.dlq` remains reserved only.

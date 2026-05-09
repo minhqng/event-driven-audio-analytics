@@ -10,6 +10,20 @@ import numpy as np
 import pytest
 import torch
 
+from event_driven_audio_analytics.ingestion.modules.audio_validator import (
+    VALIDATION_STATUS_VALIDATED,
+    validate_audio_record,
+)
+from event_driven_audio_analytics.ingestion.modules.artifact_writer import write_segment_artifacts
+from event_driven_audio_analytics.ingestion.modules.metadata_loader import MetadataRecord
+from event_driven_audio_analytics.ingestion.modules.segmenter import segment_audio
+from event_driven_audio_analytics.processing.config import ProcessingSettings
+from event_driven_audio_analytics.processing.pipeline import ProcessingPipeline
+from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
+from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
+from event_driven_audio_analytics.shared.settings import BaseServiceSettings
+
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LEGACY_REFERENCE_ROOT = (
     REPO_ROOT / "references" / "legacy-fma-pipeline" / "fma-small-audio-pipeline-main"
@@ -28,19 +42,6 @@ else:
                 f"(missing {exc.name})."
             )
         )
-
-from event_driven_audio_analytics.ingestion.modules.audio_validator import (
-    VALIDATION_STATUS_VALIDATED,
-    validate_audio_record,
-)
-from event_driven_audio_analytics.ingestion.modules.artifact_writer import write_segment_artifacts
-from event_driven_audio_analytics.ingestion.modules.metadata_loader import MetadataRecord
-from event_driven_audio_analytics.ingestion.modules.segmenter import segment_audio
-from event_driven_audio_analytics.processing.config import ProcessingSettings
-from event_driven_audio_analytics.processing.pipeline import ProcessingPipeline
-from event_driven_audio_analytics.shared.models.audio_features import AudioFeaturesPayload
-from event_driven_audio_analytics.shared.models.audio_segment_ready import AudioSegmentReadyPayload
-from event_driven_audio_analytics.shared.settings import BaseServiceSettings
 
 
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "audio"

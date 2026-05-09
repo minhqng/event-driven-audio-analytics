@@ -2,16 +2,16 @@
 
 Run commands from the repository root.
 
-## Prompt Guardrails
+## System Alignment Guardrails
 
-Apply these scope rules before running follow-on implementation, validation, or
-demo prompts.
+Apply these scope rules before running validation, evidence generation, or
+follow-on implementation prompts.
 
-### Target End State
+### Final System Shape
 
-- Lift the current repo from an event-driven audio pipeline plus review/Grafana
-  evidence into a bounded event-driven FMA-Small audio analytics system.
-- The target state must end with reusable FMA-Small dataset/analytics outputs,
+- The repository is a bounded FMA-Small event-driven microservices research
+  system for near-real-time audio analytics.
+- The final narrative includes reusable FMA-Small dataset/analytics outputs,
   an object-storage-backed claim-check path, evaluation evidence, and a bounded
   private-cloud deployment variant.
 
@@ -27,7 +27,7 @@ demo prompts.
 - Do not claim fully production-ready completeness.
 - Do not add training or model serving unless that is explicitly scoped.
 
-### Required Additions In Scope
+### Thesis-Aligned Capabilities In Scope
 
 - Final FMA-Small dataset/analytics outputs that downstream steps can consume.
 - MinIO or another S3-compatible object-storage backend for claim-check
@@ -59,6 +59,20 @@ bash ./scripts/smoke/check-pytest.sh
 ```
 
 The containerized path is the authoritative test entrypoint because it runs against image-bundled repo contents and avoids host dependency drift.
+
+## Final Release Scenario Scan
+
+Use the final release scenario scan before packaging the bounded FMA-Small
+release report:
+
+```text
+docs/runbooks/final-release-validation-scenarios.md
+```
+
+It lists P0/P1/P2 validation scenarios for dataset output correctness,
+accepted/rejected manifests, local and MinIO claim-check behavior,
+restart/replay idempotency, review versus dataset-output consistency,
+evaluation metrics, K3s configuration, and common operator mistakes.
 
 ## Targeted Smoke Paths
 
@@ -146,7 +160,7 @@ The evaluator uses persisted TimescaleDB truth, checksum-verified claim-check
 artifact reads, script wall-clock timing, and bounded `docker stats` samples. It
 does not claim benchmark-scale or production performance.
 
-## Local FMA-small Burst
+## Local FMA-Small Burst
 
 Place local data under:
 
@@ -281,3 +295,37 @@ export PROCESSING_PROBE_S3_REPLAY_READINESS=true
 This keeps the default local demo independent from MinIO, but makes processing
 preflight fail fast when S3 replay support is expected and the MinIO backend is
 not reachable.
+
+## K3s / Kubernetes Variant
+
+The bounded private-cloud deployment manifests now live under:
+
+```text
+deploy/k8s/
+```
+
+This variant keeps Docker Compose as the default local path and adds a
+single-node-friendly K3s/Kubernetes mapping for:
+
+- namespace, ConfigMaps, and Secret example
+- single-broker Kafka KRaft
+- TimescaleDB
+- MinIO-backed claim-check storage
+- Grafana
+- processing, writer, and review Deployments
+- bounded ingestion and dataset-export Jobs
+
+Use the dedicated operator runbook for bootstrap order, image loading,
+deterministic demo Jobs, port-forwarding, and bounded local FMA burst steps:
+
+```text
+docs/runbooks/k3s.md
+```
+
+The Kubernetes variant is intentionally non-production:
+
+- no HA/DR
+- no service mesh
+- no GitOps/Terraform
+- no multi-node Kafka
+- no autoscaling claims

@@ -235,6 +235,10 @@ run_bounded_scenario() {
 
   docker compose run --rm --no-deps \
     -e RUN_ID="$run_id" \
+    -e METADATA_CSV_PATH="$metadata_csv_container" \
+    -e AUDIO_ROOT_PATH="$audio_root_container" \
+    -e TRACK_ID_ALLOWLIST="$track_id_allowlist" \
+    -e INGESTION_MAX_TRACKS="$max_tracks" \
     --entrypoint python \
     pytest \
     -m event_driven_audio_analytics.smoke.verify_writer_flow >/dev/null

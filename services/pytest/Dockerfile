@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY pyproject.toml README.md .env.example /app/
+COPY pyproject.toml README.md .env.example .gitignore /app/
 COPY src /app/src
 COPY references /app/references
 
@@ -20,6 +20,8 @@ RUN pip install --no-cache-dir \
     && pip install --no-cache-dir ".[dev,dataset-exporter,ingestion,processing,review,writer]"
 
 COPY infra /app/infra
+COPY deploy /app/deploy
+COPY docs /app/docs
 COPY schemas /app/schemas
 COPY scripts /app/scripts
 COPY docker-compose.yml /app/

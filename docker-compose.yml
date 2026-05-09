@@ -378,6 +378,7 @@ services:
       INGESTION_MAX_TRACKS: "${INGESTION_MAX_TRACKS:-2}"
     volumes:
       - ./artifacts:/app/artifacts:z
+      - ./data/local:/app/data/local:ro,z
 
 volumes:
   minio-data:
