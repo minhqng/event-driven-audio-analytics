@@ -1,9 +1,9 @@
-# K3s / Kubernetes Variant
+# K3s Private-Cloud Variant
 
 Run commands from the repository root.
 
 This variant is a bounded private-cloud-style mapping of the existing
-FMA-Small event-driven audio analytics system onto Kubernetes primitives. It
+FMA-Small event-driven audio analytics system onto K3s runtime primitives. It
 supports the thesis private-cloud deployment narrative while remaining
 single-node-friendly K3s demonstration only. Docker Compose remains the default
 local path.
@@ -18,16 +18,16 @@ local path.
 
 ## Manifest Layout
 
-- `deploy/k8s/`: root Kustomize entrypoint, namespace, shared ConfigMap, Secret example, and artifacts PVC.
-- `deploy/k8s/kafka/`: single-broker KRaft StatefulSet, Services, and topic bootstrap Job.
-- `deploy/k8s/timescaledb/`: single-replica StatefulSet, Service, PVC, and SQL init assets.
-- `deploy/k8s/minio/`: single-replica StatefulSet, Service, PVC, and bucket-init Job.
-- `deploy/k8s/grafana/`: Deployment, Service, and file-provisioned dashboards.
-- `deploy/k8s/processing/`, `deploy/k8s/writer/`, `deploy/k8s/review/`: long-running service Deployments.
-- `deploy/k8s/ingestion/`: deterministic demo prep, demo ingestion Jobs, FMA burst Jobs, and FMA input PVC.
-- `deploy/k8s/dataset-exporter/`: one-shot dataset bundle export Jobs.
+- `deploy/k3s/`: root Kustomize entrypoint, namespace, shared ConfigMap, Secret example, and artifacts PVC.
+- `deploy/k3s/kafka/`: single-broker KRaft StatefulSet, Services, and topic bootstrap Job.
+- `deploy/k3s/timescaledb/`: single-replica StatefulSet, Service, PVC, and SQL init assets.
+- `deploy/k3s/minio/`: single-replica StatefulSet, Service, PVC, and bucket-init Job.
+- `deploy/k3s/grafana/`: Deployment, Service, and file-provisioned dashboards.
+- `deploy/k3s/processing/`, `deploy/k3s/writer/`, `deploy/k3s/review/`: long-running service Deployments.
+- `deploy/k3s/ingestion/`: deterministic demo prep, demo ingestion Jobs, FMA burst Jobs, and FMA input PVC.
+- `deploy/k3s/dataset-exporter/`: one-shot dataset bundle export Jobs.
 
-The root `deploy/k8s/kustomization.yaml` includes only long-lived platform
+The root `deploy/k3s/kustomization.yaml` includes only long-lived platform
 resources. One-shot Jobs stay outside the root apply set so demo and evaluation
 actions remain deliberate.
 
@@ -73,33 +73,33 @@ reachable by K3s and update the manifests before apply.
 1. Create the namespace first so namespaced examples can be applied cleanly:
 
 ```powershell
-kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k3s/namespace.yaml
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k3s/namespace.yaml
 ```
 
 2. Copy and edit the tracked Secret example:
 
 ```powershell
-Copy-Item deploy/k8s/secrets.example.yaml deploy/k8s/secrets.yaml
-kubectl apply -f deploy/k8s/secrets.yaml
+Copy-Item deploy/k3s/secrets.example.yaml deploy/k3s/secrets.yaml
+kubectl apply -f deploy/k3s/secrets.yaml
 ```
 
 ```sh
-cp deploy/k8s/secrets.example.yaml deploy/k8s/secrets.yaml
-kubectl apply -f deploy/k8s/secrets.yaml
+cp deploy/k3s/secrets.example.yaml deploy/k3s/secrets.yaml
+kubectl apply -f deploy/k3s/secrets.yaml
 ```
 
 3. Apply the bounded base stack:
 
 ```powershell
-kubectl apply -k deploy/k8s
+kubectl apply -k deploy/k3s
 ```
 
 ```sh
-kubectl apply -k deploy/k8s
+kubectl apply -k deploy/k3s
 ```
 
 4. Wait for the platform dependencies that must be ready before bucket and topic bootstrap:
@@ -122,14 +122,14 @@ kubectl wait -n fma-small-analytics --for=condition=available deployment/grafana
    read-only, so bucket creation is handled by this bounded init Job.
 
 ```powershell
-kubectl apply -f deploy/k8s/minio/bucket-init.yaml
+kubectl apply -f deploy/k3s/minio/bucket-init.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/minio-bucket-init --timeout=180s
 kubectl logs -n fma-small-analytics job/minio-bucket-init
 kubectl wait -n fma-small-analytics --for=condition=available deployment/review --timeout=180s
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/minio/bucket-init.yaml
+kubectl apply -f deploy/k3s/minio/bucket-init.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/minio-bucket-init --timeout=180s
 kubectl logs -n fma-small-analytics job/minio-bucket-init
 kubectl wait -n fma-small-analytics --for=condition=available deployment/review --timeout=180s
@@ -140,13 +140,13 @@ kubectl wait -n fma-small-analytics --for=condition=available deployment/review 
    topic set to already exist.
 
 ```powershell
-kubectl apply -f deploy/k8s/kafka/topic-bootstrap.yaml
+kubectl apply -f deploy/k3s/kafka/topic-bootstrap.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/kafka-topic-bootstrap --timeout=180s
 kubectl logs -n fma-small-analytics job/kafka-topic-bootstrap
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/kafka/topic-bootstrap.yaml
+kubectl apply -f deploy/k3s/kafka/topic-bootstrap.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/kafka-topic-bootstrap --timeout=180s
 kubectl logs -n fma-small-analytics job/kafka-topic-bootstrap
 ```
@@ -168,32 +168,32 @@ kubectl wait -n fma-small-analytics --for=condition=available deployment/writer 
 Prepare the in-cluster deterministic review inputs:
 
 ```powershell
-kubectl apply -f deploy/k8s/ingestion/review-demo-input-prep.yaml
+kubectl apply -f deploy/k3s/ingestion/review-demo-input-prep.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/review-demo-input-prep --timeout=180s
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/ingestion/review-demo-input-prep.yaml
+kubectl apply -f deploy/k3s/ingestion/review-demo-input-prep.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/review-demo-input-prep --timeout=180s
 ```
 
 Run the bounded ingestion Jobs in order:
 
 ```powershell
-kubectl apply -f deploy/k8s/ingestion/demo-high-energy.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-high-energy.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-high-energy --timeout=300s
-kubectl apply -f deploy/k8s/ingestion/demo-silent-oriented.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-silent-oriented.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-silent-oriented --timeout=300s
-kubectl apply -f deploy/k8s/ingestion/demo-validation-failure.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-validation-failure.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-validation-failure --timeout=300s
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/ingestion/demo-high-energy.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-high-energy.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-high-energy --timeout=300s
-kubectl apply -f deploy/k8s/ingestion/demo-silent-oriented.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-silent-oriented.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-silent-oriented --timeout=300s
-kubectl apply -f deploy/k8s/ingestion/demo-validation-failure.yaml
+kubectl apply -f deploy/k3s/ingestion/demo-validation-failure.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-demo-validation-failure --timeout=300s
 ```
 
@@ -240,18 +240,18 @@ kubectl port-forward -n fma-small-analytics service/minio 9001:9001
 Export the deterministic demo bundles after the demo runs have persisted:
 
 ```powershell
-kubectl apply -f deploy/k8s/dataset-exporter/demo-high-energy.yaml
-kubectl apply -f deploy/k8s/dataset-exporter/demo-silent-oriented.yaml
-kubectl apply -f deploy/k8s/dataset-exporter/demo-validation-failure.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-high-energy.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-silent-oriented.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-validation-failure.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-high-energy --timeout=300s
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-silent-oriented --timeout=300s
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-validation-failure --timeout=300s
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/dataset-exporter/demo-high-energy.yaml
-kubectl apply -f deploy/k8s/dataset-exporter/demo-silent-oriented.yaml
-kubectl apply -f deploy/k8s/dataset-exporter/demo-validation-failure.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-high-energy.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-silent-oriented.yaml
+kubectl apply -f deploy/k3s/dataset-exporter/demo-validation-failure.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-high-energy --timeout=300s
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-silent-oriented --timeout=300s
 kubectl wait -n fma-small-analytics --for=condition=complete job/dataset-export-demo-validation-failure --timeout=300s
@@ -268,11 +268,11 @@ Bundle output lands on the shared `artifacts-pvc` under:
 For operator-supplied local FMA-Small data, first create a separate PVC:
 
 ```powershell
-kubectl apply -f deploy/k8s/ingestion/fma-input-pvc.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-input-pvc.yaml
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/ingestion/fma-input-pvc.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-input-pvc.yaml
 ```
 
 Populate it with:
@@ -285,16 +285,16 @@ Populate it with:
 Run the bounded burst Jobs:
 
 ```powershell
-kubectl apply -f deploy/k8s/ingestion/fma-burst-5.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-burst-5.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-fma-burst-5 --timeout=600s
-kubectl apply -f deploy/k8s/ingestion/fma-burst-100.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-burst-100.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-fma-burst-100 --timeout=1800s
 ```
 
 ```sh
-kubectl apply -f deploy/k8s/ingestion/fma-burst-5.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-burst-5.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-fma-burst-5 --timeout=600s
-kubectl apply -f deploy/k8s/ingestion/fma-burst-100.yaml
+kubectl apply -f deploy/k3s/ingestion/fma-burst-100.yaml
 kubectl wait -n fma-small-analytics --for=condition=complete job/ingestion-fma-burst-100 --timeout=1800s
 ```
 
@@ -313,7 +313,7 @@ Manual bounded scaling path:
   - dataset-exporter output bundles
 
 Phase 7.1 documents the K3s evaluation path, but does not port the Compose
-evaluation scripts into Kubernetes automation.
+evaluation scripts into K3s automation.
 
 ## Operational Notes
 

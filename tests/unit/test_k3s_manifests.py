@@ -6,7 +6,7 @@ import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-K8S_ROOT = PROJECT_ROOT / "deploy" / "k8s"
+K3S_ROOT = PROJECT_ROOT / "deploy" / "k3s"
 
 
 def _load_yaml(path: Path) -> list[dict[str, object]]:
@@ -32,7 +32,7 @@ def _container_env_map(container: dict[str, object]) -> dict[str, str]:
 
 
 def test_kustomize_root_lists_expected_resources_and_generators() -> None:
-    kustomization = _load_first(K8S_ROOT / "kustomization.yaml")
+    kustomization = _load_first(K3S_ROOT / "kustomization.yaml")
 
     assert kustomization["kind"] == "Kustomization"
     assert kustomization["namespace"] == "fma-small-analytics"
@@ -93,11 +93,11 @@ def test_required_component_directories_exist() -> None:
         "writer",
     }
 
-    assert expected <= {path.name for path in K8S_ROOT.iterdir() if path.is_dir()}
+    assert expected <= {path.name for path in K3S_ROOT.iterdir() if path.is_dir()}
 
 
 def test_app_config_defaults_to_minio_private_cloud_variant() -> None:
-    config_map = _load_first(K8S_ROOT / "configmap.yaml")
+    config_map = _load_first(K3S_ROOT / "configmap.yaml")
 
     assert config_map["kind"] == "ConfigMap"
     data = config_map["data"]
@@ -117,14 +117,14 @@ def test_app_config_defaults_to_minio_private_cloud_variant() -> None:
 
 
 def test_base_workloads_match_bounded_k3s_mapping() -> None:
-    kafka = _load_first(K8S_ROOT / "kafka" / "statefulset.yaml")
-    timescaledb = _load_first(K8S_ROOT / "timescaledb" / "statefulset.yaml")
-    minio = _load_first(K8S_ROOT / "minio" / "statefulset.yaml")
-    grafana = _load_first(K8S_ROOT / "grafana" / "deployment.yaml")
-    processing = _load_first(K8S_ROOT / "processing" / "deployment.yaml")
-    writer = _load_first(K8S_ROOT / "writer" / "deployment.yaml")
-    review = _load_first(K8S_ROOT / "review" / "deployment.yaml")
-    review_service = _load_first(K8S_ROOT / "review" / "service.yaml")
+    kafka = _load_first(K3S_ROOT / "kafka" / "statefulset.yaml")
+    timescaledb = _load_first(K3S_ROOT / "timescaledb" / "statefulset.yaml")
+    minio = _load_first(K3S_ROOT / "minio" / "statefulset.yaml")
+    grafana = _load_first(K3S_ROOT / "grafana" / "deployment.yaml")
+    processing = _load_first(K3S_ROOT / "processing" / "deployment.yaml")
+    writer = _load_first(K3S_ROOT / "writer" / "deployment.yaml")
+    review = _load_first(K3S_ROOT / "review" / "deployment.yaml")
+    review_service = _load_first(K3S_ROOT / "review" / "service.yaml")
 
     assert kafka["kind"] == "StatefulSet"
     kafka_env = _container_env_map(kafka["spec"]["template"]["spec"]["containers"][0])
@@ -190,19 +190,19 @@ def test_base_workloads_match_bounded_k3s_mapping() -> None:
 
 
 def test_job_manifests_cover_demo_burst_and_export_paths() -> None:
-    bootstrap = _load_first(K8S_ROOT / "kafka" / "topic-bootstrap.yaml")
-    bucket_init = _load_first(K8S_ROOT / "minio" / "bucket-init.yaml")
+    bootstrap = _load_first(K3S_ROOT / "kafka" / "topic-bootstrap.yaml")
+    bucket_init = _load_first(K3S_ROOT / "minio" / "bucket-init.yaml")
     review_demo_prep = _load_first(
-        K8S_ROOT / "ingestion" / "review-demo-input-prep.yaml"
+        K3S_ROOT / "ingestion" / "review-demo-input-prep.yaml"
     )
-    demo_high = _load_first(K8S_ROOT / "ingestion" / "demo-high-energy.yaml")
-    demo_silent = _load_first(K8S_ROOT / "ingestion" / "demo-silent-oriented.yaml")
+    demo_high = _load_first(K3S_ROOT / "ingestion" / "demo-high-energy.yaml")
+    demo_silent = _load_first(K3S_ROOT / "ingestion" / "demo-silent-oriented.yaml")
     demo_fail = _load_first(
-        K8S_ROOT / "ingestion" / "demo-validation-failure.yaml"
+        K3S_ROOT / "ingestion" / "demo-validation-failure.yaml"
     )
-    burst_5 = _load_first(K8S_ROOT / "ingestion" / "fma-burst-5.yaml")
-    burst_100 = _load_first(K8S_ROOT / "ingestion" / "fma-burst-100.yaml")
-    export_live = _load_first(K8S_ROOT / "dataset-exporter" / "fma-small-live.yaml")
+    burst_5 = _load_first(K3S_ROOT / "ingestion" / "fma-burst-5.yaml")
+    burst_100 = _load_first(K3S_ROOT / "ingestion" / "fma-burst-100.yaml")
+    export_live = _load_first(K3S_ROOT / "dataset-exporter" / "fma-small-live.yaml")
 
     assert bootstrap["kind"] == "Job"
     bootstrap_script = bootstrap["spec"]["template"]["spec"]["containers"][0][
@@ -261,8 +261,8 @@ def test_job_manifests_cover_demo_burst_and_export_paths() -> None:
 
 
 def test_secret_example_fma_input_pvc_and_docs_reference_component_layout() -> None:
-    secret_example = _load_first(K8S_ROOT / "secrets.example.yaml")
-    fma_input_pvc = _load_first(K8S_ROOT / "ingestion" / "fma-input-pvc.yaml")
+    secret_example = _load_first(K3S_ROOT / "secrets.example.yaml")
+    fma_input_pvc = _load_first(K3S_ROOT / "ingestion" / "fma-input-pvc.yaml")
 
     assert secret_example["kind"] == "Secret"
     assert set(secret_example["stringData"]) == {
@@ -282,32 +282,32 @@ def test_secret_example_fma_input_pvc_and_docs_reference_component_layout() -> N
     validation = (PROJECT_ROOT / "docs" / "runbooks" / "validation.md").read_text(
         encoding="utf-8"
     )
-    k3s_readme = (K8S_ROOT / "README.md").read_text(encoding="utf-8")
+    k3s_readme = (K3S_ROOT / "README.md").read_text(encoding="utf-8")
     k3s_runbook = (PROJECT_ROOT / "docs" / "runbooks" / "k3s.md").read_text(
         encoding="utf-8"
     )
 
-    assert "deploy/k8s/secrets.yaml" in gitignore
-    assert "deploy/k8s/" in readme
+    assert "deploy/k3s/secrets.yaml" in gitignore
+    assert "deploy/k3s/" in readme
     assert "docs/runbooks/k3s.md" in readme
     assert "docs/runbooks/k3s.md" in docs_index
-    assert "## K3s / Kubernetes Variant" in validation
-    assert "kubectl apply -k deploy/k8s" in k3s_readme
-    assert "kubectl apply -k deploy/k8s" in k3s_runbook
+    assert "## K3s Private-Cloud Variant" in validation
+    assert "kubectl apply -k deploy/k3s" in k3s_readme
+    assert "kubectl apply -k deploy/k3s" in k3s_runbook
     assert "review-demo-input-prep.yaml" in k3s_runbook
     assert (
-        k3s_runbook.index("kubectl apply -f deploy/k8s/namespace.yaml")
-        < k3s_runbook.index("kubectl apply -f deploy/k8s/secrets.yaml")
+        k3s_runbook.index("kubectl apply -f deploy/k3s/namespace.yaml")
+        < k3s_runbook.index("kubectl apply -f deploy/k3s/secrets.yaml")
     )
     assert (
-        k3s_runbook.index("kubectl apply -f deploy/k8s/minio/bucket-init.yaml")
+        k3s_runbook.index("kubectl apply -f deploy/k3s/minio/bucket-init.yaml")
         < k3s_runbook.index(
             "kubectl wait -n fma-small-analytics "
             "--for=condition=available deployment/review --timeout=180s"
         )
     )
     assert (
-        k3s_runbook.index("kubectl apply -f deploy/k8s/kafka/topic-bootstrap.yaml")
+        k3s_runbook.index("kubectl apply -f deploy/k3s/kafka/topic-bootstrap.yaml")
         < k3s_runbook.index(
             "kubectl wait -n fma-small-analytics "
             "--for=condition=available deployment/processing --timeout=180s"

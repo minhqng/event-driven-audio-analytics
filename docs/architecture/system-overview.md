@@ -32,7 +32,7 @@ TimescaleDB is the persisted analytics truth. The review console reads that trut
 
 ## Deployment And Evidence
 
-Docker Compose remains the default local/dev path. The K3s/Kubernetes manifests provide a bounded single-node private-cloud mapping with Kafka, TimescaleDB, MinIO, Grafana, processing, writer, review, ingestion Jobs, and dataset-exporter Jobs.
+Docker Compose remains the default local/dev path. The K3s manifests provide a bounded single-node private-cloud mapping with Kafka, TimescaleDB, MinIO, Grafana, processing, writer, review, ingestion Jobs, and dataset-exporter Jobs.
 
 Final generated evidence lives under `artifacts/evidence/final-demo/`:
 
