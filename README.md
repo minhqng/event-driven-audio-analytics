@@ -16,14 +16,14 @@ Repository này giới hạn phạm vi vào FMA-Small và hiện thực hóa đ�
 - At-least-once delivery with checkpoint-aware, idempotent persistence
 - A read-only review console as the primary surface over persisted run, track, and segment outcomes
 - Deterministic dataset/analytics bundle generation from completed persisted runs
-- Bounded MinIO/private-cloud object storage and K3s/Kubernetes deployment variants
+- Bounded MinIO/private-cloud object storage and K3s deployment variants
 - Evaluation evidence for latency, throughput, resource usage, scaling, and restart/replay behavior
 - Bounded restart/replay verification for the same `run_id`
 - Grafana-backed observability that corroborates persisted truth without becoming the product front door
 
 ## Scope
 
-- In scope: FMA-Small only, Docker Compose, a bounded K3s/Kubernetes manifest variant, Kafka KRaft, local and MinIO/S3-compatible claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style operational metrics, dataset/analytics exports, and bounded demo/evaluation evidence flows
+- In scope: FMA-Small only, Docker Compose, a bounded K3s manifest variant, Kafka KRaft, local and MinIO/S3-compatible claim-check storage, TimescaleDB, Grafana, metadata ETL, mono 32 kHz normalization, 3.0 s segments with 1.5 s overlap, RMS, silence gating, log-mel summary shape, Welford-style operational metrics, dataset/analytics exports, and bounded demo/evaluation evidence flows
 - Out of scope: service mesh, GitOps/Terraform, HA/DR, multi-node Kafka, production object storage/IAM, model serving, full MLOps, and benchmark-scale claims beyond the documented bounded runs
 - Kafka remains small-event transport only. Raw waveform payloads and large tensors do not belong on the broker.
 
@@ -92,11 +92,11 @@ bash ./scripts/smoke/check-minio-claim-check-flow.sh
 
 This path keeps the default deterministic demo on `STORAGE_BACKEND=local`, then exercises the bounded MinIO variant separately. Canonical storage env vars live in `.env.example`, and the full manual/acceptance steps are in `docs/runbooks/validation.md`.
 
-Optional bounded K3s/Kubernetes variant:
+Optional bounded K3s variant:
 
-- Manifests live under `deploy/k8s/`
+- Manifests live under `deploy/k3s/`
 - The K3s operator runbook lives in `docs/runbooks/k3s.md`
-- This variant maps the same bounded FMA-Small pipeline to Kubernetes primitives without replacing Docker Compose
+- This variant maps the same bounded FMA-Small pipeline to K3s runtime primitives without replacing Docker Compose
 
 When `MINIO_ENDPOINT_URL` is left unset, the services derive `http://minio:9000`
 or `https://minio:9000` from `MINIO_SECURE`. If a local processing deployment

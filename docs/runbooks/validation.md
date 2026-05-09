@@ -33,7 +33,7 @@ follow-on implementation prompts.
 - MinIO or another S3-compatible object-storage backend for claim-check
   artifacts.
 - An evaluation framework and evidence path specific to FMA-Small.
-- A bounded K3s/Kubernetes deployment variant for private-cloud demonstration.
+- A bounded K3s deployment variant for private-cloud demonstration.
 - Final docs and demo story aligned with the FMA-Small title and boundaries.
 
 ## Fast Local Checks
@@ -296,16 +296,16 @@ This keeps the default local demo independent from MinIO, but makes processing
 preflight fail fast when S3 replay support is expected and the MinIO backend is
 not reachable.
 
-## K3s / Kubernetes Variant
+## K3s Private-Cloud Variant
 
 The bounded private-cloud deployment manifests now live under:
 
 ```text
-deploy/k8s/
+deploy/k3s/
 ```
 
 This variant keeps Docker Compose as the default local path and adds a
-single-node-friendly K3s/Kubernetes mapping for:
+single-node-friendly K3s mapping for:
 
 - namespace, ConfigMaps, and Secret example
 - single-broker Kafka KRaft
@@ -322,7 +322,7 @@ deterministic demo Jobs, port-forwarding, and bounded local FMA burst steps:
 docs/runbooks/k3s.md
 ```
 
-The Kubernetes variant is intentionally non-production:
+The K3s variant is intentionally non-production:
 
 - no HA/DR
 - no service mesh
