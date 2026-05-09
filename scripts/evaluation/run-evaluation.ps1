@@ -112,8 +112,11 @@ function Start-ResourceSampler {
 
         Set-Location -LiteralPath $RepoRoot
         while ($true) {
-            docker stats --no-stream --format "{{json .}}" | Where-Object { $_ } |
-                Add-Content -LiteralPath $OutputPath -Encoding utf8
+            $containerIds = @(docker compose ps --quiet 2>$null | Where-Object { $_ })
+            if ($containerIds.Count -gt 0) {
+                docker stats --no-stream --format "{{json .}}" @containerIds | Where-Object { $_ } |
+                    Add-Content -LiteralPath $OutputPath -Encoding utf8
+            }
             Start-Sleep -Seconds $IntervalS
         }
     }

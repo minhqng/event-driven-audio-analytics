@@ -97,7 +97,10 @@ start_resource_sampler() {
   output_path="$1"
   (
     while :; do
-      docker stats --no-stream --format "{{json .}}" >> "$output_path"
+      container_ids="$(docker compose ps --quiet 2>/dev/null || true)"
+      if [ -n "$container_ids" ]; then
+        docker stats --no-stream --format "{{json .}}" $container_ids >> "$output_path"
+      fi
       sleep "$resource_sample_interval_s"
     done
   ) &

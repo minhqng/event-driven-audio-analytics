@@ -24,6 +24,9 @@ def test_powershell_evaluation_script_contract() -> None:
     assert "fma-small-burst-100" in script
     assert "fma-small-full-local-experiment" in script
     assert "docker stats --no-stream" in script
+    assert "docker compose ps --quiet" in script
+    assert "if ($containerIds.Count -gt 0)" in script
+    assert 'docker stats --no-stream --format "{{json .}}" @containerIds' in script
     assert "Start-ResourceSampler" in script
     assert "Stop-ResourceSampler" in script
     assert "Start-Job" in script
@@ -62,6 +65,9 @@ def test_bash_evaluation_script_contract() -> None:
     assert "fma-small-burst-100" in script
     assert "fma-small-full-local-experiment" in script
     assert "docker stats --no-stream" in script
+    assert 'container_ids="$(docker compose ps --quiet 2>/dev/null || true)"' in script
+    assert 'if [ -n "$container_ids" ]; then' in script
+    assert 'docker stats --no-stream --format "{{json .}}" $container_ids' in script
     assert "start_resource_sampler" in script
     assert "stop_active_resource_sampler" in script
     assert "active_sampler_pid" in script
