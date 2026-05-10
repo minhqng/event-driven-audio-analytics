@@ -37,6 +37,7 @@ def test_writer_settings_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     monkeypatch.setenv("WRITER_DB_POOL_MIN_SIZE", "2")
     monkeypatch.setenv("WRITER_DB_POOL_MAX_SIZE", "5")
     monkeypatch.setenv("WRITER_DB_POOL_TIMEOUT_S", "12.5")
+    monkeypatch.setenv("WRITER_INPUT_TOPICS", "audio.metadata,audio.features")
 
     settings = WriterSettings.from_env()
 
@@ -50,6 +51,16 @@ def test_writer_settings_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     assert settings.db_pool_min_size == 2
     assert settings.db_pool_max_size == 5
     assert settings.db_pool_timeout_s == 12.5
+    assert settings.input_topics == ("audio.metadata", "audio.features")
+
+
+def test_writer_settings_rejects_unsupported_input_topic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WRITER_INPUT_TOPICS", "audio.metadata,audio.segment.ready")
+
+    with pytest.raises(ValueError, match="Unsupported: audio.segment.ready"):
+        WriterSettings.from_env()
 
 
 def test_open_database_pool_uses_requested_bounds(monkeypatch: pytest.MonkeyPatch) -> None:

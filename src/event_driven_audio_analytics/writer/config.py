@@ -5,12 +5,34 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 
+from event_driven_audio_analytics.shared.contracts.topics import WRITER_INPUT_TOPICS
 from event_driven_audio_analytics.shared.settings import (
     BaseServiceSettings,
     DatabaseSettings,
     load_base_service_settings,
     load_database_settings,
 )
+
+
+def _parse_input_topics(raw_value: str) -> tuple[str, ...]:
+    """Parse and validate the writer topic subscription override."""
+
+    if not raw_value.strip():
+        return WRITER_INPUT_TOPICS
+
+    topics = tuple(part.strip() for part in raw_value.split(",") if part.strip())
+    if not topics:
+        return WRITER_INPUT_TOPICS
+
+    supported_topics = set(WRITER_INPUT_TOPICS)
+    unsupported_topics = sorted(set(topics) - supported_topics)
+    if unsupported_topics:
+        raise ValueError(
+            "WRITER_INPUT_TOPICS may only include: "
+            f"{', '.join(WRITER_INPUT_TOPICS)}. "
+            f"Unsupported: {', '.join(unsupported_topics)}."
+        )
+    return topics
 
 
 @dataclass(slots=True)
@@ -29,6 +51,7 @@ class WriterSettings:
     db_pool_min_size: int
     db_pool_max_size: int
     db_pool_timeout_s: float
+    input_topics: tuple[str, ...] = WRITER_INPUT_TOPICS
 
     @classmethod
     def from_env(cls) -> "WriterSettings":
@@ -52,4 +75,5 @@ class WriterSettings:
             db_pool_min_size=int(os.getenv("WRITER_DB_POOL_MIN_SIZE", "1")),
             db_pool_max_size=int(os.getenv("WRITER_DB_POOL_MAX_SIZE", "4")),
             db_pool_timeout_s=float(os.getenv("WRITER_DB_POOL_TIMEOUT_S", "30.0")),
+            input_topics=_parse_input_topics(os.getenv("WRITER_INPUT_TOPICS", "")),
         )

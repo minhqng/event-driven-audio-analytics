@@ -108,6 +108,20 @@ docker compose run --rm dataset-exporter export --run-id demo-high-energy
 For a repo-local FMA burst, replace `demo-high-energy` with the burst `RUN_ID`
 such as `fma-small-live`.
 
+For the full repo-local `fma-small` pack, run the burst with an explicit cap of
+`8000` after `run-demo.ps1` has started the stack:
+
+```powershell
+$env:RUN_ID = "fma-small-full"
+$env:INGESTION_MAX_TRACKS = "8000"
+$env:TRACK_ID_ALLOWLIST = ""
+powershell -ExecutionPolicy Bypass -File .\scripts\demo\run-local-fma-burst.ps1
+```
+
+The writer defaults to all writer topics. For large backlog drain work, optional
+topic-specific writer workers can be started with `WRITER_INPUT_TOPICS` set to
+one of `audio.metadata`, `audio.features`, or `system.metrics`.
+
 The dataset bundle is the final product output. The review console and Grafana
 remain read-only inspection and corroboration surfaces over the same persisted
 truth.

@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from event_driven_audio_analytics.shared.contracts.topics import WRITER_INPUT_TOPICS
 from event_driven_audio_analytics.shared.kafka import build_consumer
 from event_driven_audio_analytics.writer.config import WriterSettings
 
@@ -34,7 +33,7 @@ def build_writer_consumer(settings: WriterSettings) -> Consumer:
         bootstrap_servers=settings.base.kafka_bootstrap_servers,
         group_id=settings.consumer_group,
         client_id=settings.base.service_name,
-        topics=WRITER_INPUT_TOPICS,
+        topics=settings.input_topics,
         auto_offset_reset=settings.auto_offset_reset,
         enable_auto_commit=False,
         enable_auto_offset_store=False,
