@@ -1,0 +1,2 @@
+{"id":"e0998498-6498-4b29-bffa-51e302b641be","ts":"2026-05-23T09:27:20.652Z","severity":"warning","message":"Web search: Set BRAVE_API_KEY or use an Anthropic model for built-in search","source":"notify","read":false}
+{"id":"59e08229-d262-4d2c-b140-09ed586caf44","ts":"2026-05-23T09:27:20.654Z","severity":"info","message":"Model: openai-codex/gpt-5.5","source":"notify","read":false}
