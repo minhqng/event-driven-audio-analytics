@@ -1,0 +1,18 @@
+{
+  "id": "8f4ae683-60ed-4ff2-a8a9-73bc54584ba4",
+  "runtime": "bash",
+  "purpose": "Check available Python/pytest runner after bare pytest was unavailable",
+  "script_chars": 46,
+  "started_at": "2026-05-23T10:29:20.046Z",
+  "finished_at": "2026-05-23T10:29:20.177Z",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "duration_ms": 131,
+  "stdout_bytes": 0,
+  "stderr_bytes": 108,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "stdout_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\8f4ae683-60ed-4ff2-a8a9-73bc54584ba4.stdout",
+  "stderr_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\8f4ae683-60ed-4ff2-a8a9-73bc54584ba4.stderr"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20",
+  "runtime": "python",
+  "purpose": "Run targeted review tests via project virtualenv",
+  "script_chars": 499,
+  "started_at": "2026-05-23T10:30:56.232Z",
+  "finished_at": "2026-05-23T10:30:56.242Z",
+  "exit_code": -4058,
+  "signal": null,
+  "timed_out": false,
+  "duration_ms": 10,
+  "stdout_bytes": 0,
+  "stderr_bytes": 34,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "stdout_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20.stdout",
+  "stderr_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20.stderr"
+}

@@ -16,7 +16,7 @@
 
 ## Slices
 
-- [ ] **S01: Honest pipeline status contract** `risk:high` `depends:[]`
+- [ ] **S01: S01** `risk:high` `depends:[]`
   > After this: Run detail or derived review payloads have a tested, honest pipeline-stage status contract for deterministic demo states without claiming unobserved infrastructure health.
 
 - [ ] **S02: Data driven pipeline diagram** `risk:high` `depends:[S01]`

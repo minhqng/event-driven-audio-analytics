@@ -22,6 +22,7 @@ from .schemas import (
     build_derived_provenance,
     build_fs_provenance,
     build_page_payload,
+    derive_pipeline_stages,
     derive_run_state,
     derive_track_state,
     isoformat_or_none,
@@ -401,55 +402,62 @@ def get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object] |
             processing_state_error = str(exc)
 
     summary = _build_run_item(row)
-    return {
-        "run": summary,
-        "validation_outcomes": {
+    validation_outcome_items = [
+        {
+            "validation_status": str(validation_status),
+            "track_count": int(track_count),
+            "provenance": build_db_provenance(),
+        }
+        for validation_status, track_count in validation_rows
+    ]
+    runtime_proof = {
+        "emphasis": "secondary",
+        "provenance": build_derived_provenance(),
+        "manifest": {
+            "path": manifest_uri_value,
+            "exists": manifest_exists,
+            "provenance": {
+                "path": "claim_check_uri",
+                "exists": manifest_exists_provenance,
+            },
+        },
+        "processing_state": {
+            "path": processing_state_path.as_posix(),
+            "exists": processing_state_path.exists(),
+            "state": processing_state_payload,
+            "read_error": processing_state_error,
+            "provenance": {
+                "path": "fs",
+                "exists": "fs",
+                "state": "fs" if processing_state_payload is not None else "fs",
+            },
+        },
+        "checkpoints": {
             "items": [
                 {
-                    "validation_status": str(validation_status),
-                    "track_count": int(track_count),
+                    "topic_name": str(topic_name),
+                    "partition_id": int(partition_id),
+                    "last_committed_offset": int(last_committed_offset),
+                    "updated_at": isoformat_or_none(updated_at),
                     "provenance": build_db_provenance(),
                 }
-                for validation_status, track_count in validation_rows
+                for topic_name, partition_id, last_committed_offset, updated_at in checkpoint_rows
             ],
             "provenance": build_db_provenance(),
         },
-        "runtime_proof": {
-            "emphasis": "secondary",
-            "provenance": build_derived_provenance(),
-            "manifest": {
-                "path": manifest_uri_value,
-                "exists": manifest_exists,
-                "provenance": {
-                    "path": "claim_check_uri",
-                    "exists": manifest_exists_provenance,
-                },
-            },
-            "processing_state": {
-                "path": processing_state_path.as_posix(),
-                "exists": processing_state_path.exists(),
-                "state": processing_state_payload,
-                "read_error": processing_state_error,
-                "provenance": {
-                    "path": "fs",
-                    "exists": "fs",
-                    "state": "fs" if processing_state_payload is not None else "fs",
-                },
-            },
-            "checkpoints": {
-                "items": [
-                    {
-                        "topic_name": str(topic_name),
-                        "partition_id": int(partition_id),
-                        "last_committed_offset": int(last_committed_offset),
-                        "updated_at": isoformat_or_none(updated_at),
-                        "provenance": build_db_provenance(),
-                    }
-                    for topic_name, partition_id, last_committed_offset, updated_at in checkpoint_rows
-                ],
-                "provenance": build_db_provenance(),
-            },
+    }
+    return {
+        "run": summary,
+        "validation_outcomes": {
+            "items": validation_outcome_items,
+            "provenance": build_db_provenance(),
         },
+        "runtime_proof": runtime_proof,
+        "pipeline_stages": derive_pipeline_stages(
+            summary,
+            validation_outcomes=validation_outcome_items,
+            runtime_proof=runtime_proof,
+        ),
         "links": {
             "tracks_url": f"/api/runs/{validated_run_id}/tracks",
         },

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-05-23T10:14:55.076Z",
+  "exported_at": "2026-05-23T10:29:02.986Z",
   "milestones": [
     {
       "id": "M001",
@@ -86,7 +86,7 @@
     {
       "milestone_id": "M001",
       "id": "S01",
-      "title": "Honest pipeline status contract",
+      "title": "S01",
       "status": "pending",
       "risk": "high",
       "depends": [],
@@ -208,19 +208,24 @@
       "milestone_id": "M001",
       "slice_id": "S01",
       "id": "T01",
-      "title": "Pin pipeline stage contract tests",
-      "status": "pending",
-      "one_liner": "",
-      "narrative": "",
-      "verification_result": "",
+      "title": "Pinned the review pipeline-stage contract with query-level fixtures and a public API shape assertion.",
+      "status": "complete",
+      "one_liner": "Pinned the review pipeline-stage contract with query-level fixtures and a public API shape assertion.",
+      "narrative": "Inspected the milestone/slice context plus existing review schemas, queries, and app tests. The query tests already define the intended red contract for `pipeline_stages`: stable stage ids, labels, constrained status values, non-empty reasons, and derived provenance, covering persisted success, metadata-only validation failure, downstream processing/writer error, empty/no-evidence, and partial runtime/artifact proof cases. I extended `tests/unit/test_review_app.py` with an API-boundary assertion that `/api/runs/{run_id}` responses preserve the same stage item shape when the query layer returns it, keeping the contract visible at the public review route without requiring Docker or a live database.",
+      "verification_result": "Verified the modified test files parse successfully. Ran the query test subset through the local venv with a workspace basetemp; it produced the expected red state for this test-pinning task: 14 passing tests and 5 failing pipeline-stage tests, all failing with `KeyError: 'pipeline_stages'` because T02 has not implemented the contract yet. The full specified test command could not complete in the local venv because FastAPI is not installed there; this environment limitation was captured as durable project knowledge.",
       "duration": "",
-      "completed_at": null,
+      "completed_at": "2026-05-23T10:29:02.938Z",
       "blocker_discovered": false,
-      "deviations": "",
-      "known_issues": "",
-      "key_files": [],
-      "key_decisions": [],
-      "full_summary_md": "",
+      "deviations": "Added an app-level route contract assertion in addition to the query-boundary tests so the public run-detail API shape is pinned before implementation.",
+      "known_issues": "The pinned query tests intentionally fail until T02 implements `pipeline_stages`. The local venv also lacks FastAPI, so app tests require the official containerized pytest path or review/dev extras installed.",
+      "key_files": [
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "key_decisions": [
+        "Keep T01 as a red-contract test task and do not implement pipeline-stage derivation until T02."
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S01\nmilestone: M001\nkey_files:\n  - tests/unit/test_review_queries.py\n  - tests/unit/test_review_app.py\nkey_decisions:\n  - Keep T01 as a red-contract test task and do not implement pipeline-stage derivation until T02.\nduration: \nverification_result: mixed\ncompleted_at: 2026-05-23T10:29:02.937Z\nblocker_discovered: false\n---\n\n# T01: Pinned the review pipeline-stage contract with query-level fixtures and a public API shape assertion.\n\n**Pinned the review pipeline-stage contract with query-level fixtures and a public API shape assertion.**\n\n## What Happened\n\nInspected the milestone/slice context plus existing review schemas, queries, and app tests. The query tests already define the intended red contract for `pipeline_stages`: stable stage ids, labels, constrained status values, non-empty reasons, and derived provenance, covering persisted success, metadata-only validation failure, downstream processing/writer error, empty/no-evidence, and partial runtime/artifact proof cases. I extended `tests/unit/test_review_app.py` with an API-boundary assertion that `/api/runs/{run_id}` responses preserve the same stage item shape when the query layer returns it, keeping the contract visible at the public review route without requiring Docker or a live database.\n\n## Verification\n\nVerified the modified test files parse successfully. Ran the query test subset through the local venv with a workspace basetemp; it produced the expected red state for this test-pinning task: 14 passing tests and 5 failing pipeline-stage tests, all failing with `KeyError: 'pipeline_stages'` because T02 has not implemented the contract yet. The full specified test command could not complete in the local venv because FastAPI is not installed there; this environment limitation was captured as durable project knowledge.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py via gsd_exec bash runtime` | 1 | ❌ environment: /bin/bash unavailable in gsd_exec runtime | 156ms |\n| 2 | `./.venv/Scripts/python.exe -m pytest --basetemp=.pytest-tmp tests/unit/test_review_queries.py` | 1 | ✅ expected red contract: 14 passed, 5 failed on missing pipeline_stages | 190ms |\n| 3 | `./.venv/Scripts/python.exe -m pytest --basetemp=.pytest-tmp tests/unit/test_review_queries.py tests/unit/test_review_app.py` | 2 | ❌ environment: local venv missing fastapi for test_review_app collection | 190ms |\n| 4 | `./.venv/Scripts/python.exe AST parse for tests/unit/test_review_queries.py and tests/unit/test_review_app.py` | 0 | ✅ pass: modified tests parse successfully | 300ms |\n\n## Deviations\n\nAdded an app-level route contract assertion in addition to the query-boundary tests so the public run-detail API shape is pinned before implementation.\n\n## Known Issues\n\nThe pinned query tests intentionally fail until T02 implements `pipeline_stages`. The local venv also lacks FastAPI, so app tests require the official containerized pytest path or review/dev extras installed.\n\n## Files Created/Modified\n\n- `tests/unit/test_review_queries.py`\n- `tests/unit/test_review_app.py`\n",
       "description": "Create or extend focused tests for the pipeline-stage contract before implementation. Define the expected stage item shape and cover representative run states: persisted success, metadata-only validation failure, processing/writer error, empty/no evidence, and partial runtime or artifact proof. Keep these tests at the pure schema/query boundary so they do not require Docker or a live database.",
       "estimate": "45m",
       "files": [
@@ -349,5 +354,50 @@
     }
   ],
   "decisions": [],
-  "verification_evidence": []
+  "verification_evidence": [
+    {
+      "id": 1,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py via gsd_exec bash runtime",
+      "exit_code": 1,
+      "verdict": "❌ environment: /bin/bash unavailable in gsd_exec runtime",
+      "duration_ms": 156,
+      "created_at": "2026-05-23T10:29:02.938Z"
+    },
+    {
+      "id": 2,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "./.venv/Scripts/python.exe -m pytest --basetemp=.pytest-tmp tests/unit/test_review_queries.py",
+      "exit_code": 1,
+      "verdict": "✅ expected red contract: 14 passed, 5 failed on missing pipeline_stages",
+      "duration_ms": 190,
+      "created_at": "2026-05-23T10:29:02.938Z"
+    },
+    {
+      "id": 3,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "./.venv/Scripts/python.exe -m pytest --basetemp=.pytest-tmp tests/unit/test_review_queries.py tests/unit/test_review_app.py",
+      "exit_code": 2,
+      "verdict": "❌ environment: local venv missing fastapi for test_review_app collection",
+      "duration_ms": 190,
+      "created_at": "2026-05-23T10:29:02.938Z"
+    },
+    {
+      "id": 4,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "./.venv/Scripts/python.exe AST parse for tests/unit/test_review_queries.py and tests/unit/test_review_app.py",
+      "exit_code": 0,
+      "verdict": "✅ pass: modified tests parse successfully",
+      "duration_ms": 300,
+      "created_at": "2026-05-23T10:29:02.938Z"
+    }
+  ]
 }

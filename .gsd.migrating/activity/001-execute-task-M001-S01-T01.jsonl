@@ -1,0 +1,2 @@
+{"type":"thinking_level_change","id":"a3a96918","parentId":null,"timestamp":"2026-05-23T10:24:35.547Z","thinkingLevel":"off"}
+{"type":"model_change","id":"d823f1a5","parentId":"a3a96918","timestamp":"2026-05-23T10:24:35.557Z","provider":"openai-codex","modelId":"gpt-5.5"}

@@ -26,7 +26,7 @@ The status contract is available through the existing review API path used by th
 
 ## Tasks
 
-- [ ] **T01: Pin pipeline stage contract tests** `est:45m`
+- [x] **T01: Pin pipeline stage contract tests** `est:45m`
   Create or extend focused tests for the pipeline-stage contract before implementation. Define the expected stage item shape and cover representative run states: persisted success, metadata-only validation failure, processing/writer error, empty/no evidence, and partial runtime or artifact proof. Keep these tests at the pure schema/query boundary so they do not require Docker or a live database.
   - Files: `tests/unit/test_review_queries.py`, `tests/unit/test_review_app.py`, `src/event_driven_audio_analytics/review/schemas.py`, `src/event_driven_audio_analytics/review/queries.py`
   - Verify: pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py
