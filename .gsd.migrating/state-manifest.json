@@ -1,0 +1,353 @@
+{
+  "version": 1,
+  "exported_at": "2026-05-23T10:14:55.076Z",
+  "milestones": [
+    {
+      "id": "M001",
+      "title": "Review console demo UI upgrade",
+      "status": "active",
+      "depends_on": [],
+      "created_at": "2026-05-23T09:56:29.658Z",
+      "completed_at": null,
+      "vision": "Nâng cấp phần giao diện của project event-driven audio analytics đồ án để khi mở demo, giảng viên thấy được luồng dữ liệu, kết quả phân tích, trạng thái hệ thống, và bằng chứng hoạt động một cách trực quan hơn hiện tại.",
+      "success_criteria": [
+        "The review console opens at the demo entrypoint and presents the narrative order: pipeline flow, run outcome, audio analysis, and system or evidence corroboration.",
+        "A pipeline stage diagram is visible and each stage has an honest status derived from observable review API or persisted evidence data.",
+        "API health and auto-refresh freshness are visible, including stale and error states.",
+        "Deterministic demo runs are easy to distinguish by success, validation failure, and evidence availability.",
+        "Audio analytics results use concise Vietnamese-first copy with English technical terms where useful.",
+        "Grafana remains a supporting evidence path rather than the first required surface.",
+        "Missing data, failed API calls, and media or segment gaps produce clear localized fallback messages.",
+        "No React, Vite, Node, or new frontend build pipeline is introduced.",
+        "Existing tests pass, new status behavior is tested, and browser verification evidence is produced."
+      ],
+      "key_risks": [
+        {
+          "risk": "Pipeline status can overclaim health that the review layer cannot actually observe.",
+          "whyItMatters": "The demo must be trustworthy; false green checks for Kafka, MinIO, TimescaleDB, or containers would undermine the evidence story."
+        },
+        {
+          "risk": "Static JavaScript can become brittle if status, refresh, and narrative changes are added as one large rewrite.",
+          "whyItMatters": "The current review console already supports evidence scripts and DOM readiness markers that must not break."
+        },
+        {
+          "risk": "Visual polish can hide missing error and empty states.",
+          "whyItMatters": "A live thesis demo needs graceful behavior when data is missing, stale, or partially unavailable."
+        },
+        {
+          "risk": "Final proof depends on a real browser and local demo entrypoint, not just unit tests.",
+          "whyItMatters": "The milestone outcome is presentation clarity in the actual review console."
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Pipeline status can overclaim system health",
+          "retireIn": "S01",
+          "whatWillBeProven": "Stage statuses are derived only from observable review API and persisted evidence data, with tests covering persisted, metadata-only, error, empty, and partial states."
+        },
+        {
+          "riskOrUnknown": "Static pipeline visualization may not map cleanly to real selected-run data",
+          "retireIn": "S02",
+          "whatWillBeProven": "The review console renders a selected run's stage statuses from the stable status contract while preserving current readiness markers."
+        },
+        {
+          "riskOrUnknown": "Demo failures and stale data may be confusing during live presentation",
+          "retireIn": "S03",
+          "whatWillBeProven": "The UI exposes API health, refresh freshness, empty data, load failures, and localized media/segment gaps with clear fallback messages."
+        },
+        {
+          "riskOrUnknown": "Bilingual narrative can become noisy or unclear",
+          "retireIn": "S04",
+          "whatWillBeProven": "Vietnamese-first copy and professional styling improve the demo story without adding a frontend toolchain or obscuring technical terms."
+        },
+        {
+          "riskOrUnknown": "Unit tests alone may miss live browser integration issues",
+          "retireIn": "S05",
+          "whatWillBeProven": "The local review console is verified through tests and browser evidence at the actual demo entrypoint."
+        }
+      ],
+      "verification_contract": "Run focused review schema/query/API tests for status derivation and existing review tests for endpoint compatibility.",
+      "verification_integration": "Exercise the FastAPI-served static review console against deterministic demo data and existing review APIs.",
+      "verification_operational": "Verify health, refresh freshness, stale/error state, and preserved evidence-script readiness markers during local demo operation.",
+      "verification_uat": "Review the final browser UI for Vietnamese-first narrative clarity, professional academic tone, and ability to explain the demo without Grafana first.",
+      "definition_of_done": [
+        "All five slices are complete or intentionally re-scoped through GSD.",
+        "The review console works at http://localhost:8080/?demo=1 with the demo stack.",
+        "Existing review tests pass and new status behavior is covered by focused tests.",
+        "Browser verification proves the final console shows pipeline story, status indicators, run outcomes, and fallback behavior where feasible.",
+        "The final implementation preserves the existing static FastAPI asset model and readiness DOM markers used by evidence scripts."
+      ],
+      "requirement_coverage": "No formal requirement IDs exist yet. This roadmap covers the recovered M001 context: review-console clarity, read-only demo-live status, bilingual presentation, fallback behavior, and browser-verifiable evidence. Formal requirements should be recorded before or during S01 task planning if the project wants ID-level traceability.",
+      "boundary_map_markdown": "### S01 → S02\n\nProduces:\n- Stable pipeline stage status contract for selected runs, including stage id, label, value, reason, and provenance.\n- Tests proving status derivation for persisted, metadata-only, error, empty, and partial evidence states.\n\nConsumes:\n- Existing review run summaries, run detail payloads, validation outcomes, runtime proof, and artifact evidence.\n\n### S02 → S03\n\nProduces:\n- Data-driven pipeline diagram in the static review console.\n- Preserved body readiness markers: `data-review-ready`, `data-selected-run-id`, `data-selected-track-id`, and error marker behavior.\n\nConsumes:\n- S01 status contract and existing review API loading flow.\n\n### S02 → S04\n\nProduces:\n- Stable selected-run UI structure and stage rendering areas for narrative copy and visual polish.\n\nConsumes:\n- S01 status contract and existing review console layout.\n\n### S03 and S04 → S05\n\nProduces:\n- Health, refresh, stale/error, empty, and localized fallback surfaces.\n- Vietnamese-first narrative, run outcome cards, audio explanation surfaces, and Grafana support path.\n\nConsumes:\n- Final assembled FastAPI-served review console at the local demo entrypoint.",
+      "sequence": 0
+    }
+  ],
+  "slices": [
+    {
+      "milestone_id": "M001",
+      "id": "S01",
+      "title": "Honest pipeline status contract",
+      "status": "pending",
+      "risk": "high",
+      "depends": [],
+      "demo": "Run detail or derived review payloads have a tested, honest pipeline-stage status contract for deterministic demo states without claiming unobserved infrastructure health.",
+      "created_at": "2026-05-23T09:56:29.659Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Define and expose a tested, honest pipeline-stage status contract for selected review runs using only observable review API and persisted evidence data. This slice should leave downstream UI slices with a stable stage shape: stage id, label, status value, reason, and provenance, without claiming unobserved infrastructure health.",
+      "success_criteria": "- Stage ids, labels, status values, reason text, and provenance shape are defined and stable.\n- Status rules only use observable review data: run summary, validation outcomes, track/segment evidence, runtime proof, artifact existence, and `/healthz` where relevant.\n- Deterministic demo states map clearly: persisted high-energy and silent-oriented runs are successful/available; validation-failure run is metadata-only or validation-degraded without fake downstream health.\n- Unit/API tests cover persisted, metadata-only, error, empty, and partial evidence cases.\n- Existing review API/query/runtime tests still pass.\n- The review API payload is ready for S02 to render without duplicating complex derivation logic in static JavaScript.",
+      "proof_level": "Contract proof through focused unit/API tests over persisted, metadata-only validation failure, processing or writer errors, empty runs, and partial evidence/runtime proof states.",
+      "integration_closure": "The status contract is available through the existing review API path used by the console, preferably `/api/runs/{run_id}` via query-layer enrichment. No new frontend build pipeline or runtime service is introduced. Downstream S02 can consume this contract directly from selected-run detail without duplicating status business rules in JavaScript.",
+      "observability_impact": "Adds explicit derived stage reason and provenance fields so future agents can inspect why each stage is ready, degraded, failed, empty, or unknown. Failure diagnosis should be possible from API JSON and unit test fixtures without needing to infer hidden state from the UI.",
+      "sequence": 1,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": "This is a recovery placeholder, not an implementation slice. It preserves the approved direction from the existing context draft: improve the static FastAPI review console as the primary demo surface, keep Grafana supportive, avoid adding a frontend build pipeline, and add read-only status only where needed."
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S02",
+      "title": "Data driven pipeline diagram",
+      "status": "pending",
+      "risk": "high",
+      "depends": [
+        "S01"
+      ],
+      "demo": "Selecting a demo run in the review console updates a data-driven pipeline diagram with stage status labels, reasons, and accessible visual states from real review data.",
+      "created_at": "2026-05-23T10:11:29.995Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Replace the static pipeline card behavior with selected-run status rendering in the existing HTML, CSS, and JavaScript while preserving the static FastAPI frontend model.",
+      "success_criteria": "- Pipeline diagram is data-driven rather than hard-coded active-only.\n- Selected-run changes update stage statuses without page reload.\n- Status labels include concise reason/provenance context.\n- Existing readiness markers are preserved.",
+      "proof_level": "UI integration proof through static asset review plus browser or DOM-level verification against the served review console.",
+      "integration_closure": "The browser UI consumes the S01 status contract through existing review API calls and keeps evidence-script body data attributes intact.",
+      "observability_impact": "Makes selected run, selected track, and pipeline-stage state visible in the DOM for browser verification and future evidence scripts.",
+      "sequence": 2,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S03",
+      "title": "Refresh and fallback states",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "The review console visibly reports API health, last successful refresh, stale or failed refresh state, empty runs, failed run loads, and localized media or segment gaps without breaking the page.",
+      "created_at": "2026-05-23T10:11:29.995Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Add demo-safe refresh and fallback behavior around existing review API calls so live presentation failures are visible and understandable.",
+      "success_criteria": "- API health and refresh freshness are visible.\n- Stale, failed, empty, and partial evidence states have clear messages.\n- Segment or media failures are localized and do not break the whole review page.\n- Polling or refresh behavior avoids noisy failure loops.",
+      "proof_level": "Contract and UI proof for loading, empty, stale, and failure paths using tests where practical plus browser verification for at least the normal path.",
+      "integration_closure": "Health and refresh state are connected to the same data-loading flow that drives the run list, detail panel, tracks, and segment media display.",
+      "observability_impact": "Adds last-refresh and error state surfaces in the UI and DOM, improving diagnosis during demos and browser verification.",
+      "sequence": 3,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S04",
+      "title": "Bilingual demo narrative polish",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "The review console presents a Vietnamese-first demo story with professional academic styling, clear deterministic run cards, audio result explanations, and Grafana as supporting evidence.",
+      "created_at": "2026-05-23T10:11:29.995Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Polish the demo narrative and visual hierarchy after status rendering exists, keeping the UI readable for a thesis/project defense and avoiding noisy bilingual duplication.",
+      "success_criteria": "- Narrative order is visible: pipeline flow, run outcome, audio analysis, system or evidence corroboration.\n- Copy is Vietnamese-first with English technical terms where helpful.\n- Deterministic demo runs are easy to distinguish by outcome and evidence availability.\n- Grafana remains secondary supporting evidence, not the first required surface.\n- No new frontend build pipeline is introduced.",
+      "proof_level": "Browser proof and manual review of the rendered UI for narrative order, bilingual convention, scanability, and professional tone.",
+      "integration_closure": "Narrative copy, run outcome cards, track/audio explanations, and Grafana evidence links are integrated into the existing review console layout without changing the backend contract from S01.",
+      "observability_impact": "Improves human-observable explanation of run outcomes, audio metrics, evidence links, and provenance so demos are easier to audit visually.",
+      "sequence": 4,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S05",
+      "title": "Final browser evidence integration",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S03",
+        "S04"
+      ],
+      "demo": "The local demo entrypoint is verified end to end with tests and browser evidence showing the final review console story, status indicators, run outcomes, and no regressions to evidence-script readiness markers.",
+      "created_at": "2026-05-23T10:11:29.995Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Prove the assembled milestone in the real local review-console environment and update verification or evidence paths only where necessary.",
+      "success_criteria": "- Existing review tests and new status tests pass.\n- Demo entrypoint renders the final UI in a browser.\n- Browser verification confirms status indicators, narrative, run outcomes, and readiness markers.\n- Evidence or smoke scripts are updated only if required and remain compatible.\n- Final milestone acceptance criteria are rechecked against live behavior.",
+      "proof_level": "Integrated proof through existing tests, any updated smoke/evidence checks, and browser verification at http://localhost:8080/?demo=1.",
+      "integration_closure": "All prior slices are exercised together through the FastAPI review service, existing deterministic demo data flow, browser entrypoint, and supporting evidence artifacts.",
+      "observability_impact": "Produces durable verification evidence and confirms runtime-visible state surfaces are sufficient for the next agent or reviewer to diagnose failures.",
+      "sequence": 5,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    }
+  ],
+  "tasks": [
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Pin pipeline stage contract tests",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Create or extend focused tests for the pipeline-stage contract before implementation. Define the expected stage item shape and cover representative run states: persisted success, metadata-only validation failure, processing/writer error, empty/no evidence, and partial runtime or artifact proof. Keep these tests at the pure schema/query boundary so they do not require Docker or a live database.",
+      "estimate": "45m",
+      "files": [
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py",
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py"
+      ],
+      "verify": "pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py",
+      "inputs": [
+        ".gsd/milestones/M001/M001-CONTEXT.md",
+        ".gsd/milestones/M001/M001-ROADMAP.md",
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "expected_output": [
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "observability_impact": "Tests pin the diagnostic shape of derived status reasons and provenance, making future status regressions visible before UI work starts.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T02",
+      "title": "Implement honest stage derivation",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Implement the pure stage derivation helper and wire it into the review query/API payload. Prefer `review/schemas.py` for deterministic derivation and `review/queries.py` for payload assembly. Each stage item should include stable ids and human-readable labels, a constrained status value, reason text, and provenance. Rules must avoid claims about Kafka, MinIO, TimescaleDB, containers, or Grafana live health unless those signals are actually present in the review payload.",
+      "estimate": "1h",
+      "files": [
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "verify": "pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py",
+      "inputs": [
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "expected_output": [
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "observability_impact": "Review API JSON gains derived status reasons and provenance for each stage, creating an inspectable contract for future UI and demo failures.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T03",
+      "title": "Verify demo API compatibility",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Extend deterministic review API verification only if the new stage contract is part of the public demo payload, then run the existing review-focused test set. Confirm pinned demo ordering and existing media/runtime behavior still work. This task closes S01 by proving the status contract did not regress existing review API consumers and is ready for S02 UI rendering.",
+      "estimate": "45m",
+      "files": [
+        "src/event_driven_audio_analytics/smoke/verify_review_api.py",
+        "tests/unit/test_verify_review_api.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "verify": "pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py tests/unit/test_verify_review_api.py",
+      "inputs": [
+        "src/event_driven_audio_analytics/review/schemas.py",
+        "src/event_driven_audio_analytics/review/queries.py",
+        "src/event_driven_audio_analytics/smoke/verify_review_api.py",
+        "tests/unit/test_verify_review_api.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "expected_output": [
+        "src/event_driven_audio_analytics/smoke/verify_review_api.py",
+        "tests/unit/test_verify_review_api.py",
+        "tests/unit/test_review_queries.py",
+        "tests/unit/test_review_app.py"
+      ],
+      "observability_impact": "Smoke-verifier expectations document which stage-status fields are part of the deterministic demo API contract, making missing or malformed status evidence easy to detect.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    }
+  ],
+  "decisions": [],
+  "verification_evidence": []
+}

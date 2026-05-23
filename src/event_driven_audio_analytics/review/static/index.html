@@ -3,21 +3,33 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Run Review Console</title>
+    <title>Audio Analytics Demo Console</title>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body data-review-ready="false">
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <p class="eyebrow">Read-only Review Surface</p>
-          <h1>Run Review Console</h1>
+          <p class="eyebrow">Event-Driven Audio Analytics</p>
+          <h1>Demo Control Room</h1>
           <p class="sidebar-copy">
-            Primary demo surface for bounded run, track, and segment inspection.
-            Authoritative truth remains TimescaleDB views and persisted artifacts.
+            A presentation-ready surface for inspecting runs, tracks, validation
+            outcomes, and audio segment artifacts from the event pipeline.
           </p>
         </div>
         <div class="mode-banner" id="mode-banner"></div>
+        <div class="status-stack" aria-label="Demo readiness indicators">
+          <div class="status-row">
+            <span class="status-dot status-dot-live"></span>
+            <span>Review API</span>
+            <strong id="ready-label">Loading</strong>
+          </div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <span>Truth source</span>
+            <strong>DB + artifacts</strong>
+          </div>
+        </div>
         <div class="panel">
           <div class="panel-heading">
             <h2>Runs</h2>
@@ -29,20 +41,43 @@
       </aside>
 
       <main class="content">
-        <section class="hero">
-          <div>
-            <p class="eyebrow">Non-authoritative Presentation Layer</p>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy-block">
+            <p class="eyebrow">Live Review Surface</p>
             <h2 id="hero-title">Select a run</h2>
             <p id="hero-copy">
-              This console summarizes persisted run outcomes first, then lets you
-              inspect metadata-only tracks and segment artifacts without opening Grafana.
+              Follow the audio journey from ingestion to persisted features with
+              enough provenance detail to answer demo questions on the spot.
             </p>
+            <div class="hero-actions">
+              <a class="hero-link" href="/?demo=1">Demo mode</a>
+              <a class="hero-link hero-link-secondary" href="/healthz">Health check</a>
+            </div>
           </div>
-          <div class="truth-card">
-            <h3>Truth Layers</h3>
-            <div class="truth-row"><span class="badge badge-db">DB</span><span>TimescaleDB views and rows</span></div>
-            <div class="truth-row"><span class="badge badge-fs">FS</span><span>Shared claim-check artifacts and state files</span></div>
-            <div class="truth-row"><span class="badge badge-derived">Derived</span><span>UI-only states and status chips</span></div>
+          <div class="pipeline-card" aria-label="Event pipeline overview">
+            <div class="pipeline-node">
+              <span>01</span>
+              <strong>Ingest</strong>
+              <small>metadata + audio</small>
+            </div>
+            <div class="pipeline-line"></div>
+            <div class="pipeline-node">
+              <span>02</span>
+              <strong>Process</strong>
+              <small>RMS + silence</small>
+            </div>
+            <div class="pipeline-line"></div>
+            <div class="pipeline-node">
+              <span>03</span>
+              <strong>Persist</strong>
+              <small>TimescaleDB</small>
+            </div>
+            <div class="pipeline-line"></div>
+            <div class="pipeline-node active">
+              <span>04</span>
+              <strong>Review</strong>
+              <small>this console</small>
+            </div>
           </div>
         </section>
 

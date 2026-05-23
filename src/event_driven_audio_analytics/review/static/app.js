@@ -11,6 +11,7 @@ const state = {
 const elements = {
   body: document.body,
   modeBanner: document.getElementById("mode-banner"),
+  readyLabel: document.getElementById("ready-label"),
   runList: document.getElementById("run-list"),
   runCount: document.getElementById("run-count"),
   runPager: document.getElementById("run-pager"),
@@ -48,21 +49,21 @@ function chipClass(value) {
 
 function formatNumber(value, digits = 2) {
   if (value === null || value === undefined) {
-    return "—";
+    return "-";
   }
   return Number(value).toFixed(digits);
 }
 
 function formatRatio(value) {
   if (value === null || value === undefined) {
-    return "—";
+    return "-";
   }
   return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
 function formatTime(value) {
   if (!value) {
-    return "—";
+    return "-";
   }
   return new Date(value).toLocaleString();
 }
@@ -79,6 +80,7 @@ function badgeLabel(source) {
 
 function setReviewReady(ready, error = null) {
   elements.body.dataset.reviewReady = ready ? "true" : "false";
+  elements.readyLabel.textContent = error ? "Error" : ready ? "Ready" : "Loading";
   if (state.selectedRunId) {
     elements.body.dataset.selectedRunId = state.selectedRunId;
   } else {
@@ -111,7 +113,7 @@ function buildPager(container, payload, onPageChange) {
   }
 
   const prev = document.createElement("button");
-  prev.textContent = "Previous";
+  prev.textContent = "Prev";
   prev.disabled = payload.offset === 0;
   prev.addEventListener("click", () => onPageChange(Math.max(0, payload.offset - payload.limit)));
 
@@ -152,8 +154,8 @@ function renderRuns(payload) {
   elements.runList.innerHTML = "";
   elements.runCount.textContent = `${payload.total} run${payload.total === 1 ? "" : "s"}`;
   elements.modeBanner.textContent = state.demoMode
-    ? `Demo mode pinned to deterministic runs: ${payload.mode.pinned_run_ids.join(", ")}`
-    : "Showing recent persisted runs.";
+    ? `Demo playlist: ${payload.mode.pinned_run_ids.join(", ")}`
+    : "Showing latest persisted runs.";
 
   if (payload.items.length === 0) {
     renderEmpty(elements.runList);
@@ -171,9 +173,9 @@ function renderRuns(payload) {
         <span class="${chipClass(runItem.state.value)}">${escapeHtml(runItem.state.label)}</span>
       </div>
       <div class="run-metrics">
-        <span>${runItem.segments_persisted} persisted</span>
+        <span>${formatNumber(runItem.tracks_total, 0)} tracks</span>
+        <span>${runItem.segments_persisted} segments</span>
         <span>${formatRatio(runItem.silent_ratio)} silent</span>
-        <span>${formatNumber(runItem.avg_rms, 2)} RMS</span>
       </div>
       <div class="run-metrics">
         ${badgeLabel(runItem.provenance.source)}
@@ -204,22 +206,22 @@ function renderRunSummary(payload) {
   elements.detailGrid.classList.remove("hidden");
   elements.runtimeProofPanel.classList.remove("hidden");
   elements.heroTitle.textContent = run.run_id;
-  elements.heroCopy.textContent = run.state.reason;
+  elements.heroCopy.textContent = `${run.state.reason} ${formatNumber(run.tracks_total, 0)} tracks, ${formatNumber(run.segments_persisted, 0)} persisted segments, ${formatRatio(run.silent_ratio)} silent.`;
   elements.runSummarySource.innerHTML = `${badgeLabel(run.provenance.source)} ${badgeLabel(run.state.provenance.source)}`;
 
   const cards = [
-    ["Status", run.state.label, run.state.reason],
-    ["Tracks", formatNumber(run.tracks_total, 0), "Tracks observed in the current run."],
-    ["Segments Persisted", formatNumber(run.segments_persisted, 0), "Feature rows persisted into TimescaleDB."],
-    ["Silent Ratio", formatRatio(run.silent_ratio), "Replay-stable run total from persisted metrics or features."],
-    ["Average RMS", formatNumber(run.avg_rms, 3), "Persisted summary field from audio_features."],
-    ["Average Processing", run.avg_processing_ms === null ? "—" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Average processing latency over persisted segments."],
-    ["Validation Failures", formatNumber(run.validation_failures, 0), "Track-level reject outcomes from track_metadata."],
-    ["Error Rate", formatRatio(run.error_rate), "Failed-track ratio at run summary level."],
+    ["Status", run.state.label, run.state.reason, "status"],
+    ["Tracks", formatNumber(run.tracks_total, 0), "Tracks observed in this run.", "tracks"],
+    ["Persisted Segments", formatNumber(run.segments_persisted, 0), "Feature rows written to TimescaleDB.", "segments"],
+    ["Silent Ratio", formatRatio(run.silent_ratio), "Share of silent segments in the run.", "silent"],
+    ["Average RMS", formatNumber(run.avg_rms, 3), "Mean audio energy from persisted features.", "rms"],
+    ["Avg Processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Mean processing latency per segment.", "latency"],
+    ["Validation Failures", formatNumber(run.validation_failures, 0), "Rejected tracks from metadata validation.", "validation"],
+    ["Error Rate", formatRatio(run.error_rate), "Failed-track ratio at run level.", "errors"],
   ];
 
-  elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy]) => `
-    <article class="summary-card">
+  elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy, tone]) => `
+    <article class="summary-card summary-card-${escapeHtml(tone)}">
       <h3>${escapeHtml(title)}</h3>
       <div class="summary-value">${escapeHtml(value)}</div>
       <div class="summary-copy">${escapeHtml(copy)}</div>
@@ -233,7 +235,7 @@ function renderRunSummary(payload) {
     elements.validationOutcomes.innerHTML = `
       <div class="validation-list">
         ${validationItems.map((item) => `
-          <div class="summary-card">
+          <div class="summary-card compact-card">
             <h3>${escapeHtml(item.validation_status)}</h3>
             <div class="summary-value">${item.track_count}</div>
             <div class="summary-copy">${badgeLabel(item.provenance.source)}</div>
@@ -323,8 +325,8 @@ function renderTracks(payload) {
             <td><span class="${chipClass(item.track_state.value)}">${escapeHtml(item.track_state.label)}</span></td>
             <td>${escapeHtml(item.validation_status)}</td>
             <td>${item.segments_persisted}</td>
-            <td>${item.silent_ratio === null ? "—" : formatRatio(item.silent_ratio)}</td>
-            <td>${item.avg_rms === null ? "—" : formatNumber(item.avg_rms, 3)}</td>
+            <td>${item.silent_ratio === null ? "-" : formatRatio(item.silent_ratio)}</td>
+            <td>${item.avg_rms === null ? "-" : formatNumber(item.avg_rms, 3)}</td>
           </tr>
         `).join("")}
       </tbody>
@@ -352,9 +354,9 @@ function renderTrackDetail(payload) {
   elements.trackDetailPanel.classList.remove("hidden");
   elements.trackDetailSource.innerHTML = `${badgeLabel(track.provenance.source)} ${badgeLabel(track.track_state.provenance.source)}`;
   elements.trackHead.innerHTML = `
-    <div class="track-head-block">
+    <div class="track-head-block track-result-card">
       <h3>Track Result</h3>
-      <p><strong>${track.track_id}</strong> • ${escapeHtml(track.genre)}</p>
+      <p><strong>${track.track_id}</strong> / ${escapeHtml(track.genre)}</p>
       <p>${escapeHtml(track.track_state.reason)}</p>
       <div class="run-metrics">
         <span class="${chipClass(track.track_state.value)}">${escapeHtml(track.track_state.label)}</span>
@@ -394,7 +396,7 @@ function renderTrackDetail(payload) {
               <strong>#${segment.segment_idx}</strong>
               <div class="table-secondary">
                 <span>RMS ${formatNumber(segment.rms, 3)}</span>
-                <span>${segment.silent_flag ? "Silent" : "Non-silent"}</span>
+                <span>${segment.silent_flag ? "Silent" : "Active"}</span>
               </div>
             </td>
             <td>
