@@ -1,0 +1,18 @@
+{
+  "id": "65e9791a-190b-4c07-b142-d2e65b1fb5a1",
+  "runtime": "node",
+  "purpose": "verify M002 S01 T01 research artifact includes required Grafana inventory facts",
+  "script_chars": 1736,
+  "started_at": "2026-05-25T07:51:35.751Z",
+  "finished_at": "2026-05-25T07:51:35.800Z",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "duration_ms": 49,
+  "stdout_bytes": 138,
+  "stderr_bytes": 0,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "stdout_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\65e9791a-190b-4c07-b142-d2e65b1fb5a1.stdout",
+  "stderr_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\65e9791a-190b-4c07-b142-d2e65b1fb5a1.stderr"
+}

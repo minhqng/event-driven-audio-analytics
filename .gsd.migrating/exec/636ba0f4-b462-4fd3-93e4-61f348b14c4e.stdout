@@ -1,0 +1,24 @@
+DASHBOARD infra/grafana/dashboards/audio_quality.json title=Audio Quality uid=audio-quality
+ PANEL id=1 type=timeseries title=Segment RMS Over Time datasource=timescaledb views=none desc=Average RMS from the persisted audio_features rows, grouped by time bucket and run_id.
+ PANEL id=2 type=barchart title=Silent Segment Ratio By Run datasource=timescaledb views=vw_dashboard_run_summary desc=Latest run-level silent_ratio snapshot from processing, with fallback to the persisted audio_features summary view.
+ PANEL id=3 type=barchart title=Persisted Segment Count By Run datasource=timescaledb views=vw_dashboard_run_summary desc=Persisted segment counts per run, using the writer-backed audio_features table rather than placeholder counts.
+ PANEL id=4 type=table title=Validation Outcomes By Run datasource=timescaledb views=vw_dashboard_run_validation desc=Validation outcomes from track_metadata, used to explain why a run produced or did not produce downstream segments.
+ PANEL id=5 type=table title=Run Quality Summary Table datasource=timescaledb views=vw_dashboard_run_summary desc=Compact run summary for academic reporting: counts, RMS, and silent_ratio from the final dashboard views.
+DASHBOARD infra/grafana/dashboards/system_health.json title=System Health uid=system-health
+ PANEL id=1 type=timeseries title=Persisted Segment Throughput datasource=timescaledb views=none desc=Count of persisted feature rows per time bucket, which acts as the PoC throughput signal.
+ PANEL id=2 type=timeseries title=Processing Latency Over Time datasource=timescaledb views=vw_dashboard_metric_events desc=Average processing_ms metric emitted by processing and normalized through vw_dashboard_metric_events.
+ PANEL id=3 type=timeseries title=Writer DB Latency By Topic datasource=timescaledb views=vw_dashboard_metric_events desc=Average writer write_ms grouped by destination topic, showing DB persistence latency without click-ops transforms.
+ PANEL id=4 type=barchart title=Claim-Check Artifact Write Latency datasource=timescaledb views=vw_dashboard_run_summary desc=Run-level artifact_write_ms snapshot from ingestion, taken from the normalized run summary view.
+ PANEL id=5 type=barchart title=Track Validation Error Rate By Run datasource=timescaledb views=vw_dashboard_run_summary desc=Run-level failed-track ratio, where error_rate = validation_failures / tracks_total. Runtime processing and writer errors remain visible in 
+ PANEL id=6 type=table title=Operational Summary Table datasource=timescaledb views=vw_dashboard_run_summary desc=Compact operational summary used in the report and demo handoff.
+SQL_VIEWS vw_run_feature_summary,vw_latest_run_checkpoints,vw_latest_system_metrics,vw_dashboard_metric_events,vw_dashboard_run_total_metrics,vw_dashboard_run_validation,vw_dashboard_run_summary
+SCRIPT scripts/demo/generate-dashboard-evidence.sh
+ urls=http://localhost:$grafana_port/d/audio-quality/audio-quality?from=now-6h&to=now&kiosk | http://localhost:$grafana_port/d/system-health/system-health?from=now-6h&to=now&kiosk
+ mentions=grafana-api.json,audio-quality-dashboard.png,system-health-dashboard.png,review-dashboard-notes.md,api/dashboards/uid/audio-quality,api/dashboards/uid/system-health
+SCRIPT scripts/demo/generate-dashboard-evidence.ps1
+ urls=http://localhost:$grafanaPort/d/audio-quality/audio-quality?from=now-6h&to=now&kiosk | http://localhost:$grafanaPort/d/system-health/system-health?from=now-6h&to=now&kiosk
+ mentions=grafana-api.json,audio-quality-dashboard.png,system-health-dashboard.png,review-dashboard-notes.md,api/dashboards/uid/audio-quality,api/dashboards/uid/system-health
+TESTS tests/unit/test_grafana_provisioning.py: test_grafana_datasource_uses_postgres_environment_references,test_compose_passes_postgres_environment_to_grafana
+TESTS tests/unit/test_demo_evidence_scripts.py: test_shell_demo_script_keeps_dataset_export_contract,test_powershell_demo_script_keeps_dataset_export_contract,test_powershell_dashboard_script_suppresses_browser_stderr
+TESTS tests/unit/test_k3s_manifests.py: test_kustomize_root_lists_expected_resources_and_generators,test_required_component_directories_exist,test_app_config_defaults_to_minio_private_cloud_variant,test_base_workloads_match_bounded_k3s_mapping,test_job_manifests_cover_demo_burst_and_export_paths,test_secret_example_fma_input_pvc_and_docs_reference_component_layout
+K3S_PARITY audio_same=true system_same=true

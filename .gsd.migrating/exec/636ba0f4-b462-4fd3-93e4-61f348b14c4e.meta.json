@@ -1,0 +1,18 @@
+{
+  "id": "636ba0f4-b462-4fd3-93e4-61f348b14c4e",
+  "runtime": "node",
+  "purpose": "M002 S01 T01 inventory Grafana dashboards SQL views scripts tests",
+  "script_chars": 2399,
+  "started_at": "2026-05-25T07:50:15.440Z",
+  "finished_at": "2026-05-25T07:50:15.503Z",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "duration_ms": 63,
+  "stdout_bytes": 4407,
+  "stderr_bytes": 0,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "stdout_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\636ba0f4-b462-4fd3-93e4-61f348b14c4e.stdout",
+  "stderr_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\636ba0f4-b462-4fd3-93e4-61f348b14c4e.stderr"
+}

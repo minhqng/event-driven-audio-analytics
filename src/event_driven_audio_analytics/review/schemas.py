@@ -74,13 +74,13 @@ def derive_run_state(summary: dict[str, object]) -> dict[str, object]:
             return {
                 "value": "persisted",
                 "label": "Persisted",
-                "reason": "Run reached TimescaleDB without downstream errors.",
+                "reason": "Run đã ghi tới TimescaleDB và không có downstream errors.",
                 "provenance": build_derived_provenance(),
             }
         return {
             "value": "mixed",
             "label": "Mixed",
-            "reason": "Some rows persisted, but the run also includes validation failures.",
+            "reason": "Một số rows đã persist, nhưng run vẫn có validation failures.",
             "provenance": build_derived_provenance(),
         }
 
@@ -88,7 +88,7 @@ def derive_run_state(summary: dict[str, object]) -> dict[str, object]:
         return {
             "value": "metadata_only",
             "label": "Metadata-only",
-            "reason": "Tracks are present in metadata, but no segments reached persisted features.",
+            "reason": "Tracks đã có trong metadata, nhưng chưa có segments nào tới persisted features.",
             "provenance": build_derived_provenance(),
         }
 
@@ -96,14 +96,14 @@ def derive_run_state(summary: dict[str, object]) -> dict[str, object]:
         return {
             "value": "errors",
             "label": "Errors",
-            "reason": "Downstream processing or writer errors were recorded for this run.",
+            "reason": "Run này đã ghi nhận downstream processing hoặc writer errors.",
             "provenance": build_derived_provenance(),
         }
 
     return {
         "value": "empty",
         "label": "Empty",
-        "reason": "The run has no persisted segments and no recorded validation outcome yet.",
+        "reason": "Run chưa có persisted segments và chưa có validation outcome được ghi nhận.",
         "provenance": build_derived_provenance(),
     }
 
@@ -116,7 +116,7 @@ def derive_track_state(track_summary: dict[str, object]) -> dict[str, object]:
         return {
             "value": "persisted",
             "label": "Persisted",
-            "reason": "This track produced persisted segment summaries.",
+            "reason": "Track này đã tạo persisted segment summaries.",
             "provenance": build_derived_provenance(),
         }
 
@@ -124,7 +124,7 @@ def derive_track_state(track_summary: dict[str, object]) -> dict[str, object]:
         "value": "metadata_only",
         "label": "Metadata-only",
         "reason": (
-            "This track exists only as metadata for the current run. "
+            "Track này hiện chỉ tồn tại ở metadata của run hiện tại. "
             f"validation_status={validation_status}."
         ),
         "provenance": build_derived_provenance(),
@@ -186,14 +186,14 @@ def derive_pipeline_stages(
             stage_id="metadata",
             label="Metadata",
             value="ready",
-            reason="Run summary metadata is present in the review payload.",
+            reason="Run summary metadata đã có trong review payload.",
         )
     else:
         metadata_stage = _stage_item(
             stage_id="metadata",
             label="Metadata",
             value="empty",
-            reason="No run summary rows, tracks, segments, or errors are present in the review payload.",
+            reason="Review payload chưa có run summary rows, tracks, segments hoặc errors.",
         )
 
     if not has_any_run_signal:
@@ -201,28 +201,28 @@ def derive_pipeline_stages(
             stage_id="validation",
             label="Validation",
             value="empty",
-            reason="No validation outcomes are present because the run has no observable review data.",
+            reason="Chưa có validation outcomes vì run chưa có review data quan sát được.",
         )
     elif validation_failures > 0.0:
         validation_stage = _stage_item(
             stage_id="validation",
             label="Validation",
             value="degraded",
-            reason="Validation outcomes include rejected or non-persisted track metadata.",
+            reason="Validation outcomes có rejected hoặc non-persisted track metadata.",
         )
     elif validation_outcomes:
         validation_stage = _stage_item(
             stage_id="validation",
             label="Validation",
             value="ready",
-            reason="Validation outcome counts are present and no validation failures are reported.",
+            reason="Đã có validation outcome counts và không ghi nhận validation failures.",
         )
     else:
         validation_stage = _stage_item(
             stage_id="validation",
             label="Validation",
             value="unknown",
-            reason="Run metadata is present, but no validation outcome counts were returned.",
+            reason="Run metadata đã có, nhưng chưa trả về validation outcome counts.",
         )
 
     if processing_error_count > 0 or writer_error_count > 0:
@@ -230,21 +230,21 @@ def derive_pipeline_stages(
             stage_id="features",
             label="Features",
             value="failed",
-            reason="Processing or writer error counts are recorded for this run.",
+            reason="Run này có processing hoặc writer error counts.",
         )
     elif segments_persisted > 0:
         features_stage = _stage_item(
             stage_id="features",
             label="Features",
             value="ready",
-            reason="Persisted segment feature rows are present in the review summary.",
+            reason="Persisted segment feature rows đã có trong review summary.",
         )
     else:
         features_stage = _stage_item(
             stage_id="features",
             label="Features",
             value="empty",
-            reason="No persisted segment feature rows are present in the review summary.",
+            reason="Review summary chưa có persisted segment feature rows.",
         )
 
     if segments_persisted <= 0:
@@ -252,28 +252,28 @@ def derive_pipeline_stages(
             stage_id="artifacts",
             label="Artifacts",
             value="empty",
-            reason="No persisted segment rows are available to prove review artifacts.",
+            reason="Chưa có persisted segment rows để chứng minh review artifacts.",
         )
     elif processing_state_read_error:
         artifacts_stage = _stage_item(
             stage_id="artifacts",
             label="Artifacts",
             value="degraded",
-            reason=f"Persisted segments are present, but processing state could not be read: {processing_state_read_error}",
+            reason=f"Persisted segments đã có, nhưng không đọc được processing state: {processing_state_read_error}",
         )
     elif manifest_exists:
         artifacts_stage = _stage_item(
             stage_id="artifacts",
             label="Artifacts",
             value="ready",
-            reason="A manifest reference exists for the run and persisted segment rows are present.",
+            reason="Run đã có manifest reference và persisted segment rows.",
         )
     else:
         artifacts_stage = _stage_item(
             stage_id="artifacts",
             label="Artifacts",
             value="degraded",
-            reason="Persisted segment rows are present, but no existing manifest reference is observable.",
+            reason="Persisted segment rows đã có, nhưng chưa quan sát được manifest reference tồn tại.",
         )
 
     upstream_values = {
@@ -287,28 +287,28 @@ def derive_pipeline_stages(
             stage_id="review",
             label="Review",
             value="empty",
-            reason="No review data is available to summarize for this run.",
+            reason="Chưa có review data để tổng hợp cho run này.",
         )
     elif upstream_values == {"ready"}:
         review_stage = _stage_item(
             stage_id="review",
             label="Review",
             value="ready",
-            reason="All observable review stages are ready from persisted payload evidence.",
+            reason="Tất cả review stages quan sát được đều ready từ persisted payload evidence.",
         )
     elif "unknown" in upstream_values:
         review_stage = _stage_item(
             stage_id="review",
             label="Review",
             value="unknown",
-            reason="Some review stage evidence is missing from the payload.",
+            reason="Một số review stage evidence đang thiếu trong payload.",
         )
     else:
         review_stage = _stage_item(
             stage_id="review",
             label="Review",
             value="degraded",
-            reason="One or more observable review stages are incomplete or recorded errors.",
+            reason="Một hoặc nhiều review stages quan sát được chưa hoàn tất hoặc có errors.",
         )
 
     return {

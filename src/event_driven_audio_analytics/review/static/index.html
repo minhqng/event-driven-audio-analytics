@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Phong dieu khien demo audio analytics</title>
+    <title>Phòng điều khiển demo audio analytics</title>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body data-review-ready="false">
@@ -11,10 +11,10 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <p class="eyebrow">Event-Driven Audio Analytics</p>
-          <h1>Phong dieu khien demo</h1>
+          <h1>Phòng điều khiển demo</h1>
           <p class="sidebar-copy">
-            Man hinh trinh bay de theo doi run, track, validation, features,
-            va artifact am thanh tu pipeline huong su kien.
+            Màn hình trình bày để theo dõi run, track, validation, features
+            và artifact âm thanh trong pipeline hướng sự kiện.
           </p>
         </div>
         <div class="mode-banner" id="mode-banner"></div>
@@ -26,18 +26,18 @@
           </div>
           <div class="status-row">
             <span class="status-dot"></span>
-            <span>Lan cap nhat</span>
-            <strong id="freshness-label">Chua co du lieu</strong>
+            <span>Lần cập nhật</span>
+            <strong id="freshness-label">Chưa có dữ liệu</strong>
           </div>
           <div class="status-row">
             <span class="status-dot"></span>
-            <span>Nguon su that</span>
+            <span>Nguồn sự thật</span>
             <strong>DB + artifacts</strong>
           </div>
         </div>
         <div class="panel">
           <div class="panel-heading">
-            <h2>Danh sach run</h2>
+            <h2>Danh sách run</h2>
             <span class="panel-meta" id="run-count">0 runs</span>
           </div>
           <div class="run-list" id="run-list"></div>
@@ -48,27 +48,27 @@
       <main class="content">
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-copy-block">
-            <p class="eyebrow">Review console truc tiep</p>
-            <h2 id="hero-title">Select a run</h2>
+            <p class="eyebrow">Review console trực tiếp</p>
+            <h2 id="hero-title">Chọn một run</h2>
             <p id="hero-copy">
-              Theo doi hanh trinh am thanh tu ingest den persisted features,
-              kem provenance de tra loi cau hoi demo ngay tren man hinh.
+              Theo dõi hành trình âm thanh từ ingest đến persisted features,
+              kèm provenance để trả lời câu hỏi demo ngay trên màn hình.
             </p>
             <div class="hero-actions">
-              <a class="hero-link" href="/?demo=1">Demo mode</a>
-              <a class="hero-link hero-link-secondary" href="/healthz">Kiem tra API</a>
+              <button class="hero-link" id="demo-mode-toggle" type="button">Demo playlist</button>
+              <a class="hero-link hero-link-secondary" href="/healthz">Kiểm tra API</a>
             </div>
           </div>
           <div class="pipeline-card" id="pipeline-card" aria-label="Pipeline stage status">
             <div class="pipeline-placeholder">
-              Chon mot run de xem trang thai pipeline.
+              Chọn một run để xem trạng thái pipeline.
             </div>
           </div>
         </section>
 
         <section class="panel hidden" id="run-summary-panel">
           <div class="panel-heading">
-            <h2>Ket qua run</h2>
+            <h2>Kết quả run</h2>
             <span class="panel-meta" id="run-summary-source"></span>
           </div>
           <div class="summary-grid" id="run-summary-grid"></div>
@@ -77,7 +77,7 @@
         <section class="layout-grid hidden" id="detail-grid">
           <section class="panel">
             <div class="panel-heading">
-              <h2>Ket qua validation</h2>
+              <h2>Kết quả validation</h2>
             </div>
             <div id="validation-outcomes"></div>
           </section>
@@ -94,7 +94,7 @@
 
         <section class="panel hidden" id="track-detail-panel">
           <div class="panel-heading">
-            <h2>Chi tiet track</h2>
+            <h2>Chi tiết track</h2>
             <span class="panel-meta" id="track-detail-source"></span>
           </div>
           <div class="track-head" id="track-head"></div>
@@ -105,8 +105,8 @@
         <section class="panel hidden" id="runtime-proof-panel">
           <details>
             <summary>
-              <span>Bang chung runtime</span>
-              <span class="proof-note">Dung de bo sung khi can doi chieu, khong phai man hinh chinh.</span>
+              <span>Bằng chứng runtime</span>
+              <span class="proof-note">Dùng để bổ sung khi cần đối chiếu, không phải màn hình chính.</span>
             </summary>
             <div id="runtime-proof"></div>
           </details>
@@ -116,11 +116,11 @@
 
     <template id="empty-state-template">
       <div class="empty-state">
-        <h3>Chua co du lieu</h3>
-        <p>Man hinh nay chi doc du lieu run va artifact da duoc persist.</p>
+        <h3>Chưa có dữ liệu</h3>
+        <p>Màn hình này chỉ đọc dữ liệu run và artifact đã được persist.</p>
       </div>
     </template>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=review-console-toggle-20260525"></script>
   </body>
 </html>

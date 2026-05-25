@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-05-23T10:14:00Z | Files: 297 | Described: 0/297
-<!-- gsd:codebase-meta {"generatedAt":"2026-05-23T10:14:00Z","fingerprint":"2ff0b15b14d1fc0d4d84a02d6f1e3eff0b0e515a","fileCount":297,"truncated":false} -->
+Generated: 2026-05-25T07:43:08Z | Files: 369 | Described: 0/369
+<!-- gsd:codebase-meta {"generatedAt":"2026-05-25T07:43:08Z","fingerprint":"7bdb6f5341691eaea4d0be555f37e123bbbeffa6","fileCount":369,"truncated":false} -->
 
 ### (root)/
 - `.dockerignore`
@@ -11,18 +11,135 @@ Generated: 2026-05-23T10:14:00Z | Files: 297 | Described: 0/297
 - `docker-compose.yml`
 - `LICENSE`
 - `pyproject.toml`
+- `pytest.cmd`
 - `README.md`
 - `run-demo.ps1`
 - `run-demo.sh`
 
 ### .gsd.migrating/
+- `.gsd.migrating/CODEBASE.md`
+- `.gsd.migrating/DECISIONS.md`
+- `.gsd.migrating/doctor-history.jsonl`
+- `.gsd.migrating/event-log.jsonl`
 - `.gsd.migrating/gsd.db`
 - `.gsd.migrating/gsd.db-shm`
 - `.gsd.migrating/gsd.db-wal`
+- `.gsd.migrating/KNOWLEDGE.md`
+- `.gsd.migrating/metrics.json`
 - `.gsd.migrating/notifications.jsonl`
+- `.gsd.migrating/state-manifest.json`
+- `.gsd.migrating/STATE.md`
+
+### .gsd.migrating/activity/
+- `.gsd.migrating/activity/001-execute-task-M001-S01-T01.jsonl`
+- `.gsd.migrating/activity/002-execute-task-M001-S01-T01.jsonl`
+
+### .gsd.migrating/audit/
+- `.gsd.migrating/audit/events.jsonl`
+
+### .gsd.migrating/exec/
+- `.gsd.migrating/exec/14f65ae4-c43e-4493-94f0-9f345f2c5412.meta.json`
+- `.gsd.migrating/exec/14f65ae4-c43e-4493-94f0-9f345f2c5412.stderr`
+- `.gsd.migrating/exec/14f65ae4-c43e-4493-94f0-9f345f2c5412.stdout`
+- `.gsd.migrating/exec/5cf8eb21-45c7-4c8d-a40f-3b9347ccf52f.meta.json`
+- `.gsd.migrating/exec/5cf8eb21-45c7-4c8d-a40f-3b9347ccf52f.stderr`
+- `.gsd.migrating/exec/5cf8eb21-45c7-4c8d-a40f-3b9347ccf52f.stdout`
+- `.gsd.migrating/exec/8f4ae683-60ed-4ff2-a8a9-73bc54584ba4.meta.json`
+- `.gsd.migrating/exec/8f4ae683-60ed-4ff2-a8a9-73bc54584ba4.stderr`
+- `.gsd.migrating/exec/8f4ae683-60ed-4ff2-a8a9-73bc54584ba4.stdout`
+- `.gsd.migrating/exec/964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20.meta.json`
+- `.gsd.migrating/exec/964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20.stderr`
+- `.gsd.migrating/exec/964bf0ea-7d77-4f3e-ba2a-f2d36a9abd20.stdout`
+- `.gsd.migrating/exec/c94c6b89-b964-4320-96db-604c0e7a903a.meta.json`
+- `.gsd.migrating/exec/c94c6b89-b964-4320-96db-604c0e7a903a.stderr`
+- `.gsd.migrating/exec/c94c6b89-b964-4320-96db-604c0e7a903a.stdout`
+
+### .gsd.migrating/journal/
+- `.gsd.migrating/journal/2026-05-23.jsonl`
+
+### .gsd.migrating/milestones/M001/
+- `.gsd.migrating/milestones/M001/M001-CONTEXT.md`
+- `.gsd.migrating/milestones/M001/M001-DISCUSSION.md`
+- `.gsd.migrating/milestones/M001/M001-ROADMAP.md`
+
+### .gsd.migrating/milestones/M001/slices/S01/
+- `.gsd.migrating/milestones/M001/slices/S01/S01-PLAN.md`
+
+### .gsd.migrating/milestones/M001/slices/S01/tasks/
+- `.gsd.migrating/milestones/M001/slices/S01/tasks/T01-PLAN.md`
+- `.gsd.migrating/milestones/M001/slices/S01/tasks/T01-SUMMARY.md`
+- `.gsd.migrating/milestones/M001/slices/S01/tasks/T01-VERIFY.json`
+- `.gsd.migrating/milestones/M001/slices/S01/tasks/T02-PLAN.md`
+- `.gsd.migrating/milestones/M001/slices/S01/tasks/T03-PLAN.md`
 
 ### .gsd.migrating/runtime/
+- `.gsd.migrating/runtime/uok-parity.jsonl`
+- `.gsd.migrating/runtime/uok-plan-v2-graph.json`
+- `.gsd.migrating/runtime/uok-writer-sequence.json`
 - `.gsd.migrating/runtime/write-gate-state.json`
+
+### .gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/CODEBASE.md`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/doctor-history.jsonl`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/gsd.db`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/gsd.db-shm`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/gsd.db-wal`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/KNOWLEDGE.md`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/notifications.jsonl`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/STATE.md`
+
+### .gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/milestones/M001/
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/milestones/M001/M001-CONTEXT-DRAFT.md`
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/milestones/M001/M001-DISCUSSION.md`
+
+### .gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/runtime/
+- `.gsd.migrating/runtime/migration-archive/gsd.migrating-20260523T095650Z/runtime/write-gate-state.json`
+
+### .gsd.migrating/runtime/units/
+- `.gsd.migrating/runtime/units/execute-task-M001-S01-T01.json`
+- `.gsd.migrating/runtime/units/execute-task-M001-S01-T02.json`
+
+### .gsd.migrating/safety/
+- `.gsd.migrating/safety/evidence-M001-S01-T02.json`
+
+### .tmp/pytest/
+- `.tmp/pytest/escape.wav`
+
+### .tmp/pytest/test_get_run_detail_adds_pipel0/runs/demo-run/manifests/
+- `.tmp/pytest/test_get_run_detail_adds_pipel0/runs/demo-run/manifests/segments.parquet`
+
+### .tmp/pytest/test_get_run_detail_marks_part0/runs/demo-run/state/
+- `.tmp/pytest/test_get_run_detail_marks_part0/runs/demo-run/state/processing_metrics.json`
+
+### .tmp/pytest/test_get_run_detail_prefers_pe0/runs/demo-run/manifests/
+- `.tmp/pytest/test_get_run_detail_prefers_pe0/runs/demo-run/manifests/segments.parquet`
+
+### .tmp/pytest/test_get_run_detail_reads_proc0/runs/demo-run/manifests/
+- `.tmp/pytest/test_get_run_detail_reads_proc0/runs/demo-run/manifests/segments.parquet`
+
+### .tmp/pytest/test_get_run_detail_reads_proc0/runs/demo-run/state/
+- `.tmp/pytest/test_get_run_detail_reads_proc0/runs/demo-run/state/processing_metrics.json`
+
+### .tmp/pytest/test_get_run_detail_reports_ma0/runs/demo-run/state/
+- `.tmp/pytest/test_get_run_detail_reports_ma0/runs/demo-run/state/processing_metrics.json`
+
+### .tmp/pytest/test_get_track_detail_marks_ar0/runs/demo-run/segments/42/
+- `.tmp/pytest/test_get_track_detail_marks_ar0/runs/demo-run/segments/42/0.wav`
+
+### .tmp/pytest/test_get_track_detail_rejects_0/runs/other-run/segments/42/
+- `.tmp/pytest/test_get_track_detail_rejects_0/runs/other-run/segments/42/0.wav`
+
+### .tmp/pytest/test_get_track_detail_uses_uri0/runs/demo-run/review-media/
+- `.tmp/pytest/test_get_track_detail_uses_uri0/runs/demo-run/review-media/segment-0.wav`
+
+### .tmp/pytest/test_lookup_segment_artifact_r0/runs/other-run/segments/42/
+- `.tmp/pytest/test_lookup_segment_artifact_r0/runs/other-run/segments/42/0.wav`
+
+### .tmp/pytest/test_lookup_segment_artifact_r1/runs/demo-run/segments/42/
+- `.tmp/pytest/test_lookup_segment_artifact_r1/runs/demo-run/segments/42/0.wav`
+
+### .tmp/pytest/test_media_endpoint_streams_ex0/runs/demo-run/segments/2/
+- `.tmp/pytest/test_media_endpoint_streams_ex0/runs/demo-run/segments/2/0.wav`
 
 ### artifacts/
 - `artifacts/README.md`
@@ -225,6 +342,13 @@ Generated: 2026-05-23T10:14:00Z | Files: 297 | Described: 0/297
 
 ### src/event_driven_audio_analytics/
 - `src/event_driven_audio_analytics/__init__.py`
+
+### src/event_driven_audio_analytics.egg-info/
+- `src/event_driven_audio_analytics.egg-info/dependency_links.txt`
+- `src/event_driven_audio_analytics.egg-info/PKG-INFO`
+- `src/event_driven_audio_analytics.egg-info/requires.txt`
+- `src/event_driven_audio_analytics.egg-info/SOURCES.txt`
+- `src/event_driven_audio_analytics.egg-info/top_level.txt`
 
 ### src/event_driven_audio_analytics/dataset_exporter/
 - `src/event_driven_audio_analytics/dataset_exporter/__init__.py`

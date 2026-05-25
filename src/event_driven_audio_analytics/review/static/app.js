@@ -6,6 +6,7 @@ const state = {
   selectedRunId: null,
   selectedTrackId: null,
   demoMode: new URLSearchParams(window.location.search).get("demo") === "1",
+  activeRequestId: 0,
   lastSuccessfulRefresh: null,
   lastRefreshError: null,
 };
@@ -15,18 +16,18 @@ const STALE_AFTER_MS = 60000;
 
 const stageCopy = {
   metadata: { label: "Metadata", short: "Run summary" },
-  validation: { label: "Validation", short: "Kiem tra dau vao" },
+  validation: { label: "Validation", short: "Kiểm tra đầu vào" },
   features: { label: "Features", short: "RMS + silence" },
   artifacts: { label: "Artifacts", short: "Media + manifest" },
-  review: { label: "Review", short: "Man hinh demo" },
+  review: { label: "Review", short: "Màn hình demo" },
 };
 
 const stageValueLabels = {
-  ready: "San sang",
-  degraded: "Can chu y",
-  failed: "Loi",
-  empty: "Chua co",
-  unknown: "Chua ro",
+  ready: "Sẵn sàng",
+  degraded: "Cần chú ý",
+  failed: "Lỗi",
+  empty: "Chưa có",
+  unknown: "Chưa rõ",
 };
 
 const elements = {
@@ -38,6 +39,7 @@ const elements = {
   runList: document.getElementById("run-list"),
   runCount: document.getElementById("run-count"),
   runPager: document.getElementById("run-pager"),
+  demoModeToggle: document.getElementById("demo-mode-toggle"),
   heroTitle: document.getElementById("hero-title"),
   heroCopy: document.getElementById("hero-copy"),
   runSummaryPanel: document.getElementById("run-summary-panel"),
@@ -103,7 +105,7 @@ function badgeLabel(source) {
 
 function setReviewReady(ready, error = null) {
   elements.body.dataset.reviewReady = ready ? "true" : "false";
-  elements.readyLabel.textContent = error ? "Loi" : ready ? "San sang" : "Dang tai";
+  elements.readyLabel.textContent = error ? "Lỗi" : ready ? "Sẵn sàng" : "Đang tải";
   if (state.selectedRunId) {
     elements.body.dataset.selectedRunId = state.selectedRunId;
   } else {
@@ -135,7 +137,7 @@ function setRefreshError(error) {
 function updateFreshnessLabel() {
   if (!state.lastSuccessfulRefresh) {
     elements.body.dataset.refreshState = state.lastRefreshError ? "error" : "loading";
-    elements.freshnessLabel.textContent = state.lastRefreshError ? "Loi tai du lieu" : "Dang tai";
+    elements.freshnessLabel.textContent = state.lastRefreshError ? "Lỗi tải dữ liệu" : "Đang tải";
     return;
   }
 
@@ -143,16 +145,16 @@ function updateFreshnessLabel() {
   const ageSeconds = Math.max(0, Math.round(ageMs / 1000));
   if (state.lastRefreshError) {
     elements.body.dataset.refreshState = "error";
-    elements.freshnessLabel.textContent = `Loi, giu du lieu ${ageSeconds}s truoc`;
+    elements.freshnessLabel.textContent = `Lỗi, giữ dữ liệu ${ageSeconds}s trước`;
     return;
   }
   if (ageMs > STALE_AFTER_MS) {
     elements.body.dataset.refreshState = "stale";
-    elements.freshnessLabel.textContent = `Du lieu cu ${ageSeconds}s`;
+    elements.freshnessLabel.textContent = `Dữ liệu cũ ${ageSeconds}s`;
     return;
   }
   elements.body.dataset.refreshState = "fresh";
-  elements.freshnessLabel.textContent = `Moi ${ageSeconds}s`;
+  elements.freshnessLabel.textContent = `Mới ${ageSeconds}s`;
 }
 
 async function fetchJSON(url) {
@@ -161,6 +163,25 @@ async function fetchJSON(url) {
     throw new Error(`${response.status} ${response.statusText}`);
   }
   return response.json();
+}
+
+function readUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const trackId = params.get("track_id");
+  const parsedTrackId = trackId === null ? null : Number(trackId);
+  return {
+    runId: params.get("run_id"),
+    trackId: Number.isFinite(parsedTrackId) ? parsedTrackId : null,
+  };
+}
+
+function startViewRequest() {
+  state.activeRequestId += 1;
+  return state.activeRequestId;
+}
+
+function isCurrentRequest(requestId) {
+  return requestId === state.activeRequestId;
 }
 
 function buildPager(container, payload, onPageChange) {
@@ -197,10 +218,16 @@ function updateUrl() {
   if (state.selectedTrackId !== null) {
     params.set("track_id", String(state.selectedTrackId));
   }
-  history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  const query = params.toString();
+  history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
 }
 
-function renderEmpty(target, title = "Chua co du lieu", copy = "Man hinh nay chi doc du lieu da duoc persist.") {
+function renderModeControls() {
+  elements.demoModeToggle.textContent = state.demoMode ? "Tắt demo / Tất cả run" : "Demo playlist";
+  elements.demoModeToggle.setAttribute("aria-pressed", String(state.demoMode));
+}
+
+function renderEmpty(target, title = "Chưa có dữ liệu", copy = "Màn hình này chỉ đọc dữ liệu đã được persist.") {
   const template = document.getElementById("empty-state-template");
   target.innerHTML = "";
   const fragment = template.content.cloneNode(true);
@@ -210,7 +237,7 @@ function renderEmpty(target, title = "Chua co du lieu", copy = "Man hinh nay chi
 }
 
 function renderInlineError(target, message) {
-  renderEmpty(target, "Khong tai duoc du lieu", message);
+  renderEmpty(target, "Không tải được dữ liệu", message);
 }
 
 function renderPipeline(pipelineStages) {
@@ -218,7 +245,7 @@ function renderPipeline(pipelineStages) {
   if (items.length === 0) {
     elements.pipelineCard.innerHTML = `
       <div class="pipeline-placeholder">
-        Chua co stage contract trong payload run detail.
+        Chưa có stage contract trong payload run detail.
       </div>
     `;
     return;
@@ -246,17 +273,18 @@ function renderPipeline(pipelineStages) {
 
 function renderRuns(payload) {
   state.runs = payload;
+  renderModeControls();
   elements.runList.innerHTML = "";
   elements.runCount.textContent = `${payload.total} run${payload.total === 1 ? "" : "s"}`;
   elements.modeBanner.textContent = state.demoMode
-    ? `Demo playlist: ${payload.mode.pinned_run_ids.join(", ")}`
-    : "Dang hien thi cac run moi nhat.";
+    ? `Đang lọc demo playlist: ${payload.mode.pinned_run_ids.join(", ")}`
+    : "Đang hiển thị các run mới nhất.";
 
   if (payload.items.length === 0) {
     renderEmpty(
       elements.runList,
-      "Chua co run",
-      "Hay chay demo evidence path de tao deterministic runs truoc khi trinh bay."
+      "Chưa có run",
+      "Hãy chạy demo evidence path để tạo deterministic runs trước khi trình bày."
     );
     elements.runPager.innerHTML = "";
     return;
@@ -282,15 +310,19 @@ function renderRuns(payload) {
       </div>
     `;
     button.addEventListener("click", () => {
+      const requestId = startViewRequest();
       state.selectedRunId = runItem.run_id;
       state.selectedTrackId = null;
       state.trackOffset = 0;
       state.segmentOffset = 0;
       updateUrl();
-      loadRun(runItem.run_id).catch((error) => {
+      loadRun(runItem.run_id, { requestId }).catch((error) => {
+        if (!isCurrentRequest(requestId)) {
+          return;
+        }
         setReviewReady(false, error.message);
         setRefreshError(error);
-        renderInlineError(elements.runSummaryGrid, `Khong tai duoc run ${runItem.run_id}: ${error.message}`);
+        renderInlineError(elements.runSummaryGrid, `Không tải được run ${runItem.run_id}: ${error.message}`);
       });
       renderRuns(state.runs);
     });
@@ -298,8 +330,9 @@ function renderRuns(payload) {
   });
 
   buildPager(elements.runPager, payload, (nextOffset) => {
+    const requestId = startViewRequest();
     state.runOffset = nextOffset;
-    loadRuns();
+    loadRuns({ requestId });
   });
 }
 
@@ -314,14 +347,14 @@ function renderRunSummary(payload) {
   elements.runSummarySource.innerHTML = `${badgeLabel(run.provenance.source)} ${badgeLabel(run.state.provenance.source)}`;
 
   const cards = [
-    ["Trang thai", run.state.label, run.state.reason, "status"],
-    ["Tracks", formatNumber(run.tracks_total, 0), "So track quan sat trong run.", "tracks"],
-    ["Persisted segments", formatNumber(run.segments_persisted, 0), "Feature rows da ghi vao TimescaleDB.", "segments"],
-    ["Silent ratio", formatRatio(run.silent_ratio), "Ty le segment silent trong run.", "silent"],
-    ["Average RMS", formatNumber(run.avg_rms, 3), "Nang luong am thanh trung binh tu features.", "rms"],
-    ["Avg processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Thoi gian xu ly trung binh moi segment.", "latency"],
-    ["Validation failures", formatNumber(run.validation_failures, 0), "Track bi reject o buoc metadata validation.", "validation"],
-    ["Error rate", formatRatio(run.error_rate), "Ty le loi o muc run.", "errors"],
+    ["Trạng thái", run.state.label, run.state.reason, "status"],
+    ["Tracks", formatNumber(run.tracks_total, 0), "Số track quan sát trong run.", "tracks"],
+    ["Persisted segments", formatNumber(run.segments_persisted, 0), "Feature rows đã ghi vào TimescaleDB.", "segments"],
+    ["Silent ratio", formatRatio(run.silent_ratio), "Tỷ lệ segment silent trong run.", "silent"],
+    ["Average RMS", formatNumber(run.avg_rms, 3), "Năng lượng âm thanh trung bình từ features.", "rms"],
+    ["Avg processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Thời gian xử lý trung bình mỗi segment.", "latency"],
+    ["Validation failures", formatNumber(run.validation_failures, 0), "Track bị reject ở bước metadata validation.", "validation"],
+    ["Error rate", formatRatio(run.error_rate), "Tỷ lệ lỗi ở mức run.", "errors"],
   ];
 
   elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy, tone]) => `
@@ -336,8 +369,8 @@ function renderRunSummary(payload) {
   if (validationItems.length === 0) {
     renderEmpty(
       elements.validationOutcomes,
-      "Chua co validation outcome",
-      "Run nay chua co outcome validation quan sat duoc tu review API."
+      "Chưa có validation outcome",
+      "Run này chưa có outcome validation quan sát được từ review API."
     );
   } else {
     elements.validationOutcomes.innerHTML = `
@@ -366,13 +399,13 @@ function renderRuntimeProof(runtimeProof) {
       <article class="proof-card">
         <h3>Manifest</h3>
         <p class="mono">${escapeHtml(manifest.path)}</p>
-        <p>${manifest.exists ? "Da co tren shared storage." : "Chua quan sat duoc tren shared storage."}</p>
+        <p>${manifest.exists ? "Đã có trên shared storage." : "Chưa quan sát được trên shared storage."}</p>
         <div>${badgeLabel(manifest.provenance.path)} ${badgeLabel(manifest.provenance.exists)}</div>
       </article>
       <article class="proof-card">
         <h3>Processing State</h3>
         <p class="mono">${escapeHtml(processingState.path)}</p>
-        <p>${processingState.exists ? "Co file metrics phuc vu restart/replay." : "Chua co processing state file cho run nay."}</p>
+        <p>${processingState.exists ? "Có file metrics phục vụ restart/replay." : "Chưa có processing state file cho run này."}</p>
         ${processingState.state ? `
           <p>Segments: <strong>${processingState.state.segment_count}</strong></p>
           <p>Silent ratio: <strong>${formatRatio(processingState.state.silent_ratio)}</strong></p>
@@ -382,7 +415,7 @@ function renderRuntimeProof(runtimeProof) {
       </article>
       <article class="proof-card">
         <h3>Checkpoints</h3>
-        <p>${checkpoints.length} checkpoint row cho run nay.</p>
+        <p>${checkpoints.length} checkpoint row cho run này.</p>
         ${checkpoints.length > 0 ? `
           <ul>
             ${checkpoints.map((item) => `<li><span class="mono">${escapeHtml(item.topic_name)}[${item.partition_id}]</span> @ ${item.last_committed_offset}</li>`).join("")}
@@ -399,8 +432,8 @@ function renderTracks(payload) {
   if (payload.items.length === 0) {
     renderEmpty(
       elements.trackTable,
-      "Chua co track",
-      "Run nay co the bi dung o validation hoac chua co track duoc persist."
+      "Chưa có track",
+      "Run này có thể bị dừng ở validation hoặc chưa có track được persist."
     );
     elements.trackPager.innerHTML = "";
     elements.trackDetailPanel.classList.add("hidden");
@@ -412,7 +445,7 @@ function renderTracks(payload) {
       <thead>
         <tr>
           <th>Track</th>
-          <th>Trang thai</th>
+          <th>Trạng thái</th>
           <th>Validation</th>
           <th>Persisted</th>
           <th>Silent Ratio</th>
@@ -447,17 +480,19 @@ function renderTracks(payload) {
 
   elements.trackTable.querySelectorAll("[data-track-id]").forEach((button) => {
     button.addEventListener("click", () => {
+      const requestId = startViewRequest();
       state.selectedTrackId = Number(button.dataset.trackId);
       state.segmentOffset = 0;
       updateUrl();
-      loadTrack(state.selectedRunId, state.selectedTrackId);
+      loadTrack(state.selectedRunId, state.selectedTrackId, { requestId });
       renderTracks(payload);
     });
   });
 
   buildPager(elements.trackPager, payload, (nextOffset) => {
+    const requestId = startViewRequest();
     state.trackOffset = nextOffset;
-    loadTracks(state.selectedRunId);
+    loadTracks(state.selectedRunId, { requestId });
   });
 }
 
@@ -467,7 +502,7 @@ function renderTrackDetail(payload) {
   elements.trackDetailSource.innerHTML = `${badgeLabel(track.provenance.source)} ${badgeLabel(track.track_state.provenance.source)}`;
   elements.trackHead.innerHTML = `
     <div class="track-head-block track-result-card">
-      <h3>Ket qua track</h3>
+      <h3>Kết quả track</h3>
       <p><strong>${track.track_id}</strong> / ${escapeHtml(track.genre)}</p>
       <p>${escapeHtml(track.track_state.reason)}</p>
       <div class="run-metrics">
@@ -488,8 +523,8 @@ function renderTrackDetail(payload) {
   if (payload.segments.items.length === 0) {
     renderEmpty(
       elements.segmentTable,
-      "Chua co segment",
-      "Track nay khong co persisted segment; thuong gap o validation failure hoac partial evidence."
+      "Chưa có segment",
+      "Track này không có persisted segment; thường gặp ở validation failure hoặc partial evidence."
     );
     elements.segmentPager.innerHTML = "";
     return;
@@ -500,7 +535,7 @@ function renderTrackDetail(payload) {
       <thead>
         <tr>
           <th>Segment</th>
-          <th>Ket qua</th>
+          <th>Kết quả</th>
           <th>Processing</th>
           <th>Artifact</th>
         </tr>
@@ -531,7 +566,7 @@ function renderTrackDetail(payload) {
               </div>
               <div class="table-secondary mono">${escapeHtml(segment.artifact.uri)}</div>
               <audio controls preload="none" src="${escapeHtml(segment.artifact.media_url)}"></audio>
-              <div class="media-error" hidden>Khong tai duoc audio artifact cho segment nay.</div>
+              <div class="media-error" hidden>Không tải được audio artifact cho segment này.</div>
             </td>
           </tr>
         `).join("")}
@@ -548,12 +583,13 @@ function renderTrackDetail(payload) {
   });
 
   buildPager(elements.segmentPager, payload.segments, (nextOffset) => {
+    const requestId = startViewRequest();
     state.segmentOffset = nextOffset;
-    loadTrack(state.selectedRunId, state.selectedTrackId);
+    loadTrack(state.selectedRunId, state.selectedTrackId, { requestId });
   });
 }
 
-async function loadRuns({ background = false } = {}) {
+async function loadRuns({ background = false, requestId = startViewRequest() } = {}) {
   if (!background) {
     setReviewReady(false);
   }
@@ -565,12 +601,14 @@ async function loadRuns({ background = false } = {}) {
     params.set("demo_mode", "true");
   }
   const payload = await fetchJSON(`/api/runs?${params.toString()}`);
-  const urlRunId = new URLSearchParams(window.location.search).get("run_id");
-  if (urlRunId && payload.items.some((item) => item.run_id === urlRunId)) {
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
+
+  const { runId: urlRunId } = readUrlState();
+  if (urlRunId && !state.selectedRunId) {
     state.selectedRunId = urlRunId;
   } else if (!state.selectedRunId && payload.items.length > 0) {
-    state.selectedRunId = payload.items[0].run_id;
-  } else if (state.selectedRunId && !payload.items.some((item) => item.run_id === state.selectedRunId) && payload.items.length > 0) {
     state.selectedRunId = payload.items[0].run_id;
   } else if (payload.items.length === 0) {
     state.selectedRunId = null;
@@ -579,27 +617,32 @@ async function loadRuns({ background = false } = {}) {
   renderRuns(payload);
   if (state.selectedRunId) {
     updateUrl();
-    await loadRun(state.selectedRunId);
+    await loadRun(state.selectedRunId, { requestId });
     return;
   }
   setReviewReady(true);
   setRefreshSuccess();
 }
 
-async function loadRun(runId) {
+async function loadRun(runId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(`/api/runs/${encodeURIComponent(runId)}`);
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
   renderRunSummary(payload);
-  await loadTracks(runId);
+  await loadTracks(runId, { requestId });
 }
 
-async function loadTracks(runId) {
+async function loadTracks(runId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(`/api/runs/${encodeURIComponent(runId)}/tracks?limit=8&offset=${state.trackOffset}`);
-  const urlTrackId = new URLSearchParams(window.location.search).get("track_id");
-  if (urlTrackId && payload.items.some((item) => String(item.track_id) === urlTrackId)) {
-    state.selectedTrackId = Number(urlTrackId);
-  } else if (!state.selectedTrackId && payload.items.length > 0) {
-    state.selectedTrackId = payload.items[0].track_id;
-  } else if (state.selectedTrackId && !payload.items.some((item) => item.track_id === state.selectedTrackId) && payload.items.length > 0) {
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
+
+  const { trackId: urlTrackId } = readUrlState();
+  if (urlTrackId !== null && state.selectedTrackId === null) {
+    state.selectedTrackId = urlTrackId;
+  } else if (state.selectedTrackId === null && payload.items.length > 0) {
     state.selectedTrackId = payload.items[0].track_id;
   } else if (payload.items.length === 0) {
     state.selectedTrackId = null;
@@ -607,26 +650,33 @@ async function loadTracks(runId) {
   renderTracks(payload);
   if (state.selectedTrackId !== null) {
     updateUrl();
-    await loadTrack(runId, state.selectedTrackId);
+    await loadTrack(runId, state.selectedTrackId, { requestId });
     return;
   }
   setReviewReady(true);
   setRefreshSuccess();
 }
 
-async function loadTrack(runId, trackId) {
+async function loadTrack(runId, trackId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(
     `/api/runs/${encodeURIComponent(runId)}/tracks/${trackId}?segments_limit=8&segments_offset=${state.segmentOffset}`
   );
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
   renderTrackDetail(payload);
   setReviewReady(true);
   setRefreshSuccess();
 }
 
 async function refreshActiveView() {
+  const requestId = startViewRequest();
   try {
-    await loadRuns({ background: true });
+    await loadRuns({ background: true, requestId });
   } catch (error) {
+    if (!isCurrentRequest(requestId)) {
+      return;
+    }
     setRefreshError(error);
     if (!state.runs) {
       throw error;
@@ -636,17 +686,40 @@ async function refreshActiveView() {
 
 async function boot() {
   setReviewReady(false);
+  renderModeControls();
+  const { runId, trackId } = readUrlState();
+  state.selectedRunId = runId;
+  state.selectedTrackId = trackId;
+  elements.demoModeToggle.addEventListener("click", () => {
+    const requestId = startViewRequest();
+    state.demoMode = !state.demoMode;
+    state.selectedRunId = null;
+    state.selectedTrackId = null;
+    state.runOffset = 0;
+    state.trackOffset = 0;
+    state.segmentOffset = 0;
+    updateUrl();
+    renderModeControls();
+    loadRuns({ requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.runList, `Không tải được danh sách run: ${error.message}`);
+    });
+  });
   try {
-    await loadRuns();
+    await loadRuns({ requestId: startViewRequest() });
     window.setInterval(refreshActiveView, REFRESH_INTERVAL_MS);
     window.setInterval(updateFreshnessLabel, 5000);
   } catch (error) {
-    elements.heroTitle.textContent = "Review API chua san sang";
+    elements.heroTitle.textContent = "Review API chưa sẵn sàng";
     elements.heroCopy.textContent = error.message;
     renderEmpty(
       elements.runList,
-      "Khong tai duoc runs",
-      "Kiem tra demo stack hoac chay evidence path truoc khi trinh bay."
+      "Không tải được runs",
+      "Kiểm tra demo stack hoặc chạy evidence path trước khi trình bày."
     );
     renderPipeline(null);
     setRefreshError(error);

@@ -148,6 +148,8 @@ def test_base_workloads_match_bounded_k3s_mapping() -> None:
     assert minio_container["args"] == ["server", "/data", "--console-address", ":9001"]
 
     assert grafana["kind"] == "Deployment"
+    grafana_env = _container_env_map(grafana["spec"]["template"]["spec"]["containers"][0])
+    assert grafana_env["GF_USERS_DEFAULT_THEME"] == "light"
     grafana_mounts = {
         mount["name"]
         for mount in grafana["spec"]["template"]["spec"]["containers"][0][

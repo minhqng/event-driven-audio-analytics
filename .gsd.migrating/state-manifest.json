@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-05-23T10:29:02.986Z",
+  "exported_at": "2026-05-25T07:51:49.724Z",
   "milestones": [
     {
       "id": "M001",
@@ -80,6 +80,78 @@
       "requirement_coverage": "No formal requirement IDs exist yet. This roadmap covers the recovered M001 context: review-console clarity, read-only demo-live status, bilingual presentation, fallback behavior, and browser-verifiable evidence. Formal requirements should be recorded before or during S01 task planning if the project wants ID-level traceability.",
       "boundary_map_markdown": "### S01 → S02\n\nProduces:\n- Stable pipeline stage status contract for selected runs, including stage id, label, value, reason, and provenance.\n- Tests proving status derivation for persisted, metadata-only, error, empty, and partial evidence states.\n\nConsumes:\n- Existing review run summaries, run detail payloads, validation outcomes, runtime proof, and artifact evidence.\n\n### S02 → S03\n\nProduces:\n- Data-driven pipeline diagram in the static review console.\n- Preserved body readiness markers: `data-review-ready`, `data-selected-run-id`, `data-selected-track-id`, and error marker behavior.\n\nConsumes:\n- S01 status contract and existing review API loading flow.\n\n### S02 → S04\n\nProduces:\n- Stable selected-run UI structure and stage rendering areas for narrative copy and visual polish.\n\nConsumes:\n- S01 status contract and existing review console layout.\n\n### S03 and S04 → S05\n\nProduces:\n- Health, refresh, stale/error, empty, and localized fallback surfaces.\n- Vietnamese-first narrative, run outcome cards, audio explanation surfaces, and Grafana support path.\n\nConsumes:\n- Final assembled FastAPI-served review console at the local demo entrypoint.",
       "sequence": 0
+    },
+    {
+      "id": "M002",
+      "title": "Grafana presentation upgrade",
+      "status": "active",
+      "depends_on": [],
+      "created_at": "2026-05-25T07:46:15.618Z",
+      "completed_at": null,
+      "vision": "Nâng cấp Grafana để phục vụ phần trình bày đồ án: người xem có thể mở dashboard, thấy ngay chất lượng âm thanh, trạng thái pipeline, bằng chứng persisted TimescaleDB, và hiểu các chỉ số chính mà không cần giải thích dài dòng hoặc click thủ công nhiều bước.",
+      "success_criteria": [
+        "Grafana dashboards have a clear presentation order: audio quality evidence first, then system health and pipeline corroboration.",
+        "Panel titles, descriptions, units, thresholds, legends, and layout are readable in kiosk or screenshot mode for a thesis demo audience.",
+        "Dashboards remain file-provisioned and read-only over TimescaleDB persisted truth; no click-ops or new frontend stack is introduced.",
+        "Docker Compose and K3s dashboard copies stay aligned or have an explicit sync mechanism verified by tests.",
+        "Dashboard evidence scripts produce API snapshots, screenshots, and notes that explain how to present Grafana as supporting evidence.",
+        "Verification includes JSON/provisioning tests and, where environment permits, local browser or evidence-script confirmation."
+      ],
+      "key_risks": [
+        {
+          "risk": "Grafana could overclaim real-time infrastructure health.",
+          "whyItMatters": "Existing project positioning treats Grafana as corroboration from persisted TimescaleDB rows, not a full production monitoring plane."
+        },
+        {
+          "risk": "Dashboard JSON changes can silently break provisioning or K3s parity.",
+          "whyItMatters": "Grafana dashboards are consumed both by Docker Compose and K3s file provisioning, so drift would weaken demo reliability."
+        },
+        {
+          "risk": "Visual polish may improve screenshots but reduce metric correctness.",
+          "whyItMatters": "The thesis presentation needs trustworthy evidence, not just attractive charts."
+        },
+        {
+          "risk": "Browser evidence may depend on Docker availability and local ports.",
+          "whyItMatters": "Milestone completion needs a verification path that is realistic on this Windows workspace and containerized stack."
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Which dashboard story best supports the presentation?",
+          "retireIn": "S01",
+          "whatWillBeProven": "A dashboard narrative and panel contract exists, mapping each panel to an observable persisted data source and presentation purpose."
+        },
+        {
+          "riskOrUnknown": "Can dashboard layout and copy be improved without changing data semantics?",
+          "retireIn": "S02 and S03",
+          "whatWillBeProven": "Audio Quality and System Health dashboards render the same persisted truth with clearer titles, units, thresholds, and layout."
+        },
+        {
+          "riskOrUnknown": "Will Compose and K3s dashboard copies stay consistent?",
+          "retireIn": "S04",
+          "whatWillBeProven": "Tests or scripts verify dashboard JSON parity and provisioning metadata for both deployment paths."
+        },
+        {
+          "riskOrUnknown": "Can the final presentation be evidenced repeatably?",
+          "retireIn": "S05",
+          "whatWillBeProven": "The dashboard evidence script or browser verification captures the upgraded Grafana dashboards and notes successfully."
+        }
+      ],
+      "verification_contract": "Run focused unit tests for Grafana provisioning/dashboard JSON, dashboard copy parity, and evidence-script expectations. For final validation, run the official dashboard evidence path when Docker and local services are available; otherwise document the blocked external dependency and still validate static provisioning contracts.",
+      "verification_integration": "Verify `infra/grafana/dashboards/*.json`, `deploy/k3s/grafana/config/dashboards/*.json`, provisioning YAML, and demo evidence scripts agree on dashboard UIDs, titles, and file paths.",
+      "verification_operational": "Confirm dashboard evidence notes and screenshots/API snapshots can be generated by the existing `scripts/demo/generate-dashboard-evidence.*` path or by equivalent browser verification against `http://localhost:3000` when the stack is running.",
+      "verification_uat": "Open Grafana in kiosk mode and confirm a presenter can explain: audio quality outcome, persisted segment evidence, validation failures, throughput, latency, artifact write latency, and error rate from the dashboard alone.",
+      "definition_of_done": [
+        "Requirement R001 is advanced or validated with evidence.",
+        "Dashboard JSON remains valid and file-provisioned.",
+        "Audio Quality and System Health dashboards are improved for presentation readability without changing the persisted-truth data model.",
+        "Docker Compose and K3s dashboard copies are aligned or automatically checked.",
+        "Evidence scripts and runbook notes reflect the upgraded Grafana presentation flow.",
+        "Relevant tests pass and final verification evidence is recorded."
+      ],
+      "requirement_coverage": "R001 is the primary requirement for this milestone. Existing project constraints from README and runbooks remain in force: Grafana corroborates TimescaleDB persisted truth and does not replace the review console or dataset outputs as the system truth.",
+      "boundary_map_markdown": "### S01 → S02 and S03\n\nProduces:\n- Presentation narrative and panel contract for Grafana.\n- Constraints for labels, units, thresholds, and no-overclaim wording.\n\nConsumes:\n- Existing Audio Quality and System Health dashboard JSON.\n- Existing operational SQL views and demo evidence flow.\n\n### S02 and S03 → S04\n\nProduces:\n- Updated dashboard JSON content for Compose provisioning.\n- Expected panel UIDs, titles, and layout structure.\n\nConsumes:\n- S01 narrative contract.\n\n### S04 → S05\n\nProduces:\n- K3s and Compose parity checks plus evidence script expectations.\n- Updated runbook or artifact-note wording for presentation.\n\nConsumes:\n- Final dashboard files from S02 and S03.",
+      "sequence": 0
     }
   ],
   "slices": [
@@ -87,7 +159,7 @@
       "milestone_id": "M001",
       "id": "S01",
       "title": "S01",
-      "status": "pending",
+      "status": "skipped",
       "risk": "high",
       "depends": [],
       "demo": "Run detail or derived review payloads have a tested, honest pipeline-stage status contract for deterministic demo states without claiming unobserved infrastructure health.",
@@ -109,7 +181,7 @@
       "milestone_id": "M001",
       "id": "S02",
       "title": "Data driven pipeline diagram",
-      "status": "pending",
+      "status": "skipped",
       "risk": "high",
       "depends": [
         "S01"
@@ -133,7 +205,7 @@
       "milestone_id": "M001",
       "id": "S03",
       "title": "Refresh and fallback states",
-      "status": "pending",
+      "status": "skipped",
       "risk": "medium",
       "depends": [
         "S02"
@@ -157,7 +229,7 @@
       "milestone_id": "M001",
       "id": "S04",
       "title": "Bilingual demo narrative polish",
-      "status": "pending",
+      "status": "skipped",
       "risk": "medium",
       "depends": [
         "S02"
@@ -181,7 +253,7 @@
       "milestone_id": "M001",
       "id": "S05",
       "title": "Final browser evidence integration",
-      "status": "pending",
+      "status": "skipped",
       "risk": "medium",
       "depends": [
         "S03",
@@ -197,6 +269,125 @@
       "proof_level": "Integrated proof through existing tests, any updated smoke/evidence checks, and browser verification at http://localhost:8080/?demo=1.",
       "integration_closure": "All prior slices are exercised together through the FastAPI review service, existing deterministic demo data flow, browser entrypoint, and supporting evidence artifacts.",
       "observability_impact": "Produces durable verification evidence and confirms runtime-visible state surfaces are sufficient for the next agent or reviewer to diagnose failures.",
+      "sequence": 5,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S01",
+      "title": "S01",
+      "status": "pending",
+      "risk": "high",
+      "depends": [],
+      "demo": "After this: The milestone has a written panel narrative that explains what each dashboard should prove, what it must not claim, and how a presenter should read it.",
+      "created_at": "2026-05-25T07:47:51.319Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Define the Grafana demo story and panel-level contract so dashboard improvements remain honest, presentation-friendly, and grounded in observable persisted data.",
+      "success_criteria": "- A slice context or research artifact documents the Grafana presentation narrative.\n- Existing Audio Quality and System Health panels are inventoried with their data source, presentation purpose, and no-overclaim boundary.\n- The contract identifies concrete downstream edits for titles, descriptions, units, legends, thresholds, layout, and tests.\n- Verification confirms the contract references real dashboard files, SQL views, and demo evidence scripts.",
+      "proof_level": "documentation plus static contract inspection",
+      "integration_closure": "S01 produces the written contract consumed by S02 and S03. It does not edit dashboard JSON yet; it defines what the dashboard JSON must communicate and how future tests should lock that presentation contract.",
+      "observability_impact": "Makes dashboard observability explicit by documenting what each panel proves, where the data comes from, and what the presenter must not claim from Grafana alone.",
+      "sequence": 1,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S02",
+      "title": "Audio quality dashboard polish",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S01"
+      ],
+      "demo": "After this: The Audio Quality dashboard is easier to explain in kiosk or screenshot mode, with clearer titles, descriptions, units, and ordering.",
+      "created_at": "2026-05-25T07:47:51.319Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Improve the Audio Quality dashboard for a thesis presentation, emphasizing persisted audio results, validation outcomes, and readable visual hierarchy.",
+      "success_criteria": "- `infra/grafana/dashboards/audio_quality.json` has presentation-ready panel titles, descriptions, legends, units, and layout.\n- Audio quality panels distinguish validated runs, silent ratio, RMS, persisted segment counts, and summary table meaning.\n- Queries continue to use existing persisted dashboard views or documented data sources.\n- Tests validate dashboard JSON structure and expected presentation labels.",
+      "proof_level": "static JSON/provisioning tests plus dashboard API or screenshot verification when available",
+      "integration_closure": "Provides a polished audio evidence dashboard for final evidence capture and runbook presentation.",
+      "observability_impact": "Makes audio analytics outcomes inspectable without requiring SQL knowledge.",
+      "sequence": 2,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S03",
+      "title": "System health dashboard polish",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S01"
+      ],
+      "demo": "After this: The System Health dashboard tells a clear operational corroboration story from persisted metrics and run summaries.",
+      "created_at": "2026-05-25T07:47:51.319Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Improve the System Health dashboard for presentation, emphasizing pipeline throughput, processing latency, writer latency, artifact write latency, and validation/error signals without overstating infrastructure health.",
+      "success_criteria": "- `infra/grafana/dashboards/system_health.json` has presentation-ready panel titles, descriptions, legends, units, thresholds, and layout.\n- The dashboard explains that health signals come from persisted metrics and run summaries.\n- Error-rate and latency panels are readable in kiosk/screenshots.\n- Tests validate expected panel labels and no-overclaim wording.",
+      "proof_level": "static JSON/provisioning tests plus dashboard API or screenshot verification when available",
+      "integration_closure": "Provides a polished operational evidence dashboard for final evidence capture and runbook presentation.",
+      "observability_impact": "Improves operational diagnosis during demo by clarifying what each metric proves and what it does not prove.",
+      "sequence": 3,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S04",
+      "title": "Provisioning parity and evidence script alignment",
+      "status": "pending",
+      "risk": "high",
+      "depends": [
+        "S02",
+        "S03"
+      ],
+      "demo": "After this: Dashboard JSON parity, provisioning paths, UIDs, screenshot URLs, and artifact notes agree across local and K3s-facing assets.",
+      "created_at": "2026-05-25T07:47:51.319Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Keep Compose and K3s Grafana dashboards aligned and update evidence scripts or notes so the improved dashboards are captured repeatably.",
+      "success_criteria": "- Compose dashboard files and K3s dashboard copies are synchronized or checked by tests.\n- Grafana dashboard UIDs, titles, provider paths, and screenshot URLs remain stable.\n- Dashboard evidence scripts still capture Audio Quality and System Health screenshots/API snapshots.\n- Artifact notes explain the upgraded presentation flow clearly.",
+      "proof_level": "unit tests plus evidence-script static checks",
+      "integration_closure": "Ensures final verification uses the same dashboards that deployment paths provision.",
+      "observability_impact": "Reduces future demo failures caused by dashboard drift or stale screenshot scripts.",
+      "sequence": 4,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S05",
+      "title": "Final Grafana presentation verification",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S04"
+      ],
+      "demo": "After this: The local evidence path or browser verification proves the upgraded Grafana dashboards load and can support the intended presentation story.",
+      "created_at": "2026-05-25T07:47:51.319Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Verify the upgraded Grafana presentation end to end with tests and demo evidence suitable for a thesis presentation.",
+      "success_criteria": "- Relevant Grafana/provisioning/evidence tests pass.\n- Dashboard evidence script is run successfully when Docker is available, or a precise environment blocker is recorded.\n- Final screenshots or API snapshots show upgraded dashboard titles and panels.\n- Runbook or evidence index points presenters to the upgraded Grafana flow.",
+      "proof_level": "automated tests plus browser or evidence-script proof",
+      "integration_closure": "Closes the milestone by producing evidence that the Grafana presentation is ready rather than only edited on disk.",
+      "observability_impact": "Creates reusable evidence artifacts for future agents and presentation rehearsals.",
       "sequence": 5,
       "replan_triggered_at": null,
       "is_sketch": 0,
@@ -261,7 +452,7 @@
       "slice_id": "S01",
       "id": "T02",
       "title": "Implement honest stage derivation",
-      "status": "pending",
+      "status": "skipped",
       "one_liner": "",
       "narrative": "",
       "verification_result": "",
@@ -308,7 +499,7 @@
       "slice_id": "S01",
       "id": "T03",
       "title": "Verify demo API compatibility",
-      "status": "pending",
+      "status": "skipped",
       "one_liner": "",
       "narrative": "",
       "verification_result": "",
@@ -344,6 +535,141 @@
         "tests/unit/test_review_app.py"
       ],
       "observability_impact": "Smoke-verifier expectations document which stage-status fields are part of the deterministic demo API contract, making missing or malformed status evidence easy to detect.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M002",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Inventoried the existing Grafana dashboards, provisioning, evidence scripts, SQL views, and test hooks for the presentation upgrade.",
+      "status": "complete",
+      "one_liner": "Inventoried the existing Grafana dashboards, provisioning, evidence scripts, SQL views, and test hooks for the presentation upgrade.",
+      "narrative": "Inspected the active Grafana presentation surface: dashboard JSON, provisioning YAML, operational SQL views, demo evidence scripts, current tests, README/runbook positioning, and architecture constraints. Saved a structured S01 research artifact documenting dashboard UIDs, panel inventory, data-source/view provenance, evidence script URLs, existing test coverage, proposed downstream tests, constraints, pitfalls, and risks. The research confirms that `Audio Quality` and `System Health` are file-provisioned from JSON, use the `timescaledb` datasource, and currently have byte-identical Compose and K3s copies.",
+      "verification_result": "Ran a fresh static Node verification after writing `S01-RESEARCH.md`. It confirmed 24 required inventory facts were present, including both dashboard UIDs, panel titles, primary SQL views, evidence script screenshot URLs, and existing/proposed test files; it also confirmed referenced dashboard, SQL, and evidence files exist.",
+      "duration": "",
+      "completed_at": "2026-05-25T07:51:49.685Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "Visual layout quality still requires later Grafana/browser verification in S05; this task only inventoried static repo facts.",
+      "key_files": [
+        ".gsd/milestones/M002/slices/S01/S01-RESEARCH.md"
+      ],
+      "key_decisions": [
+        "Keep Grafana improvements grounded in existing file-provisioned dashboard JSON and persisted TimescaleDB truth.",
+        "Treat Compose/K3s dashboard byte parity and evidence-script stable UIDs/URLs as downstream test targets."
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S01\nmilestone: M002\nkey_files:\n  - .gsd/milestones/M002/slices/S01/S01-RESEARCH.md\nkey_decisions:\n  - Keep Grafana improvements grounded in existing file-provisioned dashboard JSON and persisted TimescaleDB truth.\n  - Treat Compose/K3s dashboard byte parity and evidence-script stable UIDs/URLs as downstream test targets.\nduration: \nverification_result: passed\ncompleted_at: 2026-05-25T07:51:49.684Z\nblocker_discovered: false\n---\n\n# T01: Inventoried the existing Grafana dashboards, provisioning, evidence scripts, SQL views, and test hooks for the presentation upgrade.\n\n**Inventoried the existing Grafana dashboards, provisioning, evidence scripts, SQL views, and test hooks for the presentation upgrade.**\n\n## What Happened\n\nInspected the active Grafana presentation surface: dashboard JSON, provisioning YAML, operational SQL views, demo evidence scripts, current tests, README/runbook positioning, and architecture constraints. Saved a structured S01 research artifact documenting dashboard UIDs, panel inventory, data-source/view provenance, evidence script URLs, existing test coverage, proposed downstream tests, constraints, pitfalls, and risks. The research confirms that `Audio Quality` and `System Health` are file-provisioned from JSON, use the `timescaledb` datasource, and currently have byte-identical Compose and K3s copies.\n\n## Verification\n\nRan a fresh static Node verification after writing `S01-RESEARCH.md`. It confirmed 24 required inventory facts were present, including both dashboard UIDs, panel titles, primary SQL views, evidence script screenshot URLs, and existing/proposed test files; it also confirmed referenced dashboard, SQL, and evidence files exist.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `gsd_exec node static verification for .gsd/milestones/M002/slices/S01/S01-RESEARCH.md required inventory facts` | 0 | ✅ pass | 49ms |\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nVisual layout quality still requires later Grafana/browser verification in S05; this task only inventoried static repo facts.\n\n## Files Created/Modified\n\n- `.gsd/milestones/M002/slices/S01/S01-RESEARCH.md`\n",
+      "description": "Inspect existing Grafana dashboard JSON, provisioning YAML, operational SQL views, and demo evidence scripts. Produce a compact inventory of current dashboard panels, UIDs, queries/views used, screenshot URLs, and existing tests that can guard presentation changes.",
+      "estimate": "45m",
+      "files": [
+        "infra/grafana/dashboards/audio_quality.json",
+        "infra/grafana/dashboards/system_health.json",
+        "infra/grafana/provisioning/dashboards/dashboards.yaml",
+        "infra/grafana/provisioning/datasources/timescaledb.yaml",
+        "infra/sql/003_operational_views.sql",
+        "scripts/demo/generate-dashboard-evidence.sh",
+        "scripts/demo/generate-dashboard-evidence.ps1",
+        "tests/unit/test_grafana_provisioning.py"
+      ],
+      "verify": "Confirm `S01-RESEARCH.md` lists both dashboard UIDs, panel titles, primary SQL views, evidence script screenshot URLs, and existing/proposed test files.",
+      "inputs": [
+        ".gsd/milestones/M002/M002-ROADMAP.md",
+        "README.md",
+        "docs/runbooks/demo.md",
+        "docs/architecture/system-overview.md"
+      ],
+      "expected_output": [
+        ".gsd/milestones/M002/slices/S01/S01-RESEARCH.md"
+      ],
+      "observability_impact": "Creates an inspectable map from Grafana panels to persisted evidence sources and existing verification hooks.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M002",
+      "slice_id": "S01",
+      "id": "T02",
+      "title": "Write Grafana presentation contract",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Write the presentation contract for Grafana: intended reading order, presenter script bullets, panel-by-panel purpose, allowed claims, forbidden overclaims, label/unit/threshold guidance, and downstream acceptance checklist for S02/S03/S04.",
+      "estimate": "60m",
+      "files": [
+        ".gsd/milestones/M002/slices/S01/S01-CONTEXT.md"
+      ],
+      "verify": "Review `S01-CONTEXT.md` for required sections: narrative order, dashboard purposes, panel contract, no-overclaim rules, visual guidance, and downstream test targets.",
+      "inputs": [
+        ".gsd/milestones/M002/slices/S01/S01-RESEARCH.md",
+        ".gsd/milestones/M002/M002-ROADMAP.md"
+      ],
+      "expected_output": [
+        ".gsd/milestones/M002/slices/S01/S01-CONTEXT.md"
+      ],
+      "observability_impact": "Turns Grafana from raw panels into a documented evidence surface with clear provenance and failure boundaries.",
+      "full_plan_md": "",
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M002",
+      "slice_id": "S01",
+      "id": "T03",
+      "title": "Verify contract references and downstream readiness",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Validate the S01 contract against the repository reality. Check that referenced files exist, dashboard UIDs and titles match JSON, SQL view names exist, evidence script URLs match dashboard UIDs, and the downstream task checklist is actionable for S02 through S04.",
+      "estimate": "30m",
+      "files": [
+        ".gsd/milestones/M002/slices/S01/S01-CONTEXT.md",
+        ".gsd/milestones/M002/slices/S01/S01-RESEARCH.md"
+      ],
+      "verify": "Run a small static verification command or script that checks referenced dashboard files, UIDs, SQL view names, and evidence URLs; record pass/fail evidence in the task summary.",
+      "inputs": [
+        "infra/grafana/dashboards/audio_quality.json",
+        "infra/grafana/dashboards/system_health.json",
+        "infra/sql/003_operational_views.sql",
+        "scripts/demo/generate-dashboard-evidence.sh",
+        "scripts/demo/generate-dashboard-evidence.ps1"
+      ],
+      "expected_output": [
+        ".gsd/milestones/M002/slices/S01/tasks/T03-SUMMARY.md"
+      ],
+      "observability_impact": "Prevents stale or fictional presentation guidance by verifying contract references against actual dashboard and evidence files.",
       "full_plan_md": "",
       "sequence": 0,
       "blocker_source": "",
@@ -398,6 +724,17 @@
       "verdict": "✅ pass: modified tests parse successfully",
       "duration_ms": 300,
       "created_at": "2026-05-23T10:29:02.938Z"
+    },
+    {
+      "id": 5,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M002",
+      "command": "gsd_exec node static verification for .gsd/milestones/M002/slices/S01/S01-RESEARCH.md required inventory facts",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 49,
+      "created_at": "2026-05-25T07:51:49.685Z"
     }
   ]
 }

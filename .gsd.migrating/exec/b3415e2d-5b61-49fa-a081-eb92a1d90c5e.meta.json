@@ -1,0 +1,18 @@
+{
+  "id": "b3415e2d-5b61-49fa-a081-eb92a1d90c5e",
+  "runtime": "bash",
+  "purpose": "Verify T02 review stage derivation tests",
+  "script_chars": 445,
+  "started_at": "2026-05-23T10:44:47.949Z",
+  "finished_at": "2026-05-23T10:44:48.080Z",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "duration_ms": 131,
+  "stdout_bytes": 0,
+  "stderr_bytes": 108,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "stdout_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\b3415e2d-5b61-49fa-a081-eb92a1d90c5e.stdout",
+  "stderr_path": "D:\\docker-images\\event-driven-audio-analytics\\.gsd\\exec\\b3415e2d-5b61-49fa-a081-eb92a1d90c5e.stderr"
+}

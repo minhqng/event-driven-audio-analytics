@@ -13,7 +13,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Count of persisted feature rows per time bucket, which acts as the PoC throughput signal.",
+      "description": "Số feature rows đã persist theo time bucket; đây là throughput signal của PoC từ TimescaleDB, không phải live broker health.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -94,7 +94,7 @@
           "refId": "A"
         }
       ],
-      "title": "Persisted Segment Throughput",
+      "title": "Throughput segment đã persist",
       "type": "timeseries"
     },
     {
@@ -102,7 +102,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Average processing_ms metric emitted by processing and normalized through vw_dashboard_metric_events.",
+      "description": "Độ trễ xử lý trung bình từ persisted processing_ms metrics trong vw_dashboard_metric_events.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -183,7 +183,7 @@
           "refId": "A"
         }
       ],
-      "title": "Processing Latency Over Time",
+      "title": "Độ trễ processing theo thời gian",
       "type": "timeseries"
     },
     {
@@ -191,7 +191,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Average writer write_ms grouped by destination topic, showing DB persistence latency without click-ops transforms.",
+      "description": "Độ trễ writer ghi DB theo topic đích, tính từ persisted write_ms metrics và không dùng click-ops transforms.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -272,7 +272,7 @@
           "refId": "A"
         }
       ],
-      "title": "Writer DB Latency By Topic",
+      "title": "Độ trễ writer DB theo topic",
       "type": "timeseries"
     },
     {
@@ -280,7 +280,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Run-level artifact_write_ms snapshot from ingestion, taken from the normalized run summary view.",
+      "description": "Độ trễ ghi artifact claim-check ở mức run, lấy từ vw_dashboard_run_summary để hỗ trợ câu chuyện persistence.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -346,7 +346,7 @@
           "refId": "A"
         }
       ],
-      "title": "Claim-Check Artifact Write Latency",
+      "title": "Độ trễ ghi artifact claim-check",
       "type": "barchart"
     },
     {
@@ -354,7 +354,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Run-level failed-track ratio, where error_rate = validation_failures / tracks_total. Runtime processing and writer errors remain visible in the operational summary counts.",
+      "description": "Tỷ lệ track fail validation theo run, tính từ persisted run summary; processing và writer errors nằm trong bảng tổng hợp vận hành.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -421,7 +421,7 @@
           "refId": "A"
         }
       ],
-      "title": "Track Validation Error Rate By Run",
+      "title": "Tỷ lệ lỗi validation theo run",
       "type": "barchart"
     },
     {
@@ -429,7 +429,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Compact operational summary used in the report and demo handoff.",
+      "description": "Bảng tổng hợp vận hành cho demo: error counts, error rate, processing latency và artifact write latency từ persisted run summary.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -483,13 +483,13 @@
           "refId": "A"
         }
       ],
-      "title": "Operational Summary Table",
+      "title": "Bảng tổng hợp vận hành",
       "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 39,
-  "style": "dark",
+  "style": "light",
   "tags": [
     "poc",
     "system-health",
@@ -499,13 +499,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30d",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "System Health",
+  "title": "Bằng chứng vận hành (System Health)",
   "uid": "system-health",
-  "version": 3,
+  "version": 5,
   "weekStart": ""
 }

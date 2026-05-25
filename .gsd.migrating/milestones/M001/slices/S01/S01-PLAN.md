@@ -31,12 +31,12 @@ The status contract is available through the existing review API path used by th
   - Files: `tests/unit/test_review_queries.py`, `tests/unit/test_review_app.py`, `src/event_driven_audio_analytics/review/schemas.py`, `src/event_driven_audio_analytics/review/queries.py`
   - Verify: pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py
 
-- [x] **T02: Implement honest stage derivation** `est:1h`
+- [ ] **T02: Implement honest stage derivation** `est:1h`
   Implement the pure stage derivation helper and wire it into the review query/API payload. Prefer `review/schemas.py` for deterministic derivation and `review/queries.py` for payload assembly. Each stage item should include stable ids and human-readable labels, a constrained status value, reason text, and provenance. Rules must avoid claims about Kafka, MinIO, TimescaleDB, containers, or Grafana live health unless those signals are actually present in the review payload.
   - Files: `src/event_driven_audio_analytics/review/schemas.py`, `src/event_driven_audio_analytics/review/queries.py`, `tests/unit/test_review_queries.py`, `tests/unit/test_review_app.py`
   - Verify: pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py
 
-- [x] **T03: Verify demo API compatibility** `est:45m`
+- [ ] **T03: Verify demo API compatibility** `est:45m`
   Extend deterministic review API verification only if the new stage contract is part of the public demo payload, then run the existing review-focused test set. Confirm pinned demo ordering and existing media/runtime behavior still work. This task closes S01 by proving the status contract did not regress existing review API consumers and is ready for S02 UI rendering.
   - Files: `src/event_driven_audio_analytics/smoke/verify_review_api.py`, `tests/unit/test_verify_review_api.py`, `tests/unit/test_review_queries.py`, `tests/unit/test_review_app.py`
   - Verify: pytest tests/unit/test_review_queries.py tests/unit/test_review_app.py tests/unit/test_verify_review_api.py

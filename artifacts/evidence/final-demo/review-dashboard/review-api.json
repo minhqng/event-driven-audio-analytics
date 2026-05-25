@@ -69,12 +69,12 @@
       }
     },
     "run": {
-      "artifact_write_ms": 640.423,
-      "avg_processing_ms": 38.60133674947974,
+      "artifact_write_ms": 530.213,
+      "avg_processing_ms": 39.031317999899784,
       "avg_rms": -8.955863509685088,
       "error_rate": 0.0,
-      "first_seen_at": "2026-05-23T11:02:23.154317Z",
-      "last_seen_at": "2026-05-23T11:02:25.123593Z",
+      "first_seen_at": "2026-05-25T08:10:57.417248Z",
+      "last_seen_at": "2026-05-25T08:10:59.227789Z",
       "links": {
         "detail_url": "/api/runs/demo-high-energy",
         "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -172,14 +172,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 35.2513359994191,
+          "processing_ms": 37.75984999992943,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 0,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:23.188941Z"
+          "ts": "2026-05-25T08:10:57.456793Z"
         },
         {
           "artifact": {
@@ -194,14 +194,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 35.120441999424656,
+          "processing_ms": 43.926182999939556,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:24.957537Z"
+          "ts": "2026-05-25T08:10:59.080409Z"
         },
         {
           "artifact": {
@@ -216,14 +216,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 40.66280299957725,
+          "processing_ms": 38.460029999896506,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:25.022474Z"
+          "ts": "2026-05-25T08:10:59.144961Z"
         },
         {
           "artifact": {
@@ -238,14 +238,14 @@
           },
           "checksum": "sha256:049cbbc20cdeed64574f1b9ff11b1408b1cb431de87426576c1d1e47811989e6",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 43.37076599949796,
+          "processing_ms": 35.979208999833645,
           "provenance": {
             "source": "db"
           },
           "rms": -11.213588477164947,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:25.091132Z"
+          "ts": "2026-05-25T08:10:59.202804Z"
         }
       ],
       "limit": 10,
@@ -254,7 +254,7 @@
     },
     "track": {
       "artist_id": 9101,
-      "avg_processing_ms": 38.60133674947974,
+      "avg_processing_ms": 39.031317999899784,
       "avg_rms": -8.955863509685088,
       "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
       "duration_s": 6.0,
@@ -290,7 +290,7 @@
     "items": [
       {
         "artist_id": 9101,
-        "avg_processing_ms": 38.60133674947974,
+        "avg_processing_ms": 39.031317999899784,
         "avg_rms": -8.955863509685088,
         "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
         "duration_s": 6.0,
@@ -333,12 +333,12 @@
     "has_more": false,
     "items": [
       {
-        "artifact_write_ms": 640.423,
-        "avg_processing_ms": 38.60133674947974,
+        "artifact_write_ms": 530.213,
+        "avg_processing_ms": 39.031317999899784,
         "avg_rms": -8.955863509685088,
         "error_rate": 0.0,
-        "first_seen_at": "2026-05-23T11:02:23.154317Z",
-        "last_seen_at": "2026-05-23T11:02:25.123593Z",
+        "first_seen_at": "2026-05-25T08:10:57.417248Z",
+        "last_seen_at": "2026-05-25T08:10:59.227789Z",
         "links": {
           "detail_url": "/api/runs/demo-high-energy",
           "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -365,12 +365,12 @@
         "writer_error_count": 0
       },
       {
-        "artifact_write_ms": 588.576,
-        "avg_processing_ms": 36.90680524982781,
+        "artifact_write_ms": 530.936,
+        "avg_processing_ms": 34.832009749948156,
         "avg_rms": -25.60186305140538,
         "error_rate": 0.0,
-        "first_seen_at": "2026-05-23T11:02:29.788332Z",
-        "last_seen_at": "2026-05-23T11:02:31.826805Z",
+        "first_seen_at": "2026-05-25T08:11:04.059082Z",
+        "last_seen_at": "2026-05-25T08:11:06.098576Z",
         "links": {
           "detail_url": "/api/runs/demo-silent-oriented",
           "tracks_url": "/api/runs/demo-silent-oriented/tracks"
@@ -401,8 +401,8 @@
         "avg_processing_ms": null,
         "avg_rms": null,
         "error_rate": 1.0,
-        "first_seen_at": "2026-05-23T11:02:37.472515Z",
-        "last_seen_at": "2026-05-23T11:02:38.510943Z",
+        "first_seen_at": "2026-05-25T08:11:11.696306Z",
+        "last_seen_at": "2026-05-25T08:11:12.724979Z",
         "links": {
           "detail_url": "/api/runs/demo-validation-failure",
           "tracks_url": "/api/runs/demo-validation-failure/tracks"
@@ -501,12 +501,12 @@
       }
     },
     "run": {
-      "artifact_write_ms": 588.576,
-      "avg_processing_ms": 36.90680524982781,
+      "artifact_write_ms": 530.936,
+      "avg_processing_ms": 34.832009749948156,
       "avg_rms": -25.60186305140538,
       "error_rate": 0.0,
-      "first_seen_at": "2026-05-23T11:02:29.788332Z",
-      "last_seen_at": "2026-05-23T11:02:31.826805Z",
+      "first_seen_at": "2026-05-25T08:11:04.059082Z",
+      "last_seen_at": "2026-05-25T08:11:06.098576Z",
       "links": {
         "detail_url": "/api/runs/demo-silent-oriented",
         "tracks_url": "/api/runs/demo-silent-oriented/tracks"
@@ -542,7 +542,7 @@
               "source": "db"
             },
             "topic_name": "audio.features",
-            "updated_at": "2026-05-23T11:02:31.000229Z"
+            "updated_at": "2026-05-25T08:11:05.260617Z"
           }
         ],
         "provenance": {
@@ -614,14 +614,14 @@
           },
           "checksum": "sha256:d4bd3ca1a3e5de733841da6c55adebbafd4f05fcc7fdf2023b1db4f151508a1b",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 37.78030400007992,
+          "processing_ms": 34.899677000112206,
           "provenance": {
             "source": "db"
           },
           "rms": -60.0,
           "segment_idx": 0,
           "silent_flag": true,
-          "ts": "2026-05-23T11:02:30.828686Z"
+          "ts": "2026-05-25T08:11:05.095769Z"
         },
         {
           "artifact": {
@@ -636,14 +636,14 @@
           },
           "checksum": "sha256:ebc75223033ab6c612278f165c0413400ef4544e790258dd3459c1f2f2062df6",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 35.07569399971544,
+          "processing_ms": 35.48714699991251,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:30.879939Z"
+          "ts": "2026-05-25T08:11:05.149642Z"
         },
         {
           "artifact": {
@@ -658,14 +658,14 @@
           },
           "checksum": "sha256:6a324380d1c4332f0759b6dd88126319f8c790b0e33b06c1597b6c4bcd8392ca",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 38.824420000310056,
+          "processing_ms": 33.555082999782826,
           "provenance": {
             "source": "db"
           },
           "rms": -12.128950764113974,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:30.938623Z"
+          "ts": "2026-05-25T08:11:05.202274Z"
         },
         {
           "artifact": {
@@ -680,14 +680,14 @@
           },
           "checksum": "sha256:95be5110cbee9d1892427f6d0da708439a9055e8ba76746a91920fcfb83675cf",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 35.94680299920583,
+          "processing_ms": 35.38613199998508,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-05-23T11:02:30.996609Z"
+          "ts": "2026-05-25T08:11:05.257349Z"
         }
       ],
       "limit": 10,
@@ -696,7 +696,7 @@
     },
     "track": {
       "artist_id": 9102,
-      "avg_processing_ms": 36.90680524982781,
+      "avg_processing_ms": 34.832009749948156,
       "avg_rms": -25.60186305140538,
       "checksum": "sha256:74821199a072e5dc590e976b6f3a9b487909399e54c550c4e3e266cf5068b7a7",
       "duration_s": 6.0,
@@ -788,8 +788,8 @@
       "avg_processing_ms": null,
       "avg_rms": null,
       "error_rate": 1.0,
-      "first_seen_at": "2026-05-23T11:02:37.472515Z",
-      "last_seen_at": "2026-05-23T11:02:38.510943Z",
+      "first_seen_at": "2026-05-25T08:11:11.696306Z",
+      "last_seen_at": "2026-05-25T08:11:12.724979Z",
       "links": {
         "detail_url": "/api/runs/demo-validation-failure",
         "tracks_url": "/api/runs/demo-validation-failure/tracks"
@@ -825,7 +825,7 @@
               "source": "db"
             },
             "topic_name": "audio.metadata",
-            "updated_at": "2026-05-23T11:02:37.473650Z"
+            "updated_at": "2026-05-25T08:11:11.698238Z"
           },
           {
             "last_committed_offset": 27,
@@ -834,7 +834,7 @@
               "source": "db"
             },
             "topic_name": "system.metrics",
-            "updated_at": "2026-05-23T11:02:38.508405Z"
+            "updated_at": "2026-05-25T08:11:12.722603Z"
           }
         ],
         "provenance": {
