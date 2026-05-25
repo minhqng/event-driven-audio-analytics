@@ -13,4 +13,6 @@
 <rect x="1260" y="555" width="250" height="160" class="box box-violet"/><text x="1300" y="615" class="label">Dataset Exporter</text><text x="1300" y="655" class="small">CSV / Parquet</text>
 <path class="arrow" d="M330 345 H440"/><path class="arrow" d="M760 345 H870"/><path class="arrow" d="M1150 340 C1200 250 1215 225 1260 225"/><path class="arrow" d="M1150 350 H1260"/><path class="arrow" d="M1150 360 C1200 520 1215 635 1260 635"/>
 <rect x="420" y="620" width="780" height="140" class="box box-gray"/><text x="470" y="675" class="label">Private Cloud bounded</text><text x="470" y="718" class="small">Docker Compose / K3s, MinIO hoặc local artifacts, observability read-only</text>
-<text x="80" y="930" class="caption">Nguồn: tác giả tự vẽ từ phạm vi repository event-driven-audio-analytics.</text></svg>
+<!-- detail-v2 --><rect x="80" y="842" width="1440" height="62" class="box box-gray"/><text x="120" y="866" class="tag">Chi tiết kỹ thuật</text><text x="120" y="894" class="tiny">Input: FMA-Small audio + metadata CSV</text><text x="585" y="894" class="tiny">Cơ chế: event-driven pipeline + claim-check</text><text x="1050" y="894" class="tiny">Output: TimescaleDB, Review, Grafana, Dataset Exporter</text><!-- /detail-v2 --><text x="80" y="930" class="caption">Nguồn: tác giả tự vẽ từ phạm vi repository event-driven-audio-analytics.</text></svg>
+
+

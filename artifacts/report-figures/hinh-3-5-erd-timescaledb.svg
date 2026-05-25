@@ -11,5 +11,7 @@
 <rect x="330" y="610" width="360" height="220" class="box box-violet"/><text x="370" y="665" class="label">writer_checkpoints</text><text x="370" y="705" class="mono">consumer_group, topic</text><text x="370" y="738" class="mono">partition</text><text x="370" y="772" class="small">committed_offset</text><text x="370" y="804" class="small">updated_at</text>
 <rect x="880" y="610" width="360" height="220" class="box box-gray"/><text x="920" y="665" class="label">dashboard views</text><text x="920" y="710" class="mono">vw_dashboard_run_summary</text><text x="920" y="745" class="mono">vw_dashboard_metric_events</text><text x="920" y="777" class="small">read-only evidence</text>
 <path class="line" d="M410 320 H600"/><text x="455" y="300" class="tiny">1 → N</text><path class="line" d="M950 320 H1130"/><text x="1005" y="300" class="tiny">run_id</text><path class="arrow" d="M775 465 C820 555 910 590 960 610"/><path class="arrow" d="M1305 435 C1270 530 1180 590 1120 610"/><path class="arrow" d="M640 610 C590 540 540 480 410 390"/>
-<text x="80" y="930" class="caption">Nguồn: tác giả tự vẽ từ SQL schema.</text></svg>
+<!-- detail-v2 --><rect x="80" y="842" width="1440" height="62" class="box box-gray"/><text x="120" y="866" class="tag">Chi tiết kỹ thuật</text><text x="120" y="894" class="tiny">Natural keys chống duplicate khi replay</text><text x="585" y="894" class="tiny">Hypertable lưu feature/metric theo thời gian</text><text x="1050" y="894" class="tiny">Dashboard views tạo summary read-only cho Review/Grafana</text><!-- /detail-v2 --><text x="80" y="930" class="caption">Nguồn: tác giả tự vẽ từ SQL schema.</text></svg>
+
+
 
