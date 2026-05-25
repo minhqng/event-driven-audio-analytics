@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Audio Analytics Demo Console</title>
+    <title>Phong dieu khien demo audio analytics</title>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body data-review-ready="false">
@@ -11,10 +11,10 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <p class="eyebrow">Event-Driven Audio Analytics</p>
-          <h1>Demo Control Room</h1>
+          <h1>Phong dieu khien demo</h1>
           <p class="sidebar-copy">
-            A presentation-ready surface for inspecting runs, tracks, validation
-            outcomes, and audio segment artifacts from the event pipeline.
+            Man hinh trinh bay de theo doi run, track, validation, features,
+            va artifact am thanh tu pipeline huong su kien.
           </p>
         </div>
         <div class="mode-banner" id="mode-banner"></div>
@@ -26,13 +26,18 @@
           </div>
           <div class="status-row">
             <span class="status-dot"></span>
-            <span>Truth source</span>
+            <span>Lan cap nhat</span>
+            <strong id="freshness-label">Chua co du lieu</strong>
+          </div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <span>Nguon su that</span>
             <strong>DB + artifacts</strong>
           </div>
         </div>
         <div class="panel">
           <div class="panel-heading">
-            <h2>Runs</h2>
+            <h2>Danh sach run</h2>
             <span class="panel-meta" id="run-count">0 runs</span>
           </div>
           <div class="run-list" id="run-list"></div>
@@ -43,47 +48,27 @@
       <main class="content">
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-copy-block">
-            <p class="eyebrow">Live Review Surface</p>
+            <p class="eyebrow">Review console truc tiep</p>
             <h2 id="hero-title">Select a run</h2>
             <p id="hero-copy">
-              Follow the audio journey from ingestion to persisted features with
-              enough provenance detail to answer demo questions on the spot.
+              Theo doi hanh trinh am thanh tu ingest den persisted features,
+              kem provenance de tra loi cau hoi demo ngay tren man hinh.
             </p>
             <div class="hero-actions">
               <a class="hero-link" href="/?demo=1">Demo mode</a>
-              <a class="hero-link hero-link-secondary" href="/healthz">Health check</a>
+              <a class="hero-link hero-link-secondary" href="/healthz">Kiem tra API</a>
             </div>
           </div>
-          <div class="pipeline-card" aria-label="Event pipeline overview">
-            <div class="pipeline-node">
-              <span>01</span>
-              <strong>Ingest</strong>
-              <small>metadata + audio</small>
-            </div>
-            <div class="pipeline-line"></div>
-            <div class="pipeline-node">
-              <span>02</span>
-              <strong>Process</strong>
-              <small>RMS + silence</small>
-            </div>
-            <div class="pipeline-line"></div>
-            <div class="pipeline-node">
-              <span>03</span>
-              <strong>Persist</strong>
-              <small>TimescaleDB</small>
-            </div>
-            <div class="pipeline-line"></div>
-            <div class="pipeline-node active">
-              <span>04</span>
-              <strong>Review</strong>
-              <small>this console</small>
+          <div class="pipeline-card" id="pipeline-card" aria-label="Pipeline stage status">
+            <div class="pipeline-placeholder">
+              Chon mot run de xem trang thai pipeline.
             </div>
           </div>
         </section>
 
         <section class="panel hidden" id="run-summary-panel">
           <div class="panel-heading">
-            <h2>Run Summary</h2>
+            <h2>Ket qua run</h2>
             <span class="panel-meta" id="run-summary-source"></span>
           </div>
           <div class="summary-grid" id="run-summary-grid"></div>
@@ -92,7 +77,7 @@
         <section class="layout-grid hidden" id="detail-grid">
           <section class="panel">
             <div class="panel-heading">
-              <h2>Validation Outcomes</h2>
+              <h2>Ket qua validation</h2>
             </div>
             <div id="validation-outcomes"></div>
           </section>
@@ -109,7 +94,7 @@
 
         <section class="panel hidden" id="track-detail-panel">
           <div class="panel-heading">
-            <h2>Track Detail</h2>
+            <h2>Chi tiet track</h2>
             <span class="panel-meta" id="track-detail-source"></span>
           </div>
           <div class="track-head" id="track-head"></div>
@@ -120,8 +105,8 @@
         <section class="panel hidden" id="runtime-proof-panel">
           <details>
             <summary>
-              <span>Runtime Proof</span>
-              <span class="proof-note">Secondary UI. Use this to support questions, not to lead the demo.</span>
+              <span>Bang chung runtime</span>
+              <span class="proof-note">Dung de bo sung khi can doi chieu, khong phai man hinh chinh.</span>
             </summary>
             <div id="runtime-proof"></div>
           </details>
@@ -131,8 +116,8 @@
 
     <template id="empty-state-template">
       <div class="empty-state">
-        <h3>No data available</h3>
-        <p>This surface only reflects persisted run data and artifact paths that already exist.</p>
+        <h3>Chua co du lieu</h3>
+        <p>Man hinh nay chi doc du lieu run va artifact da duoc persist.</p>
       </div>
     </template>
 

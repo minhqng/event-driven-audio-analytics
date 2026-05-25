@@ -16,19 +16,19 @@
 
 ## Slices
 
-- [ ] **S01: S01** `risk:high` `depends:[]`
+- [x] **S01: S01** `risk:high` `depends:[]`
   > After this: Run detail or derived review payloads have a tested, honest pipeline-stage status contract for deterministic demo states without claiming unobserved infrastructure health.
 
-- [ ] **S02: Data driven pipeline diagram** `risk:high` `depends:[S01]`
+- [x] **S02: Data driven pipeline diagram** `risk:high` `depends:[S01]`
   > After this: Selecting a demo run in the review console updates a data-driven pipeline diagram with stage status labels, reasons, and accessible visual states from real review data.
 
-- [ ] **S03: Refresh and fallback states** `risk:medium` `depends:[S02]`
+- [x] **S03: Refresh and fallback states** `risk:medium` `depends:[S02]`
   > After this: The review console visibly reports API health, last successful refresh, stale or failed refresh state, empty runs, failed run loads, and localized media or segment gaps without breaking the page.
 
-- [ ] **S04: Bilingual demo narrative polish** `risk:medium` `depends:[S02]`
+- [x] **S04: Bilingual demo narrative polish** `risk:medium` `depends:[S02]`
   > After this: The review console presents a Vietnamese-first demo story with professional academic styling, clear deterministic run cards, audio result explanations, and Grafana as supporting evidence.
 
-- [ ] **S05: Final browser evidence integration** `risk:medium` `depends:[S03,S04]`
+- [x] **S05: Final browser evidence integration** `risk:medium` `depends:[S03,S04]`
   > After this: The local demo entrypoint is verified end to end with tests and browser evidence showing the final review console story, status indicators, run outcomes, and no regressions to evidence-script readiness markers.
 
 ## Boundary Map

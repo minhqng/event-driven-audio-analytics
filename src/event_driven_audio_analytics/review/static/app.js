@@ -6,12 +6,35 @@ const state = {
   selectedRunId: null,
   selectedTrackId: null,
   demoMode: new URLSearchParams(window.location.search).get("demo") === "1",
+  lastSuccessfulRefresh: null,
+  lastRefreshError: null,
+};
+
+const REFRESH_INTERVAL_MS = 25000;
+const STALE_AFTER_MS = 60000;
+
+const stageCopy = {
+  metadata: { label: "Metadata", short: "Run summary" },
+  validation: { label: "Validation", short: "Kiem tra dau vao" },
+  features: { label: "Features", short: "RMS + silence" },
+  artifacts: { label: "Artifacts", short: "Media + manifest" },
+  review: { label: "Review", short: "Man hinh demo" },
+};
+
+const stageValueLabels = {
+  ready: "San sang",
+  degraded: "Can chu y",
+  failed: "Loi",
+  empty: "Chua co",
+  unknown: "Chua ro",
 };
 
 const elements = {
   body: document.body,
   modeBanner: document.getElementById("mode-banner"),
   readyLabel: document.getElementById("ready-label"),
+  freshnessLabel: document.getElementById("freshness-label"),
+  pipelineCard: document.getElementById("pipeline-card"),
   runList: document.getElementById("run-list"),
   runCount: document.getElementById("run-count"),
   runPager: document.getElementById("run-pager"),
@@ -80,7 +103,7 @@ function badgeLabel(source) {
 
 function setReviewReady(ready, error = null) {
   elements.body.dataset.reviewReady = ready ? "true" : "false";
-  elements.readyLabel.textContent = error ? "Error" : ready ? "Ready" : "Loading";
+  elements.readyLabel.textContent = error ? "Loi" : ready ? "San sang" : "Dang tai";
   if (state.selectedRunId) {
     elements.body.dataset.selectedRunId = state.selectedRunId;
   } else {
@@ -96,6 +119,40 @@ function setReviewReady(ready, error = null) {
   } else {
     delete elements.body.dataset.reviewError;
   }
+}
+
+function setRefreshSuccess() {
+  state.lastSuccessfulRefresh = new Date();
+  state.lastRefreshError = null;
+  updateFreshnessLabel();
+}
+
+function setRefreshError(error) {
+  state.lastRefreshError = error instanceof Error ? error.message : String(error);
+  updateFreshnessLabel();
+}
+
+function updateFreshnessLabel() {
+  if (!state.lastSuccessfulRefresh) {
+    elements.body.dataset.refreshState = state.lastRefreshError ? "error" : "loading";
+    elements.freshnessLabel.textContent = state.lastRefreshError ? "Loi tai du lieu" : "Dang tai";
+    return;
+  }
+
+  const ageMs = Date.now() - state.lastSuccessfulRefresh.getTime();
+  const ageSeconds = Math.max(0, Math.round(ageMs / 1000));
+  if (state.lastRefreshError) {
+    elements.body.dataset.refreshState = "error";
+    elements.freshnessLabel.textContent = `Loi, giu du lieu ${ageSeconds}s truoc`;
+    return;
+  }
+  if (ageMs > STALE_AFTER_MS) {
+    elements.body.dataset.refreshState = "stale";
+    elements.freshnessLabel.textContent = `Du lieu cu ${ageSeconds}s`;
+    return;
+  }
+  elements.body.dataset.refreshState = "fresh";
+  elements.freshnessLabel.textContent = `Moi ${ageSeconds}s`;
 }
 
 async function fetchJSON(url) {
@@ -143,10 +200,48 @@ function updateUrl() {
   history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
 }
 
-function renderEmpty(target) {
+function renderEmpty(target, title = "Chua co du lieu", copy = "Man hinh nay chi doc du lieu da duoc persist.") {
   const template = document.getElementById("empty-state-template");
   target.innerHTML = "";
-  target.append(template.content.cloneNode(true));
+  const fragment = template.content.cloneNode(true);
+  fragment.querySelector("h3").textContent = title;
+  fragment.querySelector("p").textContent = copy;
+  target.append(fragment);
+}
+
+function renderInlineError(target, message) {
+  renderEmpty(target, "Khong tai duoc du lieu", message);
+}
+
+function renderPipeline(pipelineStages) {
+  const items = pipelineStages && Array.isArray(pipelineStages.items) ? pipelineStages.items : [];
+  if (items.length === 0) {
+    elements.pipelineCard.innerHTML = `
+      <div class="pipeline-placeholder">
+        Chua co stage contract trong payload run detail.
+      </div>
+    `;
+    return;
+  }
+
+  elements.pipelineCard.innerHTML = items.map((item, index) => {
+    const value = String(item.value || "unknown");
+    const stageId = String(item.id || `stage-${index + 1}`);
+    const copy = stageCopy[stageId] || { label: item.label || stageId, short: "Observable evidence" };
+    const reason = String(item.reason || "No reason provided.");
+    return `
+      <article class="pipeline-node pipeline-node-${escapeHtml(value)}" title="${escapeHtml(reason)}">
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <strong>${escapeHtml(copy.label)}</strong>
+        <small>${escapeHtml(copy.short)}</small>
+        <p>${escapeHtml(reason)}</p>
+        <div class="stage-footer">
+          <span class="stage-status stage-status-${escapeHtml(value)}">${escapeHtml(stageValueLabels[value] || value)}</span>
+          ${badgeLabel(item.provenance?.source)}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderRuns(payload) {
@@ -155,10 +250,14 @@ function renderRuns(payload) {
   elements.runCount.textContent = `${payload.total} run${payload.total === 1 ? "" : "s"}`;
   elements.modeBanner.textContent = state.demoMode
     ? `Demo playlist: ${payload.mode.pinned_run_ids.join(", ")}`
-    : "Showing latest persisted runs.";
+    : "Dang hien thi cac run moi nhat.";
 
   if (payload.items.length === 0) {
-    renderEmpty(elements.runList);
+    renderEmpty(
+      elements.runList,
+      "Chua co run",
+      "Hay chay demo evidence path de tao deterministic runs truoc khi trinh bay."
+    );
     elements.runPager.innerHTML = "";
     return;
   }
@@ -173,8 +272,8 @@ function renderRuns(payload) {
         <span class="${chipClass(runItem.state.value)}">${escapeHtml(runItem.state.label)}</span>
       </div>
       <div class="run-metrics">
-        <span>${formatNumber(runItem.tracks_total, 0)} tracks</span>
-        <span>${runItem.segments_persisted} segments</span>
+        <span>${formatNumber(runItem.tracks_total, 0)} track</span>
+        <span>${runItem.segments_persisted} segment</span>
         <span>${formatRatio(runItem.silent_ratio)} silent</span>
       </div>
       <div class="run-metrics">
@@ -188,7 +287,11 @@ function renderRuns(payload) {
       state.trackOffset = 0;
       state.segmentOffset = 0;
       updateUrl();
-      loadRun(runItem.run_id);
+      loadRun(runItem.run_id).catch((error) => {
+        setReviewReady(false, error.message);
+        setRefreshError(error);
+        renderInlineError(elements.runSummaryGrid, `Khong tai duoc run ${runItem.run_id}: ${error.message}`);
+      });
       renderRuns(state.runs);
     });
     elements.runList.append(button);
@@ -205,19 +308,20 @@ function renderRunSummary(payload) {
   elements.runSummaryPanel.classList.remove("hidden");
   elements.detailGrid.classList.remove("hidden");
   elements.runtimeProofPanel.classList.remove("hidden");
+  renderPipeline(payload.pipeline_stages);
   elements.heroTitle.textContent = run.run_id;
-  elements.heroCopy.textContent = `${run.state.reason} ${formatNumber(run.tracks_total, 0)} tracks, ${formatNumber(run.segments_persisted, 0)} persisted segments, ${formatRatio(run.silent_ratio)} silent.`;
+  elements.heroCopy.textContent = `${run.state.reason} ${formatNumber(run.tracks_total, 0)} track, ${formatNumber(run.segments_persisted, 0)} persisted segment, ${formatRatio(run.silent_ratio)} silent.`;
   elements.runSummarySource.innerHTML = `${badgeLabel(run.provenance.source)} ${badgeLabel(run.state.provenance.source)}`;
 
   const cards = [
-    ["Status", run.state.label, run.state.reason, "status"],
-    ["Tracks", formatNumber(run.tracks_total, 0), "Tracks observed in this run.", "tracks"],
-    ["Persisted Segments", formatNumber(run.segments_persisted, 0), "Feature rows written to TimescaleDB.", "segments"],
-    ["Silent Ratio", formatRatio(run.silent_ratio), "Share of silent segments in the run.", "silent"],
-    ["Average RMS", formatNumber(run.avg_rms, 3), "Mean audio energy from persisted features.", "rms"],
-    ["Avg Processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Mean processing latency per segment.", "latency"],
-    ["Validation Failures", formatNumber(run.validation_failures, 0), "Rejected tracks from metadata validation.", "validation"],
-    ["Error Rate", formatRatio(run.error_rate), "Failed-track ratio at run level.", "errors"],
+    ["Trang thai", run.state.label, run.state.reason, "status"],
+    ["Tracks", formatNumber(run.tracks_total, 0), "So track quan sat trong run.", "tracks"],
+    ["Persisted segments", formatNumber(run.segments_persisted, 0), "Feature rows da ghi vao TimescaleDB.", "segments"],
+    ["Silent ratio", formatRatio(run.silent_ratio), "Ty le segment silent trong run.", "silent"],
+    ["Average RMS", formatNumber(run.avg_rms, 3), "Nang luong am thanh trung binh tu features.", "rms"],
+    ["Avg processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Thoi gian xu ly trung binh moi segment.", "latency"],
+    ["Validation failures", formatNumber(run.validation_failures, 0), "Track bi reject o buoc metadata validation.", "validation"],
+    ["Error rate", formatRatio(run.error_rate), "Ty le loi o muc run.", "errors"],
   ];
 
   elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy, tone]) => `
@@ -230,7 +334,11 @@ function renderRunSummary(payload) {
 
   const validationItems = payload.validation_outcomes.items;
   if (validationItems.length === 0) {
-    renderEmpty(elements.validationOutcomes);
+    renderEmpty(
+      elements.validationOutcomes,
+      "Chua co validation outcome",
+      "Run nay chua co outcome validation quan sat duoc tu review API."
+    );
   } else {
     elements.validationOutcomes.innerHTML = `
       <div class="validation-list">
@@ -258,13 +366,13 @@ function renderRuntimeProof(runtimeProof) {
       <article class="proof-card">
         <h3>Manifest</h3>
         <p class="mono">${escapeHtml(manifest.path)}</p>
-        <p>${manifest.exists ? "Present on shared storage." : "Not present on shared storage."}</p>
+        <p>${manifest.exists ? "Da co tren shared storage." : "Chua quan sat duoc tren shared storage."}</p>
         <div>${badgeLabel(manifest.provenance.path)} ${badgeLabel(manifest.provenance.exists)}</div>
       </article>
       <article class="proof-card">
         <h3>Processing State</h3>
         <p class="mono">${escapeHtml(processingState.path)}</p>
-        <p>${processingState.exists ? "Replay-stable processing metrics file is present." : "No persisted processing state file for this run."}</p>
+        <p>${processingState.exists ? "Co file metrics phuc vu restart/replay." : "Chua co processing state file cho run nay."}</p>
         ${processingState.state ? `
           <p>Segments: <strong>${processingState.state.segment_count}</strong></p>
           <p>Silent ratio: <strong>${formatRatio(processingState.state.silent_ratio)}</strong></p>
@@ -274,7 +382,7 @@ function renderRuntimeProof(runtimeProof) {
       </article>
       <article class="proof-card">
         <h3>Checkpoints</h3>
-        <p>${checkpoints.length} checkpoint row${checkpoints.length === 1 ? "" : "s"} for this run.</p>
+        <p>${checkpoints.length} checkpoint row cho run nay.</p>
         ${checkpoints.length > 0 ? `
           <ul>
             ${checkpoints.map((item) => `<li><span class="mono">${escapeHtml(item.topic_name)}[${item.partition_id}]</span> @ ${item.last_committed_offset}</li>`).join("")}
@@ -289,7 +397,11 @@ function renderRuntimeProof(runtimeProof) {
 function renderTracks(payload) {
   elements.trackCount.textContent = `${payload.total} track${payload.total === 1 ? "" : "s"}`;
   if (payload.items.length === 0) {
-    renderEmpty(elements.trackTable);
+    renderEmpty(
+      elements.trackTable,
+      "Chua co track",
+      "Run nay co the bi dung o validation hoac chua co track duoc persist."
+    );
     elements.trackPager.innerHTML = "";
     elements.trackDetailPanel.classList.add("hidden");
     return;
@@ -300,7 +412,7 @@ function renderTracks(payload) {
       <thead>
         <tr>
           <th>Track</th>
-          <th>State</th>
+          <th>Trang thai</th>
           <th>Validation</th>
           <th>Persisted</th>
           <th>Silent Ratio</th>
@@ -355,7 +467,7 @@ function renderTrackDetail(payload) {
   elements.trackDetailSource.innerHTML = `${badgeLabel(track.provenance.source)} ${badgeLabel(track.track_state.provenance.source)}`;
   elements.trackHead.innerHTML = `
     <div class="track-head-block track-result-card">
-      <h3>Track Result</h3>
+      <h3>Ket qua track</h3>
       <p><strong>${track.track_id}</strong> / ${escapeHtml(track.genre)}</p>
       <p>${escapeHtml(track.track_state.reason)}</p>
       <div class="run-metrics">
@@ -365,7 +477,7 @@ function renderTrackDetail(payload) {
       </div>
     </div>
     <div class="track-head-block">
-      <h3>Source Metadata</h3>
+      <h3>Source metadata</h3>
       <p>Artist ID: <strong>${track.artist_id}</strong></p>
       <p>Subset: <strong>${escapeHtml(track.subset)}</strong></p>
       <p>Duration: <strong>${formatNumber(track.duration_s, 2)} s</strong></p>
@@ -374,7 +486,11 @@ function renderTrackDetail(payload) {
   `;
 
   if (payload.segments.items.length === 0) {
-    renderEmpty(elements.segmentTable);
+    renderEmpty(
+      elements.segmentTable,
+      "Chua co segment",
+      "Track nay khong co persisted segment; thuong gap o validation failure hoac partial evidence."
+    );
     elements.segmentPager.innerHTML = "";
     return;
   }
@@ -384,7 +500,7 @@ function renderTrackDetail(payload) {
       <thead>
         <tr>
           <th>Segment</th>
-          <th>Result</th>
+          <th>Ket qua</th>
           <th>Processing</th>
           <th>Artifact</th>
         </tr>
@@ -415,12 +531,21 @@ function renderTrackDetail(payload) {
               </div>
               <div class="table-secondary mono">${escapeHtml(segment.artifact.uri)}</div>
               <audio controls preload="none" src="${escapeHtml(segment.artifact.media_url)}"></audio>
+              <div class="media-error" hidden>Khong tai duoc audio artifact cho segment nay.</div>
             </td>
           </tr>
         `).join("")}
       </tbody>
     </table>
   `;
+  elements.segmentTable.querySelectorAll("audio").forEach((audio) => {
+    audio.addEventListener("error", () => {
+      const errorNode = audio.parentElement?.querySelector(".media-error");
+      if (errorNode) {
+        errorNode.hidden = false;
+      }
+    });
+  });
 
   buildPager(elements.segmentPager, payload.segments, (nextOffset) => {
     state.segmentOffset = nextOffset;
@@ -428,8 +553,10 @@ function renderTrackDetail(payload) {
   });
 }
 
-async function loadRuns() {
-  setReviewReady(false);
+async function loadRuns({ background = false } = {}) {
+  if (!background) {
+    setReviewReady(false);
+  }
   const params = new URLSearchParams({
     limit: "8",
     offset: String(state.runOffset),
@@ -456,6 +583,7 @@ async function loadRuns() {
     return;
   }
   setReviewReady(true);
+  setRefreshSuccess();
 }
 
 async function loadRun(runId) {
@@ -483,6 +611,7 @@ async function loadTracks(runId) {
     return;
   }
   setReviewReady(true);
+  setRefreshSuccess();
 }
 
 async function loadTrack(runId, trackId) {
@@ -491,16 +620,36 @@ async function loadTrack(runId, trackId) {
   );
   renderTrackDetail(payload);
   setReviewReady(true);
+  setRefreshSuccess();
+}
+
+async function refreshActiveView() {
+  try {
+    await loadRuns({ background: true });
+  } catch (error) {
+    setRefreshError(error);
+    if (!state.runs) {
+      throw error;
+    }
+  }
 }
 
 async function boot() {
   setReviewReady(false);
   try {
     await loadRuns();
+    window.setInterval(refreshActiveView, REFRESH_INTERVAL_MS);
+    window.setInterval(updateFreshnessLabel, 5000);
   } catch (error) {
-    elements.heroTitle.textContent = "Review surface unavailable";
+    elements.heroTitle.textContent = "Review API chua san sang";
     elements.heroCopy.textContent = error.message;
-    renderEmpty(elements.runList);
+    renderEmpty(
+      elements.runList,
+      "Khong tai duoc runs",
+      "Kiem tra demo stack hoac chay evidence path truoc khi trinh bay."
+    );
+    renderPipeline(null);
+    setRefreshError(error);
     setReviewReady(false, error.message);
   }
 }
