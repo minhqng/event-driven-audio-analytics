@@ -1,7 +1,7 @@
 ﻿
 ===== ingestion preflight before topic bootstrap =====
- Container event-driven-audio-analytics-ingestion-run-2f0ca47b6107 Creating 
- Container event-driven-audio-analytics-ingestion-run-2f0ca47b6107 Created 
+ Container event-driven-audio-analytics-ingestion-run-2f0ca47b6107 Creating
+ Container event-driven-audio-analytics-ingestion-run-2f0ca47b6107 Created
 {"level":"INFO","logger":"ingestion","message":"Running ingestion preflight.","run_id":"demo-run","service":"ingestion","trace_id":"run/demo-run/service/ingestion","ts":"2026-05-23T11:00:43.891524Z"}
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
@@ -17,8 +17,8 @@ event_driven_audio_analytics.ingestion.modules.runtime.IngestionReadinessError: 
 
 
 ===== processing preflight before topic bootstrap =====
- Container event-driven-audio-analytics-processing-run-9c2741348c47 Creating 
- Container event-driven-audio-analytics-processing-run-9c2741348c47 Created 
+ Container event-driven-audio-analytics-processing-run-9c2741348c47 Creating
+ Container event-driven-audio-analytics-processing-run-9c2741348c47 Created
 {"level":"INFO","logger":"processing","message":"Running processing preflight.","run_id":"demo-run","service":"processing","trace_id":"run/demo-run/service/processing","ts":"2026-05-23T11:00:47.027122Z"}
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
@@ -34,8 +34,8 @@ event_driven_audio_analytics.processing.modules.runtime.ProcessingReadinessError
 
 
 ===== writer preflight before topic bootstrap =====
- Container event-driven-audio-analytics-writer-run-f9cc153af807 Creating 
- Container event-driven-audio-analytics-writer-run-f9cc153af807 Created 
+ Container event-driven-audio-analytics-writer-run-f9cc153af807 Creating
+ Container event-driven-audio-analytics-writer-run-f9cc153af807 Created
 {"level":"INFO","logger":"writer","message":"Running writer preflight.","run_id":"demo-run","service":"writer","trace_id":"run/demo-run/service/writer","ts":"2026-05-23T11:00:48.743232Z"}
 {"exception":"Traceback (most recent call last):\n  File \"/usr/local/lib/python3.12/site-packages/event_driven_audio_analytics/writer/app.py\", line 47, in main\n    check_runtime_dependencies(settings)\n  File \"/usr/local/lib/python3.12/site-packages/event_driven_audio_analytics/writer/modules/runtime.py\", line 88, in check_runtime_dependencies\n    raise WriterReadinessError(\nevent_driven_audio_analytics.writer.modules.runtime.WriterReadinessError: Kafka is reachable but missing required writer topics: audio.features, audio.metadata, system.metrics.","failure_class":"startup_dependency","level":"ERROR","logger":"writer","message":"Writer preflight failed.","run_id":"demo-run","service":"writer","trace_id":"run/demo-run/service/writer","ts":"2026-05-23T11:00:48.771958Z"}
 Traceback (most recent call last):

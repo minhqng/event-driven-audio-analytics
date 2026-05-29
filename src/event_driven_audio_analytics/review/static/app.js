@@ -175,6 +175,18 @@ function readUrlState() {
   };
 }
 
+function firstRunId(payload) {
+  return payload && Array.isArray(payload.items) && payload.items.length > 0
+    ? payload.items[0].run_id
+    : null;
+}
+
+function firstTrackId(payload) {
+  return payload && Array.isArray(payload.items) && payload.items.length > 0
+    ? Number(payload.items[0].track_id)
+    : null;
+}
+
 function startViewRequest() {
   state.activeRequestId += 1;
   return state.activeRequestId;
@@ -238,6 +250,26 @@ function renderEmpty(target, title = "Chưa có dữ liệu", copy = "Màn hình
 
 function renderInlineError(target, message) {
   renderEmpty(target, "Không tải được dữ liệu", message);
+}
+
+function renderRunLoadError(runId, error) {
+  elements.runSummaryPanel.classList.remove("hidden");
+  elements.detailGrid.classList.add("hidden");
+  elements.trackDetailPanel.classList.add("hidden");
+  elements.runtimeProofPanel.classList.add("hidden");
+  renderInlineError(elements.runSummaryGrid, `Không tải được run ${runId}: ${error.message}`);
+  setReviewReady(false, error.message);
+  setRefreshError(error);
+}
+
+function renderTrackLoadError(trackId, error) {
+  elements.trackDetailPanel.classList.remove("hidden");
+  elements.trackHead.innerHTML = "";
+  elements.trackDetailSource.innerHTML = "";
+  elements.segmentPager.innerHTML = "";
+  renderInlineError(elements.segmentTable, `Không tải được track ${trackId}: ${error.message}`);
+  setReviewReady(false, error.message);
+  setRefreshError(error);
 }
 
 function renderPipeline(pipelineStages) {
@@ -320,9 +352,7 @@ function renderRuns(payload) {
         if (!isCurrentRequest(requestId)) {
           return;
         }
-        setReviewReady(false, error.message);
-        setRefreshError(error);
-        renderInlineError(elements.runSummaryGrid, `Không tải được run ${runItem.run_id}: ${error.message}`);
+        renderRunLoadError(runItem.run_id, error);
       });
       renderRuns(state.runs);
     });
@@ -332,7 +362,14 @@ function renderRuns(payload) {
   buildPager(elements.runPager, payload, (nextOffset) => {
     const requestId = startViewRequest();
     state.runOffset = nextOffset;
-    loadRuns({ requestId });
+    loadRuns({ requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.runList, `Không tải được danh sách run: ${error.message}`);
+    });
   });
 }
 
@@ -484,7 +521,12 @@ function renderTracks(payload) {
       state.selectedTrackId = Number(button.dataset.trackId);
       state.segmentOffset = 0;
       updateUrl();
-      loadTrack(state.selectedRunId, state.selectedTrackId, { requestId });
+      loadTrack(state.selectedRunId, state.selectedTrackId, { requestId }).catch((error) => {
+        if (!isCurrentRequest(requestId)) {
+          return;
+        }
+        renderTrackLoadError(state.selectedTrackId, error);
+      });
       renderTracks(payload);
     });
   });
@@ -492,7 +534,14 @@ function renderTracks(payload) {
   buildPager(elements.trackPager, payload, (nextOffset) => {
     const requestId = startViewRequest();
     state.trackOffset = nextOffset;
-    loadTracks(state.selectedRunId, { requestId });
+    loadTracks(state.selectedRunId, { requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.trackTable, `Không tải được tracks: ${error.message}`);
+    });
   });
 }
 
@@ -585,7 +634,12 @@ function renderTrackDetail(payload) {
   buildPager(elements.segmentPager, payload.segments, (nextOffset) => {
     const requestId = startViewRequest();
     state.segmentOffset = nextOffset;
-    loadTrack(state.selectedRunId, state.selectedTrackId, { requestId });
+    loadTrack(state.selectedRunId, state.selectedTrackId, { requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      renderTrackLoadError(state.selectedTrackId, error);
+    });
   });
 }
 
@@ -606,18 +660,47 @@ async function loadRuns({ background = false, requestId = startViewRequest() } =
   }
 
   const { runId: urlRunId } = readUrlState();
-  if (urlRunId && !state.selectedRunId) {
-    state.selectedRunId = urlRunId;
-  } else if (!state.selectedRunId && payload.items.length > 0) {
-    state.selectedRunId = payload.items[0].run_id;
-  } else if (payload.items.length === 0) {
+  const urlRunRequested = Boolean(urlRunId && !state.selectedRunId);
+  state.selectedRunId = state.selectedRunId || urlRunId || firstRunId(payload);
+  if (!state.selectedRunId) {
     state.selectedRunId = null;
     state.selectedTrackId = null;
   }
   renderRuns(payload);
   if (state.selectedRunId) {
     updateUrl();
-    await loadRun(state.selectedRunId, { requestId });
+    try {
+      await loadRun(state.selectedRunId, { requestId });
+    } catch (error) {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      if (urlRunRequested) {
+        const fallbackRunId = firstRunId(payload);
+        state.selectedRunId = fallbackRunId;
+        state.selectedTrackId = null;
+        state.trackOffset = 0;
+        state.segmentOffset = 0;
+        updateUrl();
+        renderRuns(payload);
+        if (fallbackRunId) {
+          try {
+            await loadRun(fallbackRunId, { requestId });
+            return;
+          } catch (fallbackError) {
+            if (!isCurrentRequest(requestId)) {
+              return;
+            }
+            renderRunLoadError(fallbackRunId, fallbackError);
+            return;
+          }
+        }
+        setReviewReady(true);
+        setRefreshSuccess();
+        return;
+      }
+      renderRunLoadError(state.selectedRunId, error);
+    }
     return;
   }
   setReviewReady(true);
@@ -640,17 +723,41 @@ async function loadTracks(runId, { requestId = startViewRequest() } = {}) {
   }
 
   const { trackId: urlTrackId } = readUrlState();
-  if (urlTrackId !== null && state.selectedTrackId === null) {
-    state.selectedTrackId = urlTrackId;
-  } else if (state.selectedTrackId === null && payload.items.length > 0) {
-    state.selectedTrackId = payload.items[0].track_id;
-  } else if (payload.items.length === 0) {
+  const urlTrackRequested = urlTrackId !== null && state.selectedTrackId === null;
+  state.selectedTrackId = state.selectedTrackId ?? urlTrackId ?? firstTrackId(payload);
+  if (state.selectedTrackId === null) {
     state.selectedTrackId = null;
   }
   renderTracks(payload);
   if (state.selectedTrackId !== null) {
     updateUrl();
-    await loadTrack(runId, state.selectedTrackId, { requestId });
+    try {
+      await loadTrack(runId, state.selectedTrackId, { requestId });
+    } catch (error) {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      if (urlTrackRequested) {
+        const fallbackTrackId = firstTrackId(payload);
+        if (fallbackTrackId !== null && fallbackTrackId !== state.selectedTrackId) {
+          state.selectedTrackId = fallbackTrackId;
+          state.segmentOffset = 0;
+          updateUrl();
+          renderTracks(payload);
+          try {
+            await loadTrack(runId, fallbackTrackId, { requestId });
+            return;
+          } catch (fallbackError) {
+            if (!isCurrentRequest(requestId)) {
+              return;
+            }
+            renderTrackLoadError(fallbackTrackId, fallbackError);
+            return;
+          }
+        }
+      }
+      renderTrackLoadError(state.selectedTrackId, error);
+    }
     return;
   }
   setReviewReady(true);
@@ -687,9 +794,6 @@ async function refreshActiveView() {
 async function boot() {
   setReviewReady(false);
   renderModeControls();
-  const { runId, trackId } = readUrlState();
-  state.selectedRunId = runId;
-  state.selectedTrackId = trackId;
   elements.demoModeToggle.addEventListener("click", () => {
     const requestId = startViewRequest();
     state.demoMode = !state.demoMode;

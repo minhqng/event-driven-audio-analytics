@@ -91,6 +91,7 @@ def test_grafana_dashboard_contracts_support_demo_presentation() -> None:
         assert dashboard["title"] == contract["title"]
         assert dashboard["editable"] is False
         assert dashboard["style"] == "light"
+        assert dashboard["time"] == {"from": "now-6h", "to": "now"}
 
         panels = dashboard["panels"]
         assert isinstance(panels, list)

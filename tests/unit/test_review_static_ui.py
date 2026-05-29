@@ -31,3 +31,16 @@ def test_selected_run_is_not_overwritten_by_filtered_run_list() -> None:
 
     assert "payload.items[0].run_id" in app_js
     assert "state.selectedRunId && !payload.items.some" not in app_js
+
+
+def test_bad_deep_links_fall_back_without_blank_console() -> None:
+    app_js = (STATIC_ROOT / "app.js").read_text(encoding="utf-8")
+
+    assert "state.selectedRunId = runId" not in app_js
+    assert "state.selectedTrackId = trackId" not in app_js
+    assert "const urlRunRequested = Boolean(urlRunId && !state.selectedRunId)" in app_js
+    assert "const fallbackRunId = firstRunId(payload)" in app_js
+    assert "renderRunLoadError" in app_js
+    assert "const urlTrackRequested = urlTrackId !== null && state.selectedTrackId === null" in app_js
+    assert "const fallbackTrackId = firstTrackId(payload)" in app_js
+    assert "renderTrackLoadError" in app_js
