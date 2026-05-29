@@ -10,9 +10,11 @@ __pycache__/
 .gsd/runtime/
 .gsd.migrating/
 .tmp/pytest/
+test-results/
 .coverage
 build/
 dist/
+*.egg-info/
 *.pyc
 *.pyo
 *.pyd
