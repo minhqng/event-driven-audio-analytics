@@ -5,6 +5,35 @@ import pytest
 from event_driven_audio_analytics.smoke import verify_review_api as module
 
 
+def _pipeline_stages(
+    *,
+    metadata: str = "ready",
+    validation: str = "ready",
+    features: str = "ready",
+    artifacts: str = "ready",
+    review: str = "ready",
+) -> dict[str, object]:
+    return {
+        "items": [
+            {
+                "id": stage_id,
+                "label": stage_id.title(),
+                "value": value,
+                "reason": f"{stage_id} is {value}",
+                "provenance": {"source": "derived"},
+            }
+            for stage_id, value in (
+                ("metadata", metadata),
+                ("validation", validation),
+                ("features", features),
+                ("artifacts", artifacts),
+                ("review", review),
+            )
+        ],
+        "provenance": {"source": "derived"},
+    }
+
+
 def _build_payload(*, run_ids: list[str]) -> dict[str, dict[str, object]]:
     return {
         "/healthz": {"status": "ok"},
@@ -14,6 +43,20 @@ def _build_payload(*, run_ids: list[str]) -> dict[str, dict[str, object]]:
         },
         "/api/runs/demo-high-energy": {
             "run": {"segments_persisted": 4},
+            "pipeline_stages": _pipeline_stages(),
+        },
+        "/api/runs/demo-silent-oriented": {
+            "run": {"segments_persisted": 4},
+            "pipeline_stages": _pipeline_stages(artifacts="degraded", review="degraded"),
+        },
+        "/api/runs/demo-validation-failure": {
+            "run": {"segments_persisted": 0},
+            "pipeline_stages": _pipeline_stages(
+                validation="degraded",
+                features="empty",
+                artifacts="empty",
+                review="degraded",
+            ),
         },
         "/api/runs/demo-high-energy/tracks?limit=10": {
             "total": 1,
@@ -91,4 +134,36 @@ def test_verify_review_api_rejects_out_of_order_demo_runs(
     monkeypatch.setattr(module, "_verify_wav_stream", lambda *args, **kwargs: None)
 
     with pytest.raises(RuntimeError, match="pinned demo ordering"):
+        module.verify_review_api(base_url="http://localhost:8080")
+
+
+def test_verify_review_api_rejects_missing_pipeline_stages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _build_payload(run_ids=list(module.EXPECTED_RUN_IDS))
+    payload["/api/runs/demo-high-energy"].pop("pipeline_stages")
+
+    def fake_read_json(url: str) -> dict[str, object]:
+        return payload[url.removeprefix("http://localhost:8080")]
+
+    monkeypatch.setattr(module, "_read_json", fake_read_json)
+    monkeypatch.setattr(module, "_verify_wav_stream", lambda *args, **kwargs: None)
+
+    with pytest.raises(RuntimeError, match="missing pipeline_stages"):
+        module.verify_review_api(base_url="http://localhost:8080")
+
+
+def test_verify_review_api_rejects_wrong_validation_failure_stage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _build_payload(run_ids=list(module.EXPECTED_RUN_IDS))
+    payload["/api/runs/demo-validation-failure"]["pipeline_stages"] = _pipeline_stages()
+
+    def fake_read_json(url: str) -> dict[str, object]:
+        return payload[url.removeprefix("http://localhost:8080")]
+
+    monkeypatch.setattr(module, "_read_json", fake_read_json)
+    monkeypatch.setattr(module, "_verify_wav_stream", lambda *args, **kwargs: None)
+
+    with pytest.raises(RuntimeError, match="Validation-failure"):
         module.verify_review_api(base_url="http://localhost:8080")

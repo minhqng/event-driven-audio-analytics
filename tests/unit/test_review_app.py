@@ -65,6 +65,56 @@ def test_api_runs_passes_demo_mode_to_query_layer(
     assert captured["demo_mode"] is True
 
 
+def _assert_pipeline_stage_contract(payload: dict[str, object]) -> None:
+    stages = payload["pipeline_stages"]
+    assert isinstance(stages, dict)
+    assert stages["provenance"] == {"source": "derived"}
+    items = stages["items"]
+    assert isinstance(items, list)
+    assert items
+    for item in items:
+        assert set(item) == {"id", "label", "value", "reason", "provenance"}
+        assert item["value"] in {"ready", "degraded", "failed", "empty", "unknown"}
+        assert isinstance(item["reason"], str)
+        assert item["reason"]
+        assert item["provenance"] == {"source": "derived"}
+
+
+def test_api_run_detail_exposes_pipeline_stage_contract(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    def fake_get_run_detail(settings: ReviewSettings, run_id: str) -> dict[str, object]:
+        assert run_id == "demo-run"
+        return {
+            "run": {"run_id": run_id, "provenance": {"source": "db"}},
+            "validation_outcomes": {"items": [], "provenance": {"source": "db"}},
+            "runtime_proof": {"provenance": {"source": "derived"}},
+            "pipeline_stages": {
+                "items": [
+                    {
+                        "id": "metadata",
+                        "label": "Metadata",
+                        "value": "ready",
+                        "reason": "Run metadata is available from the review payload.",
+                        "provenance": {"source": "derived"},
+                    }
+                ],
+                "provenance": {"source": "derived"},
+            },
+            "links": {"tracks_url": f"/api/runs/{run_id}/tracks"},
+        }
+
+    monkeypatch.setattr("event_driven_audio_analytics.review.app.get_run_detail", fake_get_run_detail)
+    client = TestClient(create_app(build_settings(tmp_path)))
+
+    response = client.get("/api/runs/demo-run")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_pipeline_stage_contract(payload)
+
+
 def test_media_endpoint_streams_existing_segment(
     monkeypatch,
     tmp_path: Path,

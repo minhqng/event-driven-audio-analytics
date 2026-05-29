@@ -1,26 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Run Review Console</title>
+    <title>Phòng điều khiển demo audio analytics</title>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body data-review-ready="false">
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <p class="eyebrow">Read-only Review Surface</p>
-          <h1>Run Review Console</h1>
+          <p class="eyebrow">Event-Driven Audio Analytics</p>
+          <h1>Phòng điều khiển demo</h1>
           <p class="sidebar-copy">
-            Primary demo surface for bounded run, track, and segment inspection.
-            Authoritative truth remains TimescaleDB views and persisted artifacts.
+            Màn hình trình bày để theo dõi run, track, validation, features
+            và artifact âm thanh trong pipeline hướng sự kiện.
           </p>
         </div>
         <div class="mode-banner" id="mode-banner"></div>
+        <div class="status-stack" aria-label="Demo readiness indicators">
+          <div class="status-row">
+            <span class="status-dot status-dot-live"></span>
+            <span>Review API</span>
+            <strong id="ready-label">Loading</strong>
+          </div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <span>Lần cập nhật</span>
+            <strong id="freshness-label">Chưa có dữ liệu</strong>
+          </div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <span>Nguồn sự thật</span>
+            <strong>DB + artifacts</strong>
+          </div>
+        </div>
         <div class="panel">
           <div class="panel-heading">
-            <h2>Runs</h2>
+            <h2>Danh sách run</h2>
             <span class="panel-meta" id="run-count">0 runs</span>
           </div>
           <div class="run-list" id="run-list"></div>
@@ -29,26 +46,29 @@
       </aside>
 
       <main class="content">
-        <section class="hero">
-          <div>
-            <p class="eyebrow">Non-authoritative Presentation Layer</p>
-            <h2 id="hero-title">Select a run</h2>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy-block">
+            <p class="eyebrow">Review console trực tiếp</p>
+            <h2 id="hero-title">Chọn một run</h2>
             <p id="hero-copy">
-              This console summarizes persisted run outcomes first, then lets you
-              inspect metadata-only tracks and segment artifacts without opening Grafana.
+              Theo dõi hành trình âm thanh từ ingest đến persisted features,
+              kèm provenance để trả lời câu hỏi demo ngay trên màn hình.
             </p>
+            <div class="hero-actions">
+              <button class="hero-link" id="demo-mode-toggle" type="button">Demo playlist</button>
+              <a class="hero-link hero-link-secondary" href="/healthz">Kiểm tra API</a>
+            </div>
           </div>
-          <div class="truth-card">
-            <h3>Truth Layers</h3>
-            <div class="truth-row"><span class="badge badge-db">DB</span><span>TimescaleDB views and rows</span></div>
-            <div class="truth-row"><span class="badge badge-fs">FS</span><span>Shared claim-check artifacts and state files</span></div>
-            <div class="truth-row"><span class="badge badge-derived">Derived</span><span>UI-only states and status chips</span></div>
+          <div class="pipeline-card" id="pipeline-card" aria-label="Pipeline stage status">
+            <div class="pipeline-placeholder">
+              Chọn một run để xem trạng thái pipeline.
+            </div>
           </div>
         </section>
 
         <section class="panel hidden" id="run-summary-panel">
           <div class="panel-heading">
-            <h2>Run Summary</h2>
+            <h2>Kết quả run</h2>
             <span class="panel-meta" id="run-summary-source"></span>
           </div>
           <div class="summary-grid" id="run-summary-grid"></div>
@@ -57,7 +77,7 @@
         <section class="layout-grid hidden" id="detail-grid">
           <section class="panel">
             <div class="panel-heading">
-              <h2>Validation Outcomes</h2>
+              <h2>Kết quả validation</h2>
             </div>
             <div id="validation-outcomes"></div>
           </section>
@@ -74,7 +94,7 @@
 
         <section class="panel hidden" id="track-detail-panel">
           <div class="panel-heading">
-            <h2>Track Detail</h2>
+            <h2>Chi tiết track</h2>
             <span class="panel-meta" id="track-detail-source"></span>
           </div>
           <div class="track-head" id="track-head"></div>
@@ -85,8 +105,8 @@
         <section class="panel hidden" id="runtime-proof-panel">
           <details>
             <summary>
-              <span>Runtime Proof</span>
-              <span class="proof-note">Secondary UI. Use this to support questions, not to lead the demo.</span>
+              <span>Bằng chứng runtime</span>
+              <span class="proof-note">Dùng để bổ sung khi cần đối chiếu, không phải màn hình chính.</span>
             </summary>
             <div id="runtime-proof"></div>
           </details>
@@ -96,11 +116,11 @@
 
     <template id="empty-state-template">
       <div class="empty-state">
-        <h3>No data available</h3>
-        <p>This surface only reflects persisted run data and artifact paths that already exist.</p>
+        <h3>Chưa có dữ liệu</h3>
+        <p>Màn hình này chỉ đọc dữ liệu run và artifact đã được persist.</p>
       </div>
     </template>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=review-console-toggle-20260525"></script>
   </body>
 </html>

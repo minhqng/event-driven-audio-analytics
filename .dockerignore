@@ -3,12 +3,16 @@
 .gitattributes
 .idea
 .pytest_cache
+.pytest-tmp
 .pytest-tmp-gate
+.tmp/pytest
 .ruff_cache
 .mypy_cache
 .venv
 __pycache__/
 *.py[cod]
+*.egg-info/
+test-results/
 artifacts/
 data/local/
 tests/fixtures/audio/tracks.csv

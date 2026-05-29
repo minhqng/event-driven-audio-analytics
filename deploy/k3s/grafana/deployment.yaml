@@ -35,6 +35,8 @@ spec:
               value: "true"
             - name: GF_AUTH_ANONYMOUS_ORG_ROLE
               value: Viewer
+            - name: GF_USERS_DEFAULT_THEME
+              value: light
             - name: POSTGRES_HOST
               valueFrom:
                 configMapKeyRef:

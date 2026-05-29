@@ -16,13 +16,65 @@
     "links": {
       "tracks_url": "/api/runs/demo-high-energy/tracks"
     },
+    "pipeline_stages": {
+      "items": [
+        {
+          "id": "metadata",
+          "label": "Metadata",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Run summary metadata is present in the review payload.",
+          "value": "ready"
+        },
+        {
+          "id": "validation",
+          "label": "Validation",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Validation outcome counts are present and no validation failures are reported.",
+          "value": "ready"
+        },
+        {
+          "id": "features",
+          "label": "Features",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Persisted segment feature rows are present in the review summary.",
+          "value": "ready"
+        },
+        {
+          "id": "artifacts",
+          "label": "Artifacts",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "A manifest reference exists for the run and persisted segment rows are present.",
+          "value": "ready"
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "All observable review stages are ready from persisted payload evidence.",
+          "value": "ready"
+        }
+      ],
+      "provenance": {
+        "source": "derived"
+      }
+    },
     "run": {
-      "artifact_write_ms": 861.258,
-      "avg_processing_ms": 61.84229025029708,
+      "artifact_write_ms": 530.213,
+      "avg_processing_ms": 39.031317999899784,
       "avg_rms": -8.955863509685088,
       "error_rate": 0.0,
-      "first_seen_at": "2026-05-09T09:33:19.998924Z",
-      "last_seen_at": "2026-05-09T09:33:22.845685Z",
+      "first_seen_at": "2026-05-25T08:10:57.417248Z",
+      "last_seen_at": "2026-05-25T08:10:59.227789Z",
       "links": {
         "detail_url": "/api/runs/demo-high-energy",
         "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -120,14 +172,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 63.43764900066162,
+          "processing_ms": 37.75984999992943,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 0,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:20.776168Z"
+          "ts": "2026-05-25T08:10:57.456793Z"
         },
         {
           "artifact": {
@@ -142,14 +194,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 71.8990200002736,
+          "processing_ms": 43.926182999939556,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:22.625935Z"
+          "ts": "2026-05-25T08:10:59.080409Z"
         },
         {
           "artifact": {
@@ -164,14 +216,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 56.03877000066859,
+          "processing_ms": 38.460029999896506,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:22.714863Z"
+          "ts": "2026-05-25T08:10:59.144961Z"
         },
         {
           "artifact": {
@@ -186,14 +238,14 @@
           },
           "checksum": "sha256:049cbbc20cdeed64574f1b9ff11b1408b1cb431de87426576c1d1e47811989e6",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 55.99372199958452,
+          "processing_ms": 35.979208999833645,
           "provenance": {
             "source": "db"
           },
           "rms": -11.213588477164947,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:22.805750Z"
+          "ts": "2026-05-25T08:10:59.202804Z"
         }
       ],
       "limit": 10,
@@ -202,7 +254,7 @@
     },
     "track": {
       "artist_id": 9101,
-      "avg_processing_ms": 61.84229025029708,
+      "avg_processing_ms": 39.031317999899784,
       "avg_rms": -8.955863509685088,
       "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
       "duration_s": 6.0,
@@ -238,7 +290,7 @@
     "items": [
       {
         "artist_id": 9101,
-        "avg_processing_ms": 61.84229025029708,
+        "avg_processing_ms": 39.031317999899784,
         "avg_rms": -8.955863509685088,
         "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
         "duration_s": 6.0,
@@ -281,12 +333,12 @@
     "has_more": false,
     "items": [
       {
-        "artifact_write_ms": 861.258,
-        "avg_processing_ms": 61.84229025029708,
+        "artifact_write_ms": 530.213,
+        "avg_processing_ms": 39.031317999899784,
         "avg_rms": -8.955863509685088,
         "error_rate": 0.0,
-        "first_seen_at": "2026-05-09T09:33:19.998924Z",
-        "last_seen_at": "2026-05-09T09:33:22.845685Z",
+        "first_seen_at": "2026-05-25T08:10:57.417248Z",
+        "last_seen_at": "2026-05-25T08:10:59.227789Z",
         "links": {
           "detail_url": "/api/runs/demo-high-energy",
           "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -313,12 +365,12 @@
         "writer_error_count": 0
       },
       {
-        "artifact_write_ms": 1046.117,
-        "avg_processing_ms": 64.7230000001855,
+        "artifact_write_ms": 530.936,
+        "avg_processing_ms": 34.832009749948156,
         "avg_rms": -25.60186305140538,
         "error_rate": 0.0,
-        "first_seen_at": "2026-05-09T09:33:29.317434Z",
-        "last_seen_at": "2026-05-09T09:33:31.373171Z",
+        "first_seen_at": "2026-05-25T08:11:04.059082Z",
+        "last_seen_at": "2026-05-25T08:11:06.098576Z",
         "links": {
           "detail_url": "/api/runs/demo-silent-oriented",
           "tracks_url": "/api/runs/demo-silent-oriented/tracks"
@@ -349,8 +401,8 @@
         "avg_processing_ms": null,
         "avg_rms": null,
         "error_rate": 1.0,
-        "first_seen_at": "2026-05-09T09:33:38.145749Z",
-        "last_seen_at": "2026-05-09T09:33:39.207068Z",
+        "first_seen_at": "2026-05-25T08:11:11.696306Z",
+        "last_seen_at": "2026-05-25T08:11:12.724979Z",
         "links": {
           "detail_url": "/api/runs/demo-validation-failure",
           "tracks_url": "/api/runs/demo-validation-failure/tracks"
@@ -392,6 +444,158 @@
     "offset": 0,
     "total": 3
   },
+  "silent_oriented": {
+    "links": {
+      "tracks_url": "/api/runs/demo-silent-oriented/tracks"
+    },
+    "pipeline_stages": {
+      "items": [
+        {
+          "id": "metadata",
+          "label": "Metadata",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Run summary metadata is present in the review payload.",
+          "value": "ready"
+        },
+        {
+          "id": "validation",
+          "label": "Validation",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Validation outcome counts are present and no validation failures are reported.",
+          "value": "ready"
+        },
+        {
+          "id": "features",
+          "label": "Features",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Persisted segment feature rows are present in the review summary.",
+          "value": "ready"
+        },
+        {
+          "id": "artifacts",
+          "label": "Artifacts",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "A manifest reference exists for the run and persisted segment rows are present.",
+          "value": "ready"
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "All observable review stages are ready from persisted payload evidence.",
+          "value": "ready"
+        }
+      ],
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "run": {
+      "artifact_write_ms": 530.936,
+      "avg_processing_ms": 34.832009749948156,
+      "avg_rms": -25.60186305140538,
+      "error_rate": 0.0,
+      "first_seen_at": "2026-05-25T08:11:04.059082Z",
+      "last_seen_at": "2026-05-25T08:11:06.098576Z",
+      "links": {
+        "detail_url": "/api/runs/demo-silent-oriented",
+        "tracks_url": "/api/runs/demo-silent-oriented/tracks"
+      },
+      "processing_error_count": 0,
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-silent-oriented",
+      "segments_persisted": 4,
+      "segments_total": 4.0,
+      "silent_ratio": 0.25,
+      "state": {
+        "label": "Persisted",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "Run reached TimescaleDB without downstream errors.",
+        "value": "persisted"
+      },
+      "total_error_events": 0.0,
+      "tracks_total": 1.0,
+      "validation_failures": 0.0,
+      "writer_error_count": 0
+    },
+    "runtime_proof": {
+      "checkpoints": {
+        "items": [
+          {
+            "last_committed_offset": 7,
+            "partition_id": 0,
+            "provenance": {
+              "source": "db"
+            },
+            "topic_name": "audio.features",
+            "updated_at": "2026-05-25T08:11:05.260617Z"
+          }
+        ],
+        "provenance": {
+          "source": "db"
+        }
+      },
+      "emphasis": "secondary",
+      "manifest": {
+        "exists": true,
+        "path": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
+        "provenance": {
+          "exists": "fs",
+          "path": "claim_check_uri"
+        }
+      },
+      "processing_state": {
+        "exists": true,
+        "path": "/app/artifacts/runs/demo-silent-oriented/state/processing_metrics.json",
+        "provenance": {
+          "exists": "fs",
+          "path": "fs",
+          "state": "fs"
+        },
+        "read_error": null,
+        "state": {
+          "provenance": {
+            "source": "fs"
+          },
+          "run_id": "demo-silent-oriented",
+          "segment_count": 4,
+          "silent_ratio": 0.25,
+          "silent_segments": 1
+        }
+      },
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "validation_outcomes": {
+      "items": [
+        {
+          "provenance": {
+            "source": "db"
+          },
+          "track_count": 1,
+          "validation_status": "validated"
+        }
+      ],
+      "provenance": {
+        "source": "db"
+      }
+    }
+  },
   "silent_oriented_track_detail": {
     "run_id": "demo-silent-oriented",
     "segments": {
@@ -410,14 +614,14 @@
           },
           "checksum": "sha256:d4bd3ca1a3e5de733841da6c55adebbafd4f05fcc7fdf2023b1db4f151508a1b",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 83.99736000046687,
+          "processing_ms": 34.899677000112206,
           "provenance": {
             "source": "db"
           },
           "rms": -60.0,
           "segment_idx": 0,
           "silent_flag": true,
-          "ts": "2026-05-09T09:33:30.413213Z"
+          "ts": "2026-05-25T08:11:05.095769Z"
         },
         {
           "artifact": {
@@ -432,14 +636,14 @@
           },
           "checksum": "sha256:ebc75223033ab6c612278f165c0413400ef4544e790258dd3459c1f2f2062df6",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 64.42232100016554,
+          "processing_ms": 35.48714699991251,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:30.506762Z"
+          "ts": "2026-05-25T08:11:05.149642Z"
         },
         {
           "artifact": {
@@ -454,14 +658,14 @@
           },
           "checksum": "sha256:6a324380d1c4332f0759b6dd88126319f8c790b0e33b06c1597b6c4bcd8392ca",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 52.88204499993299,
+          "processing_ms": 33.555082999782826,
           "provenance": {
             "source": "db"
           },
           "rms": -12.128950764113974,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:30.593759Z"
+          "ts": "2026-05-25T08:11:05.202274Z"
         },
         {
           "artifact": {
@@ -476,14 +680,14 @@
           },
           "checksum": "sha256:95be5110cbee9d1892427f6d0da708439a9055e8ba76746a91920fcfb83675cf",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 57.59027400017658,
+          "processing_ms": 35.38613199998508,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-05-09T09:33:30.683452Z"
+          "ts": "2026-05-25T08:11:05.257349Z"
         }
       ],
       "limit": 10,
@@ -492,7 +696,7 @@
     },
     "track": {
       "artist_id": 9102,
-      "avg_processing_ms": 64.7230000001855,
+      "avg_processing_ms": 34.832009749948156,
       "avg_rms": -25.60186305140538,
       "checksum": "sha256:74821199a072e5dc590e976b6f3a9b487909399e54c550c4e3e266cf5068b7a7",
       "duration_s": 6.0,
@@ -521,6 +725,159 @@
       },
       "track_state_value": "persisted",
       "validation_status": "validated"
+    }
+  },
+  "validation_failure": {
+    "links": {
+      "tracks_url": "/api/runs/demo-validation-failure/tracks"
+    },
+    "pipeline_stages": {
+      "items": [
+        {
+          "id": "metadata",
+          "label": "Metadata",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Run summary metadata is present in the review payload.",
+          "value": "ready"
+        },
+        {
+          "id": "validation",
+          "label": "Validation",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "Validation outcomes include rejected or non-persisted track metadata.",
+          "value": "degraded"
+        },
+        {
+          "id": "features",
+          "label": "Features",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "No persisted segment feature rows are present in the review summary.",
+          "value": "empty"
+        },
+        {
+          "id": "artifacts",
+          "label": "Artifacts",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "No persisted segment rows are available to prove review artifacts.",
+          "value": "empty"
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "provenance": {
+            "source": "derived"
+          },
+          "reason": "One or more observable review stages are incomplete or recorded errors.",
+          "value": "degraded"
+        }
+      ],
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "run": {
+      "artifact_write_ms": 0.0,
+      "avg_processing_ms": null,
+      "avg_rms": null,
+      "error_rate": 1.0,
+      "first_seen_at": "2026-05-25T08:11:11.696306Z",
+      "last_seen_at": "2026-05-25T08:11:12.724979Z",
+      "links": {
+        "detail_url": "/api/runs/demo-validation-failure",
+        "tracks_url": "/api/runs/demo-validation-failure/tracks"
+      },
+      "processing_error_count": 0,
+      "provenance": {
+        "source": "db"
+      },
+      "run_id": "demo-validation-failure",
+      "segments_persisted": 0,
+      "segments_total": 0.0,
+      "silent_ratio": 0.0,
+      "state": {
+        "label": "Metadata-only",
+        "provenance": {
+          "source": "derived"
+        },
+        "reason": "Tracks are present in metadata, but no segments reached persisted features.",
+        "value": "metadata_only"
+      },
+      "total_error_events": 1.0,
+      "tracks_total": 1.0,
+      "validation_failures": 1.0,
+      "writer_error_count": 0
+    },
+    "runtime_proof": {
+      "checkpoints": {
+        "items": [
+          {
+            "last_committed_offset": 2,
+            "partition_id": 0,
+            "provenance": {
+              "source": "db"
+            },
+            "topic_name": "audio.metadata",
+            "updated_at": "2026-05-25T08:11:11.698238Z"
+          },
+          {
+            "last_committed_offset": 27,
+            "partition_id": 0,
+            "provenance": {
+              "source": "db"
+            },
+            "topic_name": "system.metrics",
+            "updated_at": "2026-05-25T08:11:12.722603Z"
+          }
+        ],
+        "provenance": {
+          "source": "db"
+        }
+      },
+      "emphasis": "secondary",
+      "manifest": {
+        "exists": false,
+        "path": "/artifacts/runs/demo-validation-failure/manifests/segments.parquet",
+        "provenance": {
+          "exists": "fs",
+          "path": "claim_check_uri"
+        }
+      },
+      "processing_state": {
+        "exists": false,
+        "path": "/app/artifacts/runs/demo-validation-failure/state/processing_metrics.json",
+        "provenance": {
+          "exists": "fs",
+          "path": "fs",
+          "state": "fs"
+        },
+        "read_error": null,
+        "state": null
+      },
+      "provenance": {
+        "source": "derived"
+      }
+    },
+    "validation_outcomes": {
+      "items": [
+        {
+          "provenance": {
+            "source": "db"
+          },
+          "track_count": 1,
+          "validation_status": "silent"
+        }
+      ],
+      "provenance": {
+        "source": "db"
+      }
     }
   },
   "validation_failure_track_detail": {

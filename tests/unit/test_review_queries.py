@@ -195,6 +195,241 @@ def test_list_runs_uses_demo_mode_query_when_pinned_runs_are_requested(
     assert "array_position" in cursor.executed[0][0]
 
 
+def _run_summary_row(
+    *,
+    run_id: str = "demo-run",
+    tracks_total: float = 1.0,
+    segments_total: float = 2.0,
+    validation_failures: float = 0.0,
+    segments_persisted: int = 2,
+    processing_error_count: int = 0,
+    writer_error_count: int = 0,
+    total_error_events: float = 0.0,
+    error_rate: float = 0.0,
+) -> tuple[object, ...]:
+    return (
+        run_id,
+        None,
+        None,
+        tracks_total,
+        segments_total,
+        validation_failures,
+        11.0,
+        segments_persisted,
+        -9.9,
+        4.2,
+        0.5,
+        processing_error_count,
+        writer_error_count,
+        total_error_events,
+        error_rate,
+    )
+
+
+def _stage_items_by_id(payload: dict[str, object]) -> dict[str, dict[str, object]]:
+    stages = payload["pipeline_stages"]
+    assert isinstance(stages, dict)
+    items = stages["items"]
+    assert isinstance(items, list)
+    by_id = {str(item["id"]): item for item in items}
+    assert set(by_id) == {"metadata", "validation", "features", "artifacts", "review"}
+    for item in items:
+        assert set(item) == {"id", "label", "value", "reason", "provenance"}
+        assert item["value"] in {"ready", "degraded", "failed", "empty", "unknown"}
+        assert isinstance(item["reason"], str)
+        assert item["reason"]
+        assert item["provenance"] == {"source": "derived"}
+    return by_id
+
+
+def test_get_run_detail_adds_pipeline_stages_for_persisted_run(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    manifest_path = tmp_path / "runs" / "demo-run" / "manifests" / "segments.parquet"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_bytes(b"PAR1")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            _run_summary_row(),
+            ("/artifacts/runs/demo-run/manifests/segments.parquet",),
+        ],
+        fetchall_results=[
+            [("validated", 1)],
+            [("audio.features", 0, 8, None)],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    by_id = _stage_items_by_id(payload)
+    assert by_id["metadata"]["value"] == "ready"
+    assert by_id["validation"]["value"] == "ready"
+    assert by_id["features"]["value"] == "ready"
+    assert by_id["artifacts"]["value"] == "ready"
+    assert by_id["review"]["value"] == "ready"
+
+
+def test_get_run_detail_marks_validation_failure_as_metadata_only_pipeline(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    cursor = FakeCursor(
+        fetchone_results=[
+            _run_summary_row(
+                run_id="demo-validation-failure",
+                tracks_total=1.0,
+                segments_total=0.0,
+                validation_failures=1.0,
+                segments_persisted=0,
+                total_error_events=1.0,
+                error_rate=1.0,
+            ),
+            None,
+        ],
+        fetchall_results=[
+            [("silent", 1)],
+            [],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-validation-failure")
+
+    assert payload is not None
+    by_id = _stage_items_by_id(payload)
+    assert by_id["metadata"]["value"] == "ready"
+    assert by_id["validation"]["value"] == "degraded"
+    assert by_id["features"]["value"] == "empty"
+    assert by_id["artifacts"]["value"] == "empty"
+    assert by_id["review"]["value"] == "degraded"
+    assert "validation" in by_id["validation"]["reason"].lower()
+
+
+def test_get_run_detail_marks_downstream_errors_without_fake_infra_health(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    cursor = FakeCursor(
+        fetchone_results=[
+            _run_summary_row(
+                segments_total=0.0,
+                segments_persisted=0,
+                processing_error_count=1,
+                writer_error_count=0,
+                total_error_events=1.0,
+                error_rate=1.0,
+            ),
+            None,
+        ],
+        fetchall_results=[
+            [("validated", 1)],
+            [],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    by_id = _stage_items_by_id(payload)
+    assert by_id["metadata"]["value"] == "ready"
+    assert by_id["validation"]["value"] == "ready"
+    assert by_id["features"]["value"] == "failed"
+    assert by_id["artifacts"]["value"] == "empty"
+    assert by_id["review"]["value"] == "degraded"
+    rendered = " ".join(str(item) for item in by_id.values()).lower()
+    assert "kafka" not in rendered
+    assert "minio" not in rendered
+    assert "timescaledb" not in rendered
+    assert "container" not in rendered
+
+
+def test_get_run_detail_marks_empty_run_pipeline_as_empty(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    cursor = FakeCursor(
+        fetchone_results=[
+            _run_summary_row(
+                tracks_total=0.0,
+                segments_total=0.0,
+                validation_failures=0.0,
+                segments_persisted=0,
+            ),
+            None,
+        ],
+        fetchall_results=[
+            [],
+            [],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    by_id = _stage_items_by_id(payload)
+    assert by_id["metadata"]["value"] == "empty"
+    assert by_id["validation"]["value"] == "empty"
+    assert by_id["features"]["value"] == "empty"
+    assert by_id["artifacts"]["value"] == "empty"
+    assert by_id["review"]["value"] == "empty"
+
+
+def test_get_run_detail_marks_partial_runtime_proof_as_degraded_artifacts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    settings = build_settings(tmp_path)
+    processing_state_path = tmp_path / "runs" / "demo-run" / "state" / "processing_metrics.json"
+    processing_state_path.parent.mkdir(parents=True, exist_ok=True)
+    processing_state_path.write_text("[]", encoding="utf-8")
+
+    cursor = FakeCursor(
+        fetchone_results=[
+            _run_summary_row(),
+            None,
+        ],
+        fetchall_results=[
+            [("validated", 1)],
+            [("audio.features", 0, 8, None)],
+        ],
+    )
+    monkeypatch.setattr(
+        "event_driven_audio_analytics.review.queries.open_database_connection",
+        lambda _: FakeConnection(cursor),
+    )
+
+    payload = get_run_detail(settings, "demo-run")
+
+    assert payload is not None
+    by_id = _stage_items_by_id(payload)
+    assert by_id["features"]["value"] == "ready"
+    assert by_id["artifacts"]["value"] == "degraded"
+    assert by_id["review"]["value"] == "degraded"
+    assert "processing state" in by_id["artifacts"]["reason"].lower()
+
+
 def test_get_run_detail_reads_processing_state_from_fs(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

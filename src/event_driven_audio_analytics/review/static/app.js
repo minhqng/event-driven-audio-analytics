@@ -6,14 +6,40 @@ const state = {
   selectedRunId: null,
   selectedTrackId: null,
   demoMode: new URLSearchParams(window.location.search).get("demo") === "1",
+  activeRequestId: 0,
+  lastSuccessfulRefresh: null,
+  lastRefreshError: null,
+};
+
+const REFRESH_INTERVAL_MS = 25000;
+const STALE_AFTER_MS = 60000;
+
+const stageCopy = {
+  metadata: { label: "Metadata", short: "Run summary" },
+  validation: { label: "Validation", short: "Kiểm tra đầu vào" },
+  features: { label: "Features", short: "RMS + silence" },
+  artifacts: { label: "Artifacts", short: "Media + manifest" },
+  review: { label: "Review", short: "Màn hình demo" },
+};
+
+const stageValueLabels = {
+  ready: "Sẵn sàng",
+  degraded: "Cần chú ý",
+  failed: "Lỗi",
+  empty: "Chưa có",
+  unknown: "Chưa rõ",
 };
 
 const elements = {
   body: document.body,
   modeBanner: document.getElementById("mode-banner"),
+  readyLabel: document.getElementById("ready-label"),
+  freshnessLabel: document.getElementById("freshness-label"),
+  pipelineCard: document.getElementById("pipeline-card"),
   runList: document.getElementById("run-list"),
   runCount: document.getElementById("run-count"),
   runPager: document.getElementById("run-pager"),
+  demoModeToggle: document.getElementById("demo-mode-toggle"),
   heroTitle: document.getElementById("hero-title"),
   heroCopy: document.getElementById("hero-copy"),
   runSummaryPanel: document.getElementById("run-summary-panel"),
@@ -48,21 +74,21 @@ function chipClass(value) {
 
 function formatNumber(value, digits = 2) {
   if (value === null || value === undefined) {
-    return "—";
+    return "-";
   }
   return Number(value).toFixed(digits);
 }
 
 function formatRatio(value) {
   if (value === null || value === undefined) {
-    return "—";
+    return "-";
   }
   return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
 function formatTime(value) {
   if (!value) {
-    return "—";
+    return "-";
   }
   return new Date(value).toLocaleString();
 }
@@ -79,6 +105,7 @@ function badgeLabel(source) {
 
 function setReviewReady(ready, error = null) {
   elements.body.dataset.reviewReady = ready ? "true" : "false";
+  elements.readyLabel.textContent = error ? "Lỗi" : ready ? "Sẵn sàng" : "Đang tải";
   if (state.selectedRunId) {
     elements.body.dataset.selectedRunId = state.selectedRunId;
   } else {
@@ -96,12 +123,77 @@ function setReviewReady(ready, error = null) {
   }
 }
 
+function setRefreshSuccess() {
+  state.lastSuccessfulRefresh = new Date();
+  state.lastRefreshError = null;
+  updateFreshnessLabel();
+}
+
+function setRefreshError(error) {
+  state.lastRefreshError = error instanceof Error ? error.message : String(error);
+  updateFreshnessLabel();
+}
+
+function updateFreshnessLabel() {
+  if (!state.lastSuccessfulRefresh) {
+    elements.body.dataset.refreshState = state.lastRefreshError ? "error" : "loading";
+    elements.freshnessLabel.textContent = state.lastRefreshError ? "Lỗi tải dữ liệu" : "Đang tải";
+    return;
+  }
+
+  const ageMs = Date.now() - state.lastSuccessfulRefresh.getTime();
+  const ageSeconds = Math.max(0, Math.round(ageMs / 1000));
+  if (state.lastRefreshError) {
+    elements.body.dataset.refreshState = "error";
+    elements.freshnessLabel.textContent = `Lỗi, giữ dữ liệu ${ageSeconds}s trước`;
+    return;
+  }
+  if (ageMs > STALE_AFTER_MS) {
+    elements.body.dataset.refreshState = "stale";
+    elements.freshnessLabel.textContent = `Dữ liệu cũ ${ageSeconds}s`;
+    return;
+  }
+  elements.body.dataset.refreshState = "fresh";
+  elements.freshnessLabel.textContent = `Mới ${ageSeconds}s`;
+}
+
 async function fetchJSON(url) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`);
   }
   return response.json();
+}
+
+function readUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const trackId = params.get("track_id");
+  const parsedTrackId = trackId === null ? null : Number(trackId);
+  return {
+    runId: params.get("run_id"),
+    trackId: Number.isFinite(parsedTrackId) ? parsedTrackId : null,
+  };
+}
+
+function firstRunId(payload) {
+  return payload && Array.isArray(payload.items) && payload.items.length > 0
+    ? payload.items[0].run_id
+    : null;
+}
+
+function firstTrackId(payload) {
+  return payload && Array.isArray(payload.items) && payload.items.length > 0
+    ? Number(payload.items[0].track_id)
+    : null;
+}
+
+function startViewRequest() {
+  state.activeRequestId += 1;
+  return state.activeRequestId;
+}
+
+function isCurrentRequest(requestId) {
+  return requestId === state.activeRequestId;
 }
 
 function buildPager(container, payload, onPageChange) {
@@ -111,7 +203,7 @@ function buildPager(container, payload, onPageChange) {
   }
 
   const prev = document.createElement("button");
-  prev.textContent = "Previous";
+  prev.textContent = "Prev";
   prev.disabled = payload.offset === 0;
   prev.addEventListener("click", () => onPageChange(Math.max(0, payload.offset - payload.limit)));
 
@@ -138,25 +230,94 @@ function updateUrl() {
   if (state.selectedTrackId !== null) {
     params.set("track_id", String(state.selectedTrackId));
   }
-  history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  const query = params.toString();
+  history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
 }
 
-function renderEmpty(target) {
+function renderModeControls() {
+  elements.demoModeToggle.textContent = state.demoMode ? "Tắt demo / Tất cả run" : "Demo playlist";
+  elements.demoModeToggle.setAttribute("aria-pressed", String(state.demoMode));
+}
+
+function renderEmpty(target, title = "Chưa có dữ liệu", copy = "Màn hình này chỉ đọc dữ liệu đã được persist.") {
   const template = document.getElementById("empty-state-template");
   target.innerHTML = "";
-  target.append(template.content.cloneNode(true));
+  const fragment = template.content.cloneNode(true);
+  fragment.querySelector("h3").textContent = title;
+  fragment.querySelector("p").textContent = copy;
+  target.append(fragment);
+}
+
+function renderInlineError(target, message) {
+  renderEmpty(target, "Không tải được dữ liệu", message);
+}
+
+function renderRunLoadError(runId, error) {
+  elements.runSummaryPanel.classList.remove("hidden");
+  elements.detailGrid.classList.add("hidden");
+  elements.trackDetailPanel.classList.add("hidden");
+  elements.runtimeProofPanel.classList.add("hidden");
+  renderInlineError(elements.runSummaryGrid, `Không tải được run ${runId}: ${error.message}`);
+  setReviewReady(false, error.message);
+  setRefreshError(error);
+}
+
+function renderTrackLoadError(trackId, error) {
+  elements.trackDetailPanel.classList.remove("hidden");
+  elements.trackHead.innerHTML = "";
+  elements.trackDetailSource.innerHTML = "";
+  elements.segmentPager.innerHTML = "";
+  renderInlineError(elements.segmentTable, `Không tải được track ${trackId}: ${error.message}`);
+  setReviewReady(false, error.message);
+  setRefreshError(error);
+}
+
+function renderPipeline(pipelineStages) {
+  const items = pipelineStages && Array.isArray(pipelineStages.items) ? pipelineStages.items : [];
+  if (items.length === 0) {
+    elements.pipelineCard.innerHTML = `
+      <div class="pipeline-placeholder">
+        Chưa có stage contract trong payload run detail.
+      </div>
+    `;
+    return;
+  }
+
+  elements.pipelineCard.innerHTML = items.map((item, index) => {
+    const value = String(item.value || "unknown");
+    const stageId = String(item.id || `stage-${index + 1}`);
+    const copy = stageCopy[stageId] || { label: item.label || stageId, short: "Observable evidence" };
+    const reason = String(item.reason || "No reason provided.");
+    return `
+      <article class="pipeline-node pipeline-node-${escapeHtml(value)}" title="${escapeHtml(reason)}">
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <strong>${escapeHtml(copy.label)}</strong>
+        <small>${escapeHtml(copy.short)}</small>
+        <p>${escapeHtml(reason)}</p>
+        <div class="stage-footer">
+          <span class="stage-status stage-status-${escapeHtml(value)}">${escapeHtml(stageValueLabels[value] || value)}</span>
+          ${badgeLabel(item.provenance?.source)}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderRuns(payload) {
   state.runs = payload;
+  renderModeControls();
   elements.runList.innerHTML = "";
   elements.runCount.textContent = `${payload.total} run${payload.total === 1 ? "" : "s"}`;
   elements.modeBanner.textContent = state.demoMode
-    ? `Demo mode pinned to deterministic runs: ${payload.mode.pinned_run_ids.join(", ")}`
-    : "Showing recent persisted runs.";
+    ? `Đang lọc demo playlist: ${payload.mode.pinned_run_ids.join(", ")}`
+    : "Đang hiển thị các run mới nhất.";
 
   if (payload.items.length === 0) {
-    renderEmpty(elements.runList);
+    renderEmpty(
+      elements.runList,
+      "Chưa có run",
+      "Hãy chạy demo evidence path để tạo deterministic runs trước khi trình bày."
+    );
     elements.runPager.innerHTML = "";
     return;
   }
@@ -171,9 +332,9 @@ function renderRuns(payload) {
         <span class="${chipClass(runItem.state.value)}">${escapeHtml(runItem.state.label)}</span>
       </div>
       <div class="run-metrics">
-        <span>${runItem.segments_persisted} persisted</span>
+        <span>${formatNumber(runItem.tracks_total, 0)} track</span>
+        <span>${runItem.segments_persisted} segment</span>
         <span>${formatRatio(runItem.silent_ratio)} silent</span>
-        <span>${formatNumber(runItem.avg_rms, 2)} RMS</span>
       </div>
       <div class="run-metrics">
         ${badgeLabel(runItem.provenance.source)}
@@ -181,20 +342,34 @@ function renderRuns(payload) {
       </div>
     `;
     button.addEventListener("click", () => {
+      const requestId = startViewRequest();
       state.selectedRunId = runItem.run_id;
       state.selectedTrackId = null;
       state.trackOffset = 0;
       state.segmentOffset = 0;
       updateUrl();
-      loadRun(runItem.run_id);
+      loadRun(runItem.run_id, { requestId }).catch((error) => {
+        if (!isCurrentRequest(requestId)) {
+          return;
+        }
+        renderRunLoadError(runItem.run_id, error);
+      });
       renderRuns(state.runs);
     });
     elements.runList.append(button);
   });
 
   buildPager(elements.runPager, payload, (nextOffset) => {
+    const requestId = startViewRequest();
     state.runOffset = nextOffset;
-    loadRuns();
+    loadRuns({ requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.runList, `Không tải được danh sách run: ${error.message}`);
+    });
   });
 }
 
@@ -203,23 +378,24 @@ function renderRunSummary(payload) {
   elements.runSummaryPanel.classList.remove("hidden");
   elements.detailGrid.classList.remove("hidden");
   elements.runtimeProofPanel.classList.remove("hidden");
+  renderPipeline(payload.pipeline_stages);
   elements.heroTitle.textContent = run.run_id;
-  elements.heroCopy.textContent = run.state.reason;
+  elements.heroCopy.textContent = `${run.state.reason} ${formatNumber(run.tracks_total, 0)} track, ${formatNumber(run.segments_persisted, 0)} persisted segment, ${formatRatio(run.silent_ratio)} silent.`;
   elements.runSummarySource.innerHTML = `${badgeLabel(run.provenance.source)} ${badgeLabel(run.state.provenance.source)}`;
 
   const cards = [
-    ["Status", run.state.label, run.state.reason],
-    ["Tracks", formatNumber(run.tracks_total, 0), "Tracks observed in the current run."],
-    ["Segments Persisted", formatNumber(run.segments_persisted, 0), "Feature rows persisted into TimescaleDB."],
-    ["Silent Ratio", formatRatio(run.silent_ratio), "Replay-stable run total from persisted metrics or features."],
-    ["Average RMS", formatNumber(run.avg_rms, 3), "Persisted summary field from audio_features."],
-    ["Average Processing", run.avg_processing_ms === null ? "—" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Average processing latency over persisted segments."],
-    ["Validation Failures", formatNumber(run.validation_failures, 0), "Track-level reject outcomes from track_metadata."],
-    ["Error Rate", formatRatio(run.error_rate), "Failed-track ratio at run summary level."],
+    ["Trạng thái", run.state.label, run.state.reason, "status"],
+    ["Tracks", formatNumber(run.tracks_total, 0), "Số track quan sát trong run.", "tracks"],
+    ["Persisted segments", formatNumber(run.segments_persisted, 0), "Feature rows đã ghi vào TimescaleDB.", "segments"],
+    ["Silent ratio", formatRatio(run.silent_ratio), "Tỷ lệ segment silent trong run.", "silent"],
+    ["Average RMS", formatNumber(run.avg_rms, 3), "Năng lượng âm thanh trung bình từ features.", "rms"],
+    ["Avg processing", run.avg_processing_ms === null ? "-" : `${formatNumber(run.avg_processing_ms, 2)} ms`, "Thời gian xử lý trung bình mỗi segment.", "latency"],
+    ["Validation failures", formatNumber(run.validation_failures, 0), "Track bị reject ở bước metadata validation.", "validation"],
+    ["Error rate", formatRatio(run.error_rate), "Tỷ lệ lỗi ở mức run.", "errors"],
   ];
 
-  elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy]) => `
-    <article class="summary-card">
+  elements.runSummaryGrid.innerHTML = cards.map(([title, value, copy, tone]) => `
+    <article class="summary-card summary-card-${escapeHtml(tone)}">
       <h3>${escapeHtml(title)}</h3>
       <div class="summary-value">${escapeHtml(value)}</div>
       <div class="summary-copy">${escapeHtml(copy)}</div>
@@ -228,12 +404,16 @@ function renderRunSummary(payload) {
 
   const validationItems = payload.validation_outcomes.items;
   if (validationItems.length === 0) {
-    renderEmpty(elements.validationOutcomes);
+    renderEmpty(
+      elements.validationOutcomes,
+      "Chưa có validation outcome",
+      "Run này chưa có outcome validation quan sát được từ review API."
+    );
   } else {
     elements.validationOutcomes.innerHTML = `
       <div class="validation-list">
         ${validationItems.map((item) => `
-          <div class="summary-card">
+          <div class="summary-card compact-card">
             <h3>${escapeHtml(item.validation_status)}</h3>
             <div class="summary-value">${item.track_count}</div>
             <div class="summary-copy">${badgeLabel(item.provenance.source)}</div>
@@ -256,13 +436,13 @@ function renderRuntimeProof(runtimeProof) {
       <article class="proof-card">
         <h3>Manifest</h3>
         <p class="mono">${escapeHtml(manifest.path)}</p>
-        <p>${manifest.exists ? "Present on shared storage." : "Not present on shared storage."}</p>
+        <p>${manifest.exists ? "Đã có trên shared storage." : "Chưa quan sát được trên shared storage."}</p>
         <div>${badgeLabel(manifest.provenance.path)} ${badgeLabel(manifest.provenance.exists)}</div>
       </article>
       <article class="proof-card">
         <h3>Processing State</h3>
         <p class="mono">${escapeHtml(processingState.path)}</p>
-        <p>${processingState.exists ? "Replay-stable processing metrics file is present." : "No persisted processing state file for this run."}</p>
+        <p>${processingState.exists ? "Có file metrics phục vụ restart/replay." : "Chưa có processing state file cho run này."}</p>
         ${processingState.state ? `
           <p>Segments: <strong>${processingState.state.segment_count}</strong></p>
           <p>Silent ratio: <strong>${formatRatio(processingState.state.silent_ratio)}</strong></p>
@@ -272,7 +452,7 @@ function renderRuntimeProof(runtimeProof) {
       </article>
       <article class="proof-card">
         <h3>Checkpoints</h3>
-        <p>${checkpoints.length} checkpoint row${checkpoints.length === 1 ? "" : "s"} for this run.</p>
+        <p>${checkpoints.length} checkpoint row cho run này.</p>
         ${checkpoints.length > 0 ? `
           <ul>
             ${checkpoints.map((item) => `<li><span class="mono">${escapeHtml(item.topic_name)}[${item.partition_id}]</span> @ ${item.last_committed_offset}</li>`).join("")}
@@ -287,7 +467,11 @@ function renderRuntimeProof(runtimeProof) {
 function renderTracks(payload) {
   elements.trackCount.textContent = `${payload.total} track${payload.total === 1 ? "" : "s"}`;
   if (payload.items.length === 0) {
-    renderEmpty(elements.trackTable);
+    renderEmpty(
+      elements.trackTable,
+      "Chưa có track",
+      "Run này có thể bị dừng ở validation hoặc chưa có track được persist."
+    );
     elements.trackPager.innerHTML = "";
     elements.trackDetailPanel.classList.add("hidden");
     return;
@@ -298,7 +482,7 @@ function renderTracks(payload) {
       <thead>
         <tr>
           <th>Track</th>
-          <th>State</th>
+          <th>Trạng thái</th>
           <th>Validation</th>
           <th>Persisted</th>
           <th>Silent Ratio</th>
@@ -323,8 +507,8 @@ function renderTracks(payload) {
             <td><span class="${chipClass(item.track_state.value)}">${escapeHtml(item.track_state.label)}</span></td>
             <td>${escapeHtml(item.validation_status)}</td>
             <td>${item.segments_persisted}</td>
-            <td>${item.silent_ratio === null ? "—" : formatRatio(item.silent_ratio)}</td>
-            <td>${item.avg_rms === null ? "—" : formatNumber(item.avg_rms, 3)}</td>
+            <td>${item.silent_ratio === null ? "-" : formatRatio(item.silent_ratio)}</td>
+            <td>${item.avg_rms === null ? "-" : formatNumber(item.avg_rms, 3)}</td>
           </tr>
         `).join("")}
       </tbody>
@@ -333,17 +517,31 @@ function renderTracks(payload) {
 
   elements.trackTable.querySelectorAll("[data-track-id]").forEach((button) => {
     button.addEventListener("click", () => {
+      const requestId = startViewRequest();
       state.selectedTrackId = Number(button.dataset.trackId);
       state.segmentOffset = 0;
       updateUrl();
-      loadTrack(state.selectedRunId, state.selectedTrackId);
+      loadTrack(state.selectedRunId, state.selectedTrackId, { requestId }).catch((error) => {
+        if (!isCurrentRequest(requestId)) {
+          return;
+        }
+        renderTrackLoadError(state.selectedTrackId, error);
+      });
       renderTracks(payload);
     });
   });
 
   buildPager(elements.trackPager, payload, (nextOffset) => {
+    const requestId = startViewRequest();
     state.trackOffset = nextOffset;
-    loadTracks(state.selectedRunId);
+    loadTracks(state.selectedRunId, { requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.trackTable, `Không tải được tracks: ${error.message}`);
+    });
   });
 }
 
@@ -352,9 +550,9 @@ function renderTrackDetail(payload) {
   elements.trackDetailPanel.classList.remove("hidden");
   elements.trackDetailSource.innerHTML = `${badgeLabel(track.provenance.source)} ${badgeLabel(track.track_state.provenance.source)}`;
   elements.trackHead.innerHTML = `
-    <div class="track-head-block">
-      <h3>Track Result</h3>
-      <p><strong>${track.track_id}</strong> • ${escapeHtml(track.genre)}</p>
+    <div class="track-head-block track-result-card">
+      <h3>Kết quả track</h3>
+      <p><strong>${track.track_id}</strong> / ${escapeHtml(track.genre)}</p>
       <p>${escapeHtml(track.track_state.reason)}</p>
       <div class="run-metrics">
         <span class="${chipClass(track.track_state.value)}">${escapeHtml(track.track_state.label)}</span>
@@ -363,7 +561,7 @@ function renderTrackDetail(payload) {
       </div>
     </div>
     <div class="track-head-block">
-      <h3>Source Metadata</h3>
+      <h3>Source metadata</h3>
       <p>Artist ID: <strong>${track.artist_id}</strong></p>
       <p>Subset: <strong>${escapeHtml(track.subset)}</strong></p>
       <p>Duration: <strong>${formatNumber(track.duration_s, 2)} s</strong></p>
@@ -372,7 +570,11 @@ function renderTrackDetail(payload) {
   `;
 
   if (payload.segments.items.length === 0) {
-    renderEmpty(elements.segmentTable);
+    renderEmpty(
+      elements.segmentTable,
+      "Chưa có segment",
+      "Track này không có persisted segment; thường gặp ở validation failure hoặc partial evidence."
+    );
     elements.segmentPager.innerHTML = "";
     return;
   }
@@ -382,7 +584,7 @@ function renderTrackDetail(payload) {
       <thead>
         <tr>
           <th>Segment</th>
-          <th>Result</th>
+          <th>Kết quả</th>
           <th>Processing</th>
           <th>Artifact</th>
         </tr>
@@ -394,7 +596,7 @@ function renderTrackDetail(payload) {
               <strong>#${segment.segment_idx}</strong>
               <div class="table-secondary">
                 <span>RMS ${formatNumber(segment.rms, 3)}</span>
-                <span>${segment.silent_flag ? "Silent" : "Non-silent"}</span>
+                <span>${segment.silent_flag ? "Silent" : "Active"}</span>
               </div>
             </td>
             <td>
@@ -413,21 +615,38 @@ function renderTrackDetail(payload) {
               </div>
               <div class="table-secondary mono">${escapeHtml(segment.artifact.uri)}</div>
               <audio controls preload="none" src="${escapeHtml(segment.artifact.media_url)}"></audio>
+              <div class="media-error" hidden>Không tải được audio artifact cho segment này.</div>
             </td>
           </tr>
         `).join("")}
       </tbody>
     </table>
   `;
+  elements.segmentTable.querySelectorAll("audio").forEach((audio) => {
+    audio.addEventListener("error", () => {
+      const errorNode = audio.parentElement?.querySelector(".media-error");
+      if (errorNode) {
+        errorNode.hidden = false;
+      }
+    });
+  });
 
   buildPager(elements.segmentPager, payload.segments, (nextOffset) => {
+    const requestId = startViewRequest();
     state.segmentOffset = nextOffset;
-    loadTrack(state.selectedRunId, state.selectedTrackId);
+    loadTrack(state.selectedRunId, state.selectedTrackId, { requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      renderTrackLoadError(state.selectedTrackId, error);
+    });
   });
 }
 
-async function loadRuns() {
-  setReviewReady(false);
+async function loadRuns({ background = false, requestId = startViewRequest() } = {}) {
+  if (!background) {
+    setReviewReady(false);
+  }
   const params = new URLSearchParams({
     limit: "8",
     offset: String(state.runOffset),
@@ -436,69 +655,178 @@ async function loadRuns() {
     params.set("demo_mode", "true");
   }
   const payload = await fetchJSON(`/api/runs?${params.toString()}`);
-  const urlRunId = new URLSearchParams(window.location.search).get("run_id");
-  if (urlRunId && payload.items.some((item) => item.run_id === urlRunId)) {
-    state.selectedRunId = urlRunId;
-  } else if (!state.selectedRunId && payload.items.length > 0) {
-    state.selectedRunId = payload.items[0].run_id;
-  } else if (state.selectedRunId && !payload.items.some((item) => item.run_id === state.selectedRunId) && payload.items.length > 0) {
-    state.selectedRunId = payload.items[0].run_id;
-  } else if (payload.items.length === 0) {
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
+
+  const { runId: urlRunId } = readUrlState();
+  const urlRunRequested = Boolean(urlRunId && !state.selectedRunId);
+  state.selectedRunId = state.selectedRunId || urlRunId || firstRunId(payload);
+  if (!state.selectedRunId) {
     state.selectedRunId = null;
     state.selectedTrackId = null;
   }
   renderRuns(payload);
   if (state.selectedRunId) {
     updateUrl();
-    await loadRun(state.selectedRunId);
+    try {
+      await loadRun(state.selectedRunId, { requestId });
+    } catch (error) {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      if (urlRunRequested) {
+        const fallbackRunId = firstRunId(payload);
+        state.selectedRunId = fallbackRunId;
+        state.selectedTrackId = null;
+        state.trackOffset = 0;
+        state.segmentOffset = 0;
+        updateUrl();
+        renderRuns(payload);
+        if (fallbackRunId) {
+          try {
+            await loadRun(fallbackRunId, { requestId });
+            return;
+          } catch (fallbackError) {
+            if (!isCurrentRequest(requestId)) {
+              return;
+            }
+            renderRunLoadError(fallbackRunId, fallbackError);
+            return;
+          }
+        }
+        setReviewReady(true);
+        setRefreshSuccess();
+        return;
+      }
+      renderRunLoadError(state.selectedRunId, error);
+    }
     return;
   }
   setReviewReady(true);
+  setRefreshSuccess();
 }
 
-async function loadRun(runId) {
+async function loadRun(runId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(`/api/runs/${encodeURIComponent(runId)}`);
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
   renderRunSummary(payload);
-  await loadTracks(runId);
+  await loadTracks(runId, { requestId });
 }
 
-async function loadTracks(runId) {
+async function loadTracks(runId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(`/api/runs/${encodeURIComponent(runId)}/tracks?limit=8&offset=${state.trackOffset}`);
-  const urlTrackId = new URLSearchParams(window.location.search).get("track_id");
-  if (urlTrackId && payload.items.some((item) => String(item.track_id) === urlTrackId)) {
-    state.selectedTrackId = Number(urlTrackId);
-  } else if (!state.selectedTrackId && payload.items.length > 0) {
-    state.selectedTrackId = payload.items[0].track_id;
-  } else if (state.selectedTrackId && !payload.items.some((item) => item.track_id === state.selectedTrackId) && payload.items.length > 0) {
-    state.selectedTrackId = payload.items[0].track_id;
-  } else if (payload.items.length === 0) {
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
+
+  const { trackId: urlTrackId } = readUrlState();
+  const urlTrackRequested = urlTrackId !== null && state.selectedTrackId === null;
+  state.selectedTrackId = state.selectedTrackId ?? urlTrackId ?? firstTrackId(payload);
+  if (state.selectedTrackId === null) {
     state.selectedTrackId = null;
   }
   renderTracks(payload);
   if (state.selectedTrackId !== null) {
     updateUrl();
-    await loadTrack(runId, state.selectedTrackId);
+    try {
+      await loadTrack(runId, state.selectedTrackId, { requestId });
+    } catch (error) {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      if (urlTrackRequested) {
+        const fallbackTrackId = firstTrackId(payload);
+        if (fallbackTrackId !== null && fallbackTrackId !== state.selectedTrackId) {
+          state.selectedTrackId = fallbackTrackId;
+          state.segmentOffset = 0;
+          updateUrl();
+          renderTracks(payload);
+          try {
+            await loadTrack(runId, fallbackTrackId, { requestId });
+            return;
+          } catch (fallbackError) {
+            if (!isCurrentRequest(requestId)) {
+              return;
+            }
+            renderTrackLoadError(fallbackTrackId, fallbackError);
+            return;
+          }
+        }
+      }
+      renderTrackLoadError(state.selectedTrackId, error);
+    }
     return;
   }
   setReviewReady(true);
+  setRefreshSuccess();
 }
 
-async function loadTrack(runId, trackId) {
+async function loadTrack(runId, trackId, { requestId = startViewRequest() } = {}) {
   const payload = await fetchJSON(
     `/api/runs/${encodeURIComponent(runId)}/tracks/${trackId}?segments_limit=8&segments_offset=${state.segmentOffset}`
   );
+  if (!isCurrentRequest(requestId)) {
+    return;
+  }
   renderTrackDetail(payload);
   setReviewReady(true);
+  setRefreshSuccess();
+}
+
+async function refreshActiveView() {
+  const requestId = startViewRequest();
+  try {
+    await loadRuns({ background: true, requestId });
+  } catch (error) {
+    if (!isCurrentRequest(requestId)) {
+      return;
+    }
+    setRefreshError(error);
+    if (!state.runs) {
+      throw error;
+    }
+  }
 }
 
 async function boot() {
   setReviewReady(false);
+  renderModeControls();
+  elements.demoModeToggle.addEventListener("click", () => {
+    const requestId = startViewRequest();
+    state.demoMode = !state.demoMode;
+    state.selectedRunId = null;
+    state.selectedTrackId = null;
+    state.runOffset = 0;
+    state.trackOffset = 0;
+    state.segmentOffset = 0;
+    updateUrl();
+    renderModeControls();
+    loadRuns({ requestId }).catch((error) => {
+      if (!isCurrentRequest(requestId)) {
+        return;
+      }
+      setReviewReady(false, error.message);
+      setRefreshError(error);
+      renderInlineError(elements.runList, `Không tải được danh sách run: ${error.message}`);
+    });
+  });
   try {
-    await loadRuns();
+    await loadRuns({ requestId: startViewRequest() });
+    window.setInterval(refreshActiveView, REFRESH_INTERVAL_MS);
+    window.setInterval(updateFreshnessLabel, 5000);
   } catch (error) {
-    elements.heroTitle.textContent = "Review surface unavailable";
+    elements.heroTitle.textContent = "Review API chưa sẵn sàng";
     elements.heroCopy.textContent = error.message;
-    renderEmpty(elements.runList);
+    renderEmpty(
+      elements.runList,
+      "Không tải được runs",
+      "Kiểm tra demo stack hoặc chạy evidence path trước khi trình bày."
+    );
+    renderPipeline(null);
+    setRefreshError(error);
     setReviewReady(false, error.message);
   }
 }

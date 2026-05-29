@@ -2,14 +2,19 @@
 .venv/
 __pycache__/
 .pytest_cache/
+.pytest-tmp/
 .pytest-tmp-gate/
 .ruff_cache/
 .mypy_cache/
 .bg-shell/
 .gsd/runtime/
+.gsd.migrating/
+.tmp/pytest/
+test-results/
 .coverage
 build/
 dist/
+*.egg-info/
 *.pyc
 *.pyo
 *.pyd
@@ -22,6 +27,7 @@ artifacts/shared/*
 artifacts/evidence/*
 artifacts/demo-inputs/*
 artifacts/datasets/*
+artifacts/report-figures/
 
 # Local-only datasets and reference checkouts.
 data/local/**

@@ -13,7 +13,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Average RMS from the persisted audio_features rows, grouped by time bucket and run_id.",
+      "description": "Bằng chứng năng lượng âm thanh từ persisted TimescaleDB rows trong audio_features, gom nhóm theo thời gian và run_id.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -37,11 +37,11 @@
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 2,
-            "pointSize": 4,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
+            "showPoints": "always",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -102,7 +102,7 @@
           "refId": "A"
         }
       ],
-      "title": "Segment RMS Over Time",
+      "title": "RMS theo thời gian",
       "type": "timeseries"
     },
     {
@@ -110,7 +110,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Latest run-level silent_ratio snapshot from processing, with fallback to the persisted audio_features summary view.",
+      "description": "Tỷ lệ silent segment mới nhất theo run, đọc từ vw_dashboard_run_summary để giải thích run có im lặng hay không.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -177,7 +177,7 @@
           "refId": "A"
         }
       ],
-      "title": "Silent Segment Ratio By Run",
+      "title": "Tỷ lệ silent segment theo run",
       "type": "barchart"
     },
     {
@@ -185,7 +185,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Persisted segment counts per run, using the writer-backed audio_features table rather than placeholder counts.",
+      "description": "Số segment đã được writer persist vào TimescaleDB cho từng run; đây là bằng chứng không dùng placeholder.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -243,7 +243,7 @@
           "refId": "A"
         }
       ],
-      "title": "Persisted Segment Count By Run",
+      "title": "Số segment đã persist",
       "type": "barchart"
     },
     {
@@ -251,7 +251,7 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Validation outcomes from track_metadata, used to explain why a run produced or did not produce downstream segments.",
+      "description": "Kết quả validation từ track_metadata, dùng để giải thích vì sao run tạo được hoặc không tạo được downstream segments.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -305,7 +305,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validation Outcomes By Run",
+      "title": "Kết quả validation",
       "type": "table"
     },
     {
@@ -313,7 +313,80 @@
         "type": "postgres",
         "uid": "timescaledb"
       },
-      "description": "Compact run summary for academic reporting: counts, RMS, and silent_ratio from the final dashboard views.",
+      "description": "RMS trung bình theo run từ vw_dashboard_run_summary; panel này dễ đọc khi time-series bị thưa điểm trong demo ngắn.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": -30
+              },
+              {
+                "color": "red",
+                "value": -50
+              }
+            ]
+          },
+          "unit": "dB"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "id": 5,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  run_id AS metric,\n  ROUND(avg_rms::numeric, 2) AS value\nFROM vw_dashboard_run_summary\nWHERE avg_rms IS NOT NULL\nORDER BY last_seen_at DESC NULLS LAST, run_id DESC\nLIMIT 20;",
+          "refId": "A"
+        }
+      ],
+      "title": "RMS trung bình theo run",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb"
+      },
+      "description": "Bảng tổng hợp cho báo cáo đồ án: số track, số segment, silent ratio, RMS trung bình và validation failures từ dashboard views.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -343,9 +416,9 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 27
       },
-      "id": 5,
+      "id": 6,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -367,13 +440,13 @@
           "refId": "A"
         }
       ],
-      "title": "Run Quality Summary Table",
+      "title": "Bảng tổng hợp audio",
       "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 39,
-  "style": "dark",
+  "style": "light",
   "tags": [
     "poc",
     "audio-quality",
@@ -383,13 +456,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30d",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Audio Quality",
+  "title": "Chất lượng âm thanh (Audio Quality)",
   "uid": "audio-quality",
-  "version": 3,
+  "version": 5,
   "weekStart": ""
 }

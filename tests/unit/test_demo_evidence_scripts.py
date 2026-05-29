@@ -42,3 +42,18 @@ def test_powershell_dashboard_script_suppresses_browser_stderr() -> None:
     assert '$ErrorActionPreference = "Continue"' in script
     assert "$Url 2>$null | Out-Null" in script
     assert "$Url 2>$null | Out-String" in script
+
+
+def test_dashboard_evidence_scripts_keep_stable_grafana_contract() -> None:
+    shell_script = (REPO_ROOT / "scripts" / "demo" / "generate-dashboard-evidence.sh").read_text(
+        encoding="utf-8"
+    )
+    powershell_script = POWERSHELL_DASHBOARD_SCRIPT.read_text(encoding="utf-8")
+
+    for script in (shell_script, powershell_script):
+        assert "/d/audio-quality/audio-quality?from=now-6h&to=now&kiosk" in script
+        assert "/d/system-health/system-health?from=now-6h&to=now&kiosk" in script
+        assert "api/dashboards/uid/audio-quality" in script
+        assert "api/dashboards/uid/system-health" in script
+        assert "audio-quality-dashboard.png" in script
+        assert "system-health-dashboard.png" in script

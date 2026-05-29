@@ -152,7 +152,10 @@ bash ./scripts/demo/run-local-fma-burst.sh
 
 - All application code runs inside Linux containers; the host only orchestrates Docker Compose.
 - Kafka is exposed on `localhost:9092` for host tools and `kafka:29092` for other containers.
-- The default stack auto-loads the provisioned `Audio Quality` and `System Health` dashboards from files.
+- The default stack auto-loads the light Grafana dashboards from files:
+  `Chất lượng âm thanh (Audio Quality)` at UID `audio-quality` and
+  `Bằng chứng vận hành (System Health)` at UID `system-health`. Their default
+  time window is `now-6h` to match the demo evidence scripts.
 - The default stack also exposes the read-only `review` service at `http://localhost:8080`.
 - `processing` and `writer` are long-lived consumers with graceful shutdown handling for bounded restart/replay checks.
 - The official `pytest` path runs in a dedicated Compose service against image-bundled repo contents.
