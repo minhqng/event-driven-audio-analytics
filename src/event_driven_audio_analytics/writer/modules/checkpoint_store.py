@@ -25,8 +25,7 @@ VALUES (
     %(run_id)s,
     %(last_committed_offset)s
 )
-ON CONFLICT (consumer_group, topic_name, partition_id) DO UPDATE SET
-    run_id = EXCLUDED.run_id,
+ON CONFLICT (consumer_group, topic_name, partition_id, run_id) DO UPDATE SET
     last_committed_offset = EXCLUDED.last_committed_offset,
     updated_at = NOW();
 """.strip()

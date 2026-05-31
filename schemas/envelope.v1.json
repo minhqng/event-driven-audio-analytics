@@ -34,7 +34,7 @@
     "run_id": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!\\.{1,2}$)[^\\s/\\\\:]+$"
+      "pattern": "^[^\\s/\\\\:.]+$"
     },
     "produced_at": {
       "type": "string",

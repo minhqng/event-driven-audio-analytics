@@ -6,7 +6,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from event_driven_audio_analytics.shared.db import close_database_pool, open_database_pool
+from event_driven_audio_analytics.shared.db import (
+    build_postgres_dsn,
+    close_database_pool,
+    open_database_pool,
+)
 from event_driven_audio_analytics.shared.settings import DatabaseSettings
 from event_driven_audio_analytics.writer.config import WriterSettings
 from event_driven_audio_analytics.writer.modules.runtime import (
@@ -96,6 +100,26 @@ def test_open_database_pool_uses_requested_bounds(monkeypatch: pytest.MonkeyPatc
     assert captured["kwargs"] == {"autocommit": False}
     assert captured["wait_timeout"] == 12.5
     assert captured["closed"] is True
+
+
+def test_build_postgres_dsn_preserves_reserved_credential_characters() -> None:
+    from psycopg.conninfo import conninfo_to_dict
+
+    settings = DatabaseSettings(
+        host="timescaledb",
+        port=5432,
+        database="audio/analytics",
+        user="audio@analytics",
+        password="p@ss:word#with/slash%and'quote",
+    )
+
+    parsed = conninfo_to_dict(build_postgres_dsn(settings))
+
+    assert parsed["host"] == "timescaledb"
+    assert parsed["port"] == "5432"
+    assert parsed["dbname"] == "audio/analytics"
+    assert parsed["user"] == "audio@analytics"
+    assert parsed["password"] == "p@ss:word#with/slash%and'quote"
 
 
 def test_check_runtime_dependencies_fails_on_missing_topics(monkeypatch: pytest.MonkeyPatch) -> None:

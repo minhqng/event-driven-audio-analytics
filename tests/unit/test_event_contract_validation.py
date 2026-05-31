@@ -89,16 +89,23 @@ class EventContractValidationTests(unittest.TestCase):
             validate_envelope_dict(envelope, expected_event_type="audio.metadata")
 
     def test_unsafe_run_id_fails_schema_validation(self) -> None:
-        validator = load_validator("audio.metadata.v1.json")
+        cases = (
+            ("audio.metadata.v1.json", "audio.metadata.valid.json"),
+            ("audio.segment.ready.v1.json", "audio.segment.ready.valid.json"),
+            ("audio.features.v1.json", "audio.features.valid.json"),
+            ("system.metrics.v1.json", "system.metrics.valid.json"),
+        )
 
-        for run_id in ("../demo", "demo run"):
-            with self.subTest(run_id=run_id):
-                envelope = load_json(FIXTURES_DIR / "audio.metadata.valid.json")
-                envelope["run_id"] = run_id
-                envelope["payload"]["run_id"] = run_id
+        for schema_name, fixture_name in cases:
+            validator = load_validator(schema_name)
+            for run_id in ("../demo", "demo run", "demo.v1"):
+                with self.subTest(schema=schema_name, run_id=run_id):
+                    envelope = load_json(FIXTURES_DIR / fixture_name)
+                    envelope["run_id"] = run_id
+                    envelope["payload"]["run_id"] = run_id
 
-                with self.assertRaises(ValidationError):
-                    validator.validate(envelope)
+                    with self.assertRaises(ValidationError):
+                        validator.validate(envelope)
 
     def test_missing_required_top_level_fields_fail_semantic_validation(self) -> None:
         required_fields = (

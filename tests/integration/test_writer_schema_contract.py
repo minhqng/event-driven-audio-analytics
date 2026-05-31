@@ -6,11 +6,13 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SQL_PATH = REPO_ROOT / "infra" / "sql" / "002_core_tables.sql"
+K3S_SQL_PATH = REPO_ROOT / "deploy" / "k3s" / "timescaledb" / "config" / "002_core_tables.sql"
 
 
 class WriterSchemaContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.sql = SQL_PATH.read_text(encoding="utf-8")
+        self.k3s_sql = K3S_SQL_PATH.read_text(encoding="utf-8")
 
     def test_track_metadata_is_regular_table(self) -> None:
         self.assertIn("CREATE TABLE IF NOT EXISTS track_metadata", self.sql)
@@ -47,7 +49,9 @@ class WriterSchemaContractTests(unittest.TestCase):
 
     def test_run_checkpoints_is_regular_table(self) -> None:
         self.assertIn("CREATE TABLE IF NOT EXISTS run_checkpoints", self.sql)
-        self.assertIn("PRIMARY KEY (consumer_group, topic_name, partition_id)", self.sql)
+        expected_key = "PRIMARY KEY (consumer_group, topic_name, partition_id, run_id)"
+        self.assertIn(expected_key, self.sql)
+        self.assertIn(expected_key, self.k3s_sql)
 
     def test_welford_snapshots_table_exists(self) -> None:
         self.assertIn("CREATE TABLE IF NOT EXISTS welford_snapshots", self.sql)

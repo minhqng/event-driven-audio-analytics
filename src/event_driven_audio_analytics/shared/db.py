@@ -18,12 +18,25 @@ else:
     ConnectionPool = Any
 
 
+def _quote_conninfo_value(value: object) -> str:
+    """Quote a libpq conninfo value without relying on URL parsing."""
+
+    rendered = str(value)
+    escaped = rendered.replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{escaped}'"
+
+
 def build_postgres_dsn(settings: DatabaseSettings) -> str:
     """Construct a PostgreSQL DSN for TimescaleDB."""
 
-    return (
-        f"postgresql://{settings.user}:{settings.password}"
-        f"@{settings.host}:{settings.port}/{settings.database}"
+    return " ".join(
+        (
+            f"host={_quote_conninfo_value(settings.host)}",
+            f"port={_quote_conninfo_value(settings.port)}",
+            f"dbname={_quote_conninfo_value(settings.database)}",
+            f"user={_quote_conninfo_value(settings.user)}",
+            f"password={_quote_conninfo_value(settings.password)}",
+        )
     )
 
 

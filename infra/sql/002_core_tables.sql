@@ -61,9 +61,13 @@ CREATE TABLE IF NOT EXISTS run_checkpoints (
     partition_id INTEGER NOT NULL,
     run_id TEXT NOT NULL,
     last_committed_offset BIGINT NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (consumer_group, topic_name, partition_id)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE IF EXISTS run_checkpoints DROP CONSTRAINT IF EXISTS run_checkpoints_pkey;
+ALTER TABLE IF EXISTS run_checkpoints
+ADD CONSTRAINT run_checkpoints_pkey
+PRIMARY KEY (consumer_group, topic_name, partition_id, run_id);
 
 CREATE TABLE IF NOT EXISTS welford_snapshots (
     run_id TEXT NOT NULL,
