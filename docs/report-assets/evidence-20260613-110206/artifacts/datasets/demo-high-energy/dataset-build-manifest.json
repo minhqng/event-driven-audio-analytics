@@ -1,0 +1,92 @@
+{
+  "determinism": {
+    "sort_keys": [
+      "track_id",
+      "segment_idx"
+    ],
+    "timestamp_policy": "uses persisted run last_seen_at, not wall-clock time"
+  },
+  "files": [
+    {
+      "path": "accepted-segments.csv",
+      "row_count": 4,
+      "sha256": "sha256:536a540b7d84a1b7e7b7d9b65e0634c4743b0d70e49b0ac3e71e984aa291db09"
+    },
+    {
+      "path": "accepted-tracks.csv",
+      "row_count": 1,
+      "sha256": "sha256:b6672d0147972380de32ed618f25955123a00a58d7cc36371b654f4bbe4b6005"
+    },
+    {
+      "path": "anomaly-summary.json",
+      "row_count": null,
+      "sha256": "sha256:7fef1a93e9e2d63d011a78fa6961b0d7982a8312076be7bf7477791223e74847"
+    },
+    {
+      "path": "dataset-card.md",
+      "row_count": null,
+      "sha256": "sha256:e59dd8b3980e5aba7b14b4e472fa778c30b532a348750831f2d5abee439f71bb"
+    },
+    {
+      "path": "label-map.json",
+      "row_count": null,
+      "sha256": "sha256:a9dddc795cb7e6d94c04ae2e00e7735531e4701171fd3333b81f4cd94fc62c81"
+    },
+    {
+      "path": "quality-verdict.json",
+      "row_count": null,
+      "sha256": "sha256:abb09e12a315ae41cc6d418370046af861402cfd07cfb174ddf8e3bf8d1ba5e9"
+    },
+    {
+      "path": "rejected-segments.csv",
+      "row_count": 0,
+      "sha256": "sha256:161fa297db609a400b471fa7026061644458df26001d6719da80839e70312816"
+    },
+    {
+      "path": "rejected-tracks.csv",
+      "row_count": 0,
+      "sha256": "sha256:60c3dc781f5db47faa0dda1783395378a8e6e221079946b693f6931f91d8bc9d"
+    },
+    {
+      "path": "run-summary.json",
+      "row_count": null,
+      "sha256": "sha256:640ae5c344b15c06075484170f1c5164f7a291d3b63aa8a52f228ddb6f9f389d"
+    },
+    {
+      "path": "splits/split-manifest.json",
+      "row_count": null,
+      "sha256": "sha256:f1281704c69e46d9802cee93049891f32d1ad5119d80a24823e73721d4fc8a5a"
+    },
+    {
+      "path": "splits/test.parquet",
+      "row_count": 0,
+      "sha256": "sha256:3201643ab6bbd47c2d9c85c0903d7131645cc6e27076c913aa6a52b8ac14b9f0"
+    },
+    {
+      "path": "splits/train.parquet",
+      "row_count": 4,
+      "sha256": "sha256:c819285736380fd826cb9631c467a998f7bb0e96cb69ec7d8ce993ae0d72c6d9"
+    },
+    {
+      "path": "splits/validation.parquet",
+      "row_count": 0,
+      "sha256": "sha256:3201643ab6bbd47c2d9c85c0903d7131645cc6e27076c913aa6a52b8ac14b9f0"
+    },
+    {
+      "path": "stats/normalization-stats.json",
+      "row_count": null,
+      "sha256": "sha256:5d026250f90bcaf179df8407ab1f53d3a050661166fd733313c11572c5cea504"
+    }
+  ],
+  "format_version": "fma-small-dataset-bundle.v1",
+  "generated_at": "2026-06-13T03:50:06.817915+00:00",
+  "generated_at_source": "vw_dashboard_run_summary.last_seen_at",
+  "generator_version": "dataset-exporter-mvp.v1",
+  "run_id": "demo-high-energy",
+  "source_truth": {
+    "features": "audio_features",
+    "run_summary": "vw_dashboard_run_summary",
+    "segment_manifest": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
+    "tracks": "track_metadata via vw_review_tracks"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "format_version": "fma-small-dataset-bundle.v1",
+  "labels": {
+    "count": 1
+  },
+  "quality_verdict": "pass_with_warnings",
+  "run_id": "minio-smoke",
+  "segments": {
+    "accepted": 3,
+    "features_persisted": 3,
+    "rejected": 0
+  },
+  "source_summary": {
+    "artifact_write_ms": 66.177,
+    "avg_processing_ms": 10.072007999648728,
+    "avg_rms": -25.005198943940616,
+    "error_rate": 0.5,
+    "first_seen_at": "2026-06-13T04:00:13.945052+00:00",
+    "last_seen_at": "2026-06-13T04:00:15.820651+00:00",
+    "processing_error_count": 0,
+    "run_id": "minio-smoke",
+    "segments_persisted": 3,
+    "segments_total": 3.0,
+    "silent_ratio": 0.0,
+    "total_error_events": 1.0,
+    "tracks_total": 2.0,
+    "validation_failures": 1.0,
+    "writer_error_count": 0
+  },
+  "tracks": {
+    "accepted": 1,
+    "rejected": 1,
+    "total": 2
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "format_version": "fma-small-dataset-bundle.v1",
+  "labels": {
+    "count": 0
+  },
+  "quality_verdict": "fail",
+  "run_id": "demo-validation-failure",
+  "segments": {
+    "accepted": 0,
+    "features_persisted": 0,
+    "rejected": 0
+  },
+  "source_summary": {
+    "artifact_write_ms": 0.0,
+    "avg_processing_ms": null,
+    "avg_rms": null,
+    "error_rate": 1.0,
+    "first_seen_at": "2026-06-13T03:50:18.800797+00:00",
+    "last_seen_at": "2026-06-13T03:50:19.825361+00:00",
+    "processing_error_count": 0,
+    "run_id": "demo-validation-failure",
+    "segments_persisted": 0,
+    "segments_total": 0.0,
+    "silent_ratio": 0.0,
+    "total_error_events": 1.0,
+    "tracks_total": 1.0,
+    "validation_failures": 1.0,
+    "writer_error_count": 0
+  },
+  "tracks": {
+    "accepted": 0,
+    "rejected": 1,
+    "total": 1
+  }
+}

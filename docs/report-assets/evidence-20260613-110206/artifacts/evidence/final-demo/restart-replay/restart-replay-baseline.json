@@ -1,0 +1,91 @@
+{
+  "checkpoint_offsets": {
+    "audio.features": 2,
+    "audio.metadata": 1,
+    "system.metrics": 9
+  },
+  "checkpoint_topics": [
+    "audio.features",
+    "audio.metadata",
+    "system.metrics"
+  ],
+  "feature_rows": [
+    {
+      "artifact_uri": "/artifacts/runs/replay-smoke/segments/2/0.wav",
+      "checksum": "sha256:177a0416ba72df3bdcef7fc7f9e06fb86e64cbbc21e9be65870f12a902b98c38",
+      "manifest_uri": "/artifacts/runs/replay-smoke/manifests/segments.parquet",
+      "mel_bins": 128,
+      "mel_frames": 300,
+      "rms": -24.09038673411899,
+      "segment_idx": 0,
+      "silent_flag": false,
+      "track_id": 2
+    },
+    {
+      "artifact_uri": "/artifacts/runs/replay-smoke/segments/2/1.wav",
+      "checksum": "sha256:1c0cb6687268f380812fb1dd29638976e57a8d4504905d3cdb36627e0edf208b",
+      "manifest_uri": "/artifacts/runs/replay-smoke/manifests/segments.parquet",
+      "mel_bins": 128,
+      "mel_frames": 300,
+      "rms": -24.093032101839125,
+      "segment_idx": 1,
+      "silent_flag": false,
+      "track_id": 2
+    },
+    {
+      "artifact_uri": "/artifacts/runs/replay-smoke/segments/2/2.wav",
+      "checksum": "sha256:55936e9a900d15e07d1ecfe3f8908e9965d90d4199320e4d2e4151e6e9c6d674",
+      "manifest_uri": "/artifacts/runs/replay-smoke/manifests/segments.parquet",
+      "mel_bins": 128,
+      "mel_frames": 300,
+      "rms": -26.83217799586373,
+      "segment_idx": 2,
+      "silent_flag": false,
+      "track_id": 2
+    }
+  ],
+  "feature_silent_segments": 0,
+  "ingestion_metric_counts": {
+    "artifact_write_ms": 1,
+    "segments_total": 1,
+    "tracks_total": 1,
+    "validation_failures": 1
+  },
+  "metadata_rows": [
+    {
+      "artist_id": 1,
+      "checksum": "sha256:0f2c5f10a77d3b2ede8ec1276e25eef6992c564a61564ae2ac2762c9458427d1",
+      "duration_s": 4.649795918367347,
+      "genre": "Hip-Hop",
+      "manifest_uri": "/artifacts/runs/replay-smoke/manifests/segments.parquet",
+      "source_audio_uri": "/app/tests/fixtures/audio/smoke_fma_small/000/000002.mp3",
+      "subset": "small",
+      "track_id": 2,
+      "validation_status": "validated"
+    },
+    {
+      "artist_id": 99,
+      "checksum": "sha256:b904d5c0d50316ec2e8d83a709312e892ffa35652cf34ce67d2112d9e6b6557a",
+      "duration_s": 30.6,
+      "genre": "Experimental",
+      "manifest_uri": null,
+      "source_audio_uri": "/app/tests/fixtures/audio/smoke_fma_small/000/000666.mp3",
+      "subset": "small",
+      "track_id": 666,
+      "validation_status": "probe_failed"
+    }
+  ],
+  "persisted_silent_ratio": 0.0,
+  "processing_metric_counts": {
+    "processing_ms": 3,
+    "silent_ratio": 1
+  },
+  "processing_state_segments": 3,
+  "processing_state_silent_ratio": 0.0,
+  "processing_state_silent_segments": 0,
+  "run_id": "replay-smoke",
+  "writer_metric_counts": {
+    "rows_upserted": 15,
+    "write_ms": 15
+  }
+}

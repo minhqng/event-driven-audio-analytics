@@ -1,0 +1,35 @@
+{
+  "format_version": "fma-small-dataset-bundle.v1",
+  "labels": {
+    "count": 1
+  },
+  "quality_verdict": "pass",
+  "run_id": "demo-high-energy",
+  "segments": {
+    "accepted": 4,
+    "features_persisted": 4,
+    "rejected": 0
+  },
+  "source_summary": {
+    "artifact_write_ms": 306.338,
+    "avg_processing_ms": 19.63372000045638,
+    "avg_rms": -8.955863509685088,
+    "error_rate": 0.0,
+    "first_seen_at": "2026-06-13T03:50:05.355639+00:00",
+    "last_seen_at": "2026-06-13T03:50:06.817915+00:00",
+    "processing_error_count": 0,
+    "run_id": "demo-high-energy",
+    "segments_persisted": 4,
+    "segments_total": 4.0,
+    "silent_ratio": 0.0,
+    "total_error_events": 0.0,
+    "tracks_total": 1.0,
+    "validation_failures": 0.0,
+    "writer_error_count": 0
+  },
+  "tracks": {
+    "accepted": 1,
+    "rejected": 0,
+    "total": 1
+  }
+}

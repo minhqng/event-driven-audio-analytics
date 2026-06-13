@@ -1,0 +1,22 @@
+{
+  "baseline_checkpoint_offsets": {
+    "audio.features": 2,
+    "audio.metadata": 1,
+    "system.metrics": 9
+  },
+  "checkpoint_offsets": {
+    "audio.features": 5,
+    "audio.metadata": 3,
+    "system.metrics": 19
+  },
+  "feature_count": 3,
+  "feature_silent_segments": 0,
+  "metadata_count": 2,
+  "processing_ms_count": 6,
+  "processing_state_segments": 3,
+  "processing_state_silent_ratio": 0.0,
+  "run_id": "replay-smoke",
+  "silent_ratio_count": 1,
+  "writer_rows_upserted_count": 30,
+  "writer_write_ms_count": 30
+}

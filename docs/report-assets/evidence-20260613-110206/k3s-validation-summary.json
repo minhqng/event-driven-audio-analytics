@@ -1,0 +1,16 @@
+﻿{
+    "generated_at":  "2026-06-13T04:02:06.4763158Z",
+    "validation_level":  "manifest-level validation only",
+    "live_cluster_access":  false,
+    "kubectl_client_version":  "v1.34.1",
+    "kustomize_render":  {
+                             "command":  "kubectl kustomize deploy/k3s",
+                             "status":  "passed",
+                             "rendered_line_count":  1820
+                         },
+    "client_dry_run":  {
+                           "command":  "kubectl apply --dry-run=client --validate=false -k deploy/k3s",
+                           "status":  "failed_due_cluster_discovery",
+                           "note":  "kubectl still attempted server discovery and no usable cluster API was available; no live apply evidence is claimed."
+                       }
+}

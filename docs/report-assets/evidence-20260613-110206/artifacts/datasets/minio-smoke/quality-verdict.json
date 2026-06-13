@@ -1,0 +1,25 @@
+{
+  "blocking_anomaly_count": 0,
+  "reasons": [
+    "track_validation_failures"
+  ],
+  "rules": {
+    "blocking": [
+      "missing or unreadable required segment manifest",
+      "missing matching manifest row for persisted feature",
+      "missing segment artifact",
+      "artifact checksum mismatch",
+      "duplicate logical segment keys",
+      "validated track without accepted segments",
+      "no accepted FMA-Small dataset tracks"
+    ],
+    "warning": [
+      "track-level validation failures",
+      "processing or writer error events",
+      "high accepted-run silent ratio"
+    ]
+  },
+  "run_id": "minio-smoke",
+  "verdict": "pass_with_warnings",
+  "warning_anomaly_count": 1
+}

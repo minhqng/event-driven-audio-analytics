@@ -4,6 +4,7 @@ This documentation is the final reader path for the bounded FMA-Small research s
 
 ## Start Here
 
+0. `docs/bao-cao-de-tai-event-driven-audio-analytics.md` for the thesis report draft and its evidence manifest pointer.
 1. `docs/architecture/system-overview.md` for system boundaries and data flow.
 2. `docs/runbooks/demo.md` for the final demo and evidence command.
 3. `docs/runbooks/validation.md` for smoke checks and the official containerized test path.

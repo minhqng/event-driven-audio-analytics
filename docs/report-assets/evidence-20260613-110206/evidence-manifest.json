@@ -1,0 +1,317 @@
+﻿{
+    "generated_at":  "2026-06-13T04:10:14.8405839Z",
+    "evidence_snapshot_dir":  "docs/report-assets/evidence-20260613-110206",
+    "git_commit":  "0dc003c1a633c7e5d8b0bfd4fd15e125feeff5f5",
+    "git_branch":  "main",
+    "git_status_clean":  false,
+    "git_status_porcelain":  [
+                                 " M artifacts/evidence/final-demo/dataset-exports/dataset-export-summary.json",
+                                 " M artifacts/evidence/final-demo/evaluation/evaluation-report.md",
+                                 " M artifacts/evidence/final-demo/evaluation/latency-summary.json",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-deterministic-review-demo.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-fma-100.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-fma-5.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-scale-r1.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-scale-r2.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-samples/eval-scale-r3.jsonl",
+                                 " M artifacts/evidence/final-demo/evaluation/resource-usage-summary.json",
+                                 " M artifacts/evidence/final-demo/evaluation/scaling-summary.json",
+                                 " M artifacts/evidence/final-demo/evaluation/throughput-summary.json",
+                                 " M artifacts/evidence/final-demo/evidence-index.md",
+                                 " M artifacts/evidence/final-demo/restart-replay/preflight-fail-fast.txt",
+                                 " M artifacts/evidence/final-demo/review-dashboard/audio-quality-dashboard.png",
+                                 " M artifacts/evidence/final-demo/review-dashboard/grafana-api.json",
+                                 " M artifacts/evidence/final-demo/review-dashboard/review-api.json",
+                                 " M artifacts/evidence/final-demo/review-dashboard/review-console.png",
+                                 " M artifacts/evidence/final-demo/review-dashboard/review-dashboard-notes.md",
+                                 " M artifacts/evidence/final-demo/review-dashboard/review-dashboard-summary.json",
+                                 " M artifacts/evidence/final-demo/review-dashboard/system-health-dashboard.png",
+                                 " M artifacts/evidence/minio-claim-check/minio-smoke-summary.json",
+                                 " M docs/README.md",
+                                 "?? docs/bao-cao-de-tai-event-driven-audio-analytics.md",
+                                 "?? docs/report-assets/"
+                             ],
+    "note_on_git_status":  "Working tree may include regenerated evidence artifacts and this report snapshot after reruns; code commit is recorded above for provenance.",
+    "run_ids":  [
+                    "demo-high-energy",
+                    "demo-silent-oriented",
+                    "demo-validation-failure",
+                    "replay-smoke",
+                    "minio-smoke",
+                    "eval-deterministic-review-demo",
+                    "eval-fma-5",
+                    "eval-fma-100",
+                    "eval-scale-r1",
+                    "eval-scale-r2",
+                    "eval-scale-r3",
+                    "eval-fma-full-local"
+                ],
+    "storage_backend":  {
+                            "deterministic_demo":  "local",
+                            "restart_replay":  "local",
+                            "evaluation":  "local",
+                            "minio_smoke":  "minio",
+                            "k3s_variant":  "minio in manifests; not live-applied in this run"
+                        },
+    "docker":  {
+                   "docker_version":  "Docker version 29.1.3, build f52814d",
+                   "docker_compose_version":  "Docker Compose version v5.0.0-desktop.1",
+                   "images":  [
+                                  {
+                                      "tag":  "event-driven-audio-analytics-ingestion:latest",
+                                      "image_id":  "sha256:f952925f5bdbe28972a0a3e58f3024748d3eb83124256440d5e7ee5d5c51f74a",
+                                      "created":  "2026-06-13T03:48:30.655704198Z"
+                                  },
+                                  {
+                                      "tag":  "event-driven-audio-analytics-processing:latest",
+                                      "image_id":  "sha256:e042d13eb63535c2eaa179047ee98f49c2f300ed7e3081571197ef1293e73a26",
+                                      "created":  "2026-06-13T03:49:07.058228972Z"
+                                  },
+                                  {
+                                      "tag":  "event-driven-audio-analytics-writer:latest",
+                                      "image_id":  "sha256:a6a4b2cf64ec13188d2a5bbe490b673c9514dfbef8923eb28839b266f20f9d85",
+                                      "created":  "2026-06-13T03:45:39.184141538Z"
+                                  },
+                                  {
+                                      "tag":  "event-driven-audio-analytics-review:latest",
+                                      "image_id":  "sha256:4ca5cde554eb08ed59ba320f73c46366f9d934e653174b319e5f4f8f71a57724",
+                                      "created":  "2026-06-13T03:48:32.376808039Z"
+                                  },
+                                  {
+                                      "tag":  "event-driven-audio-analytics-dataset-exporter:latest",
+                                      "image_id":  "sha256:518cd3ed8f5616546551235fd980483c684309a9e1f03cf354713749f77c1a49",
+                                      "created":  "2026-06-13T03:50:47.06697329Z"
+                                  },
+                                  {
+                                      "tag":  "event-driven-audio-analytics-pytest:latest",
+                                      "image_id":  "sha256:a12e69ad4452a5ca836a892c2b35b55f65ff7982e19da3f2c29598a8fa01b20b",
+                                      "created":  "2026-06-13T03:52:18.622454376Z"
+                                  }
+                              ]
+               },
+    "host_os":  {
+                    "os":  "Microsoft Windows 11 Pro",
+                    "version":  "10.0.26200",
+                    "architecture":  "64-bit",
+                    "timezone":  "SE Asia Standard Time"
+                },
+    "script_commands":  [
+                            {
+                                "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\smoke\\check-pytest.ps1",
+                                "status":  "passed",
+                                "output_summary":  "323 passed, 5 skipped"
+                            },
+                            {
+                                "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\demo\\generate-demo-evidence.ps1",
+                                "status":  "passed",
+                                "output_summary":  "final demo evidence, dataset exports, restart/replay, review/Grafana screenshots regenerated"
+                            },
+                            {
+                                "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\evaluation\\run-evaluation.ps1",
+                                "status":  "passed",
+                                "output_summary":  "latency, throughput, resource usage, scaling summaries regenerated"
+                            },
+                            {
+                                "command":  "powershell -ExecutionPolicy Bypass -File .\\scripts\\smoke\\check-minio-claim-check-flow.ps1",
+                                "status":  "passed",
+                                "output_summary":  "MinIO claim-check smoke flow passed"
+                            },
+                            {
+                                "command":  "kubectl kustomize deploy/k3s",
+                                "status":  "passed",
+                                "output_summary":  "manifest render passed with 1820 lines"
+                            },
+                            {
+                                "command":  "kubectl apply --dry-run=client --validate=false -k deploy/k3s",
+                                "status":  "not_passed",
+                                "output_summary":  "failed because no usable cluster API discovery was available; no live K3s apply claimed"
+                            }
+                        ],
+    "input_data_profile":  {
+                               "dataset_scope":  "FMA-Small only",
+                               "deterministic_demo_inputs":  "repo-owned smoke fixtures under tests/fixtures/audio plus generated deterministic demo runs",
+                               "local_fma_full":  "skipped unless EVAL_ENABLE_FULL_FMA_SMALL=true; this run kept it skipped",
+                               "audio_processing_defaults":  {
+                                                                 "sample_rate_hz":  32000,
+                                                                 "segment_duration_s":  3,
+                                                                 "segment_overlap_s":  1.5,
+                                                                 "n_mels":  128,
+                                                                 "n_fft":  1024,
+                                                                 "hop_length":  320,
+                                                                 "target_frames":  300
+                                                             }
+                           },
+    "k3s_validation":  {
+                           "generated_at":  "2026-06-13T04:02:06.4763158Z",
+                           "validation_level":  "manifest-level validation only",
+                           "live_cluster_access":  false,
+                           "kubectl_client_version":  "v1.34.1",
+                           "kustomize_render":  {
+                                                    "command":  "kubectl kustomize deploy/k3s",
+                                                    "status":  "passed",
+                                                    "rendered_line_count":  1820
+                                                },
+                           "client_dry_run":  {
+                                                  "command":  "kubectl apply --dry-run=client --validate=false -k deploy/k3s",
+                                                  "status":  "failed_due_cluster_discovery",
+                                                  "note":  "kubectl still attempted server discovery and no usable cluster API was available; no live apply evidence is claimed."
+                                              }
+                       },
+    "evidence_files":  [
+                           {
+                               "path":  "artifacts/datasets/demo-high-energy/dataset-build-manifest.json",
+                               "bytes":  2993,
+                               "sha256":  "104615aa711fa2ae008788f1e8398be5684d6715c6c56e78a990f879623984b3"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-high-energy/quality-verdict.json",
+                               "bytes":  647,
+                               "sha256":  "abb09e12a315ae41cc6d418370046af861402cfd07cfb174ddf8e3bf8d1ba5e9"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-high-energy/run-summary.json",
+                               "bytes":  848,
+                               "sha256":  "640ae5c344b15c06075484170f1c5164f7a291d3b63aa8a52f228ddb6f9f389d"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-silent-oriented/dataset-build-manifest.json",
+                               "bytes":  3001,
+                               "sha256":  "d0fa3e6eca11103c37731db3b3e705d6ac245373177fdae46a91f77af37c0a6d"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-silent-oriented/quality-verdict.json",
+                               "bytes":  651,
+                               "sha256":  "1d90fe9cdbb807b8b3eb8137cc8d590820d9bde7814e856cb190524286b72b7b"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-silent-oriented/run-summary.json",
+                               "bytes":  858,
+                               "sha256":  "42d821aa33d572b4bd9bfe570dbc6438b0c1d0158d9da1f96fd647c1a08b8f9f"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-validation-failure/dataset-build-manifest.json",
+                               "bytes":  3007,
+                               "sha256":  "7db88ba1ea840a73510dfa67f5da049dd5d7534926ad75dcedf459cf48a080b1"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-validation-failure/quality-verdict.json",
+                               "bytes":  723,
+                               "sha256":  "520f64da041d0064f053626fea38b62cf37ac2b3d78321b670dc59d462201fe5"
+                           },
+                           {
+                               "path":  "artifacts/datasets/demo-validation-failure/run-summary.json",
+                               "bytes":  831,
+                               "sha256":  "768069d7add25234b3634cf925eac3914118c55243186a34e0bc04512e63478e"
+                           },
+                           {
+                               "path":  "artifacts/datasets/minio-smoke/dataset-build-manifest.json",
+                               "bytes":  2997,
+                               "sha256":  "b00b3552067a5b13eae9558ecd72be02f3aa5d69b75c9f1b1268736e475d6fa6"
+                           },
+                           {
+                               "path":  "artifacts/datasets/minio-smoke/quality-verdict.json",
+                               "bytes":  691,
+                               "sha256":  "051944e87bd2f84ea0b275064bcf3853871762f0eb66aa53a81085070f1d7a3c"
+                           },
+                           {
+                               "path":  "artifacts/datasets/minio-smoke/run-summary.json",
+                               "bytes":  853,
+                               "sha256":  "abd1db4cb1758a4f26b9a717b87719faa5e3df22367120d68702d9c87d450e1e"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/dataset-exports/dataset-export-summary.json",
+                               "bytes":  4691,
+                               "sha256":  "dace9f8844f0201749ef32fe1961c63045cb9d21a4cd4b205fa0ca81eed12484"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evaluation/evaluation-report.md",
+                               "bytes":  5425,
+                               "sha256":  "f96980fe5d7eb4aa49d1a685b08911d64ade2528f45a73acabc64cb00db22c43"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evaluation/latency-summary.json",
+                               "bytes":  6699,
+                               "sha256":  "5f9b0785a3a0f5a076e0a695f98d740beda48325fe4f72d2a5c343d443b9b9e4"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evaluation/resource-usage-summary.json",
+                               "bytes":  12621,
+                               "sha256":  "821819a439520a0601b04b7bd0d7b774c02b114859e249989fd7a6669b0a9910"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evaluation/scaling-summary.json",
+                               "bytes":  1283,
+                               "sha256":  "a4a1fde81a575d895acc1d2c720fd740cf40aaaf87825fdedb0c09e9df716f24"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evaluation/throughput-summary.json",
+                               "bytes":  3882,
+                               "sha256":  "6acd42365c706b3c611a286364dc30a8b9bb2bb95cf11a0dfef821839a22c158"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/evidence-index.md",
+                               "bytes":  2378,
+                               "sha256":  "f2d687787454841e24d718953b149a10d000f6ee2f7daaa5bf383bd79363e526"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/restart-replay/preflight-fail-fast.txt",
+                               "bytes":  6077,
+                               "sha256":  "9b03c9b0a3d131f4db57a2e233dc8c1b80791e035d0f72be1815f27244e3c6a7"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/restart-replay/restart-replay-baseline.json",
+                               "bytes":  2829,
+                               "sha256":  "812079a29cbaa871ccb67051d305bb93fc3a0c31aad11f9a121403d6aaea8845"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/restart-replay/restart-replay-summary.json",
+                               "bytes":  523,
+                               "sha256":  "ee3ca6fb8533d30bf0c2c35e638eb1c0d4a9b3649c825f6a29ec5622eaf7d3ff"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/audio-quality-dashboard.png",
+                               "bytes":  122396,
+                               "sha256":  "813d5d8dd7ad30c874a40e6228963947684322578196e05121b2d616a17c8cb1"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/grafana-api.json",
+                               "bytes":  1212,
+                               "sha256":  "aaf3afc6b84dbd377b7a5a37920ba5b0e8c5c7a3207560456291f64aed73015f"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/review-api.json",
+                               "bytes":  30457,
+                               "sha256":  "bd4ef381fcab501594055cbe0078ab23c9ef28670c49513ca305a93184b3c3e0"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/review-console.png",
+                               "bytes":  492631,
+                               "sha256":  "37bbe9b7c67c3c0d31f54b579e2c8c24e0dc9b6ec060bcc97ed16af94bdac3df"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/review-dashboard-notes.md",
+                               "bytes":  2518,
+                               "sha256":  "5f69df87f5437607b3750fb208981cc44d109666b5da771bddfcb138885499ca"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/review-dashboard-summary.json",
+                               "bytes":  1535,
+                               "sha256":  "005032c020361d72e1a29c9f42d9ebeaaea28a407e15f446a8e725b009aa35b8"
+                           },
+                           {
+                               "path":  "artifacts/evidence/final-demo/review-dashboard/system-health-dashboard.png",
+                               "bytes":  94480,
+                               "sha256":  "140dcffe5c05e30c122a8a18b646a5003f116334a9f9ebbef37a81db5b1cc3d2"
+                           },
+                           {
+                               "path":  "artifacts/evidence/minio-claim-check/minio-smoke-summary.json",
+                               "bytes":  699,
+                               "sha256":  "04141e30b078ad4fe8b34219dc92345af0043da60c3c7dcf8907c4bd858123e3"
+                           },
+                           {
+                               "path":  "k3s-validation-summary.json",
+                               "bytes":  827,
+                               "sha256":  "bdd3eb4892e4c3ca543fb08b611c3ae328c223d83c4af210a3a8a6e12d23c37a"
+                           }
+                       ]
+}
