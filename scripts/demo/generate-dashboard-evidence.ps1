@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot "../.."))
+. ".\scripts\demo\demo-powershell-helpers.ps1"
 
 function Assert-LastExitCode {
     param(
@@ -252,6 +253,7 @@ function Invoke-DemoRun {
     Assert-LastExitCode "docker compose run ingestion for $RunId"
 }
 
+Initialize-DemoHostPorts
 $grafanaPort = if ($env:GRAFANA_PORT) { $env:GRAFANA_PORT } else { "3000" }
 $reviewPort = if ($env:REVIEW_PORT) { $env:REVIEW_PORT } else { "8080" }
 $demoInputRootHost = Join-Path $PWD "artifacts\demo-inputs\review-demo"

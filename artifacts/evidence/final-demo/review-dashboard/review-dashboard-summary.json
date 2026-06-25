@@ -1,7 +1,7 @@
 ﻿{
   "high_energy": {
-    "artifact_write_ms": 306.338,
-    "avg_processing_ms": 19.63372000045638,
+    "artifact_write_ms": 597.94,
+    "avg_processing_ms": 40.50784699995802,
     "avg_rms": -8.955863509685088,
     "error_rate": 0.0,
     "processing_error_count": 0,
@@ -15,8 +15,8 @@
     "writer_error_count": 0
   },
   "silent_oriented": {
-    "artifact_write_ms": 312.617,
-    "avg_processing_ms": 24.819070000830834,
+    "artifact_write_ms": 659.267,
+    "avg_processing_ms": 41.951104999952804,
     "avg_rms": -25.60186305140538,
     "error_rate": 0.0,
     "processing_error_count": 0,

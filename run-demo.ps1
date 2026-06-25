@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath $PSScriptRoot
+. ".\scripts\demo\demo-powershell-helpers.ps1"
 
 function Assert-LastExitCode {
     param(
@@ -73,6 +74,7 @@ function Wait-ReviewViewReady {
 }
 
 Write-Host "Starting event-driven-audio-analytics demo stack..."
+Initialize-DemoHostPorts
 docker compose up --build -d kafka timescaledb grafana
 Assert-LastExitCode "docker compose up --build -d"
 

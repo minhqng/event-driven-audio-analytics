@@ -14,6 +14,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath $PSScriptRoot
+. ".\scripts\demo\demo-powershell-helpers.ps1"
 
 function Write-Step { param([string]$Msg) Write-Host "" ; Write-Host "[*] $Msg" -ForegroundColor Cyan }
 function Write-Ok   { param([string]$Msg) Write-Host "    OK  $Msg" -ForegroundColor Green }
@@ -112,6 +113,7 @@ function Get-RunSummaryRow {
 }
 
 # --- Ports -------------------------------------------------------------------
+Initialize-DemoHostPorts
 $reviewPort  = if ($env:REVIEW_PORT)  { $env:REVIEW_PORT  } else { "8080" }
 $grafanaPort = if ($env:GRAFANA_PORT) { $env:GRAFANA_PORT } else { "3000" }
 

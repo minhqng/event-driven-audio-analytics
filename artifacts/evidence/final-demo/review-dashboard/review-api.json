@@ -69,12 +69,12 @@
       }
     },
     "run": {
-      "artifact_write_ms": 306.338,
-      "avg_processing_ms": 19.63372000045638,
+      "artifact_write_ms": 597.94,
+      "avg_processing_ms": 40.50784699995802,
       "avg_rms": -8.955863509685088,
       "error_rate": 0.0,
-      "first_seen_at": "2026-06-13T03:50:05.355639Z",
-      "last_seen_at": "2026-06-13T03:50:06.817915Z",
+      "first_seen_at": "2026-06-25T14:17:02.020606Z",
+      "last_seen_at": "2026-06-25T14:17:04.562720Z",
       "links": {
         "detail_url": "/api/runs/demo-high-energy",
         "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -110,7 +110,7 @@
               "source": "db"
             },
             "topic_name": "audio.features",
-            "updated_at": "2026-06-13T03:50:06.803341Z"
+            "updated_at": "2026-06-25T14:17:04.546092Z"
           },
           {
             "last_committed_offset": 0,
@@ -119,7 +119,7 @@
               "source": "db"
             },
             "topic_name": "audio.metadata",
-            "updated_at": "2026-06-13T03:50:06.678759Z"
+            "updated_at": "2026-06-25T14:17:02.020606Z"
           },
           {
             "last_committed_offset": 11,
@@ -128,7 +128,7 @@
               "source": "db"
             },
             "topic_name": "system.metrics",
-            "updated_at": "2026-06-13T03:50:06.816072Z"
+            "updated_at": "2026-06-25T14:17:04.560650Z"
           }
         ],
         "provenance": {
@@ -200,14 +200,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 25.515884000924416,
+          "processing_ms": 38.395175999994535,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 0,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:05.380633Z"
+          "ts": "2026-06-25T14:17:03.054458Z"
         },
         {
           "artifact": {
@@ -222,14 +222,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 18.429622999974526,
+          "processing_ms": 37.677346999771544,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:06.731377Z"
+          "ts": "2026-06-25T14:17:04.406840Z"
         },
         {
           "artifact": {
@@ -244,14 +244,14 @@
           },
           "checksum": "sha256:8b41b82b3443eeeadcc124140dcdf74e1ec5e07c05a8ea9bb38ddf8e81de913c",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 17.25788600015221,
+          "processing_ms": 43.34238999990703,
           "provenance": {
             "source": "db"
           },
           "rms": -8.203288520525135,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:06.765570Z"
+          "ts": "2026-06-25T14:17:04.474009Z"
         },
         {
           "artifact": {
@@ -266,14 +266,14 @@
           },
           "checksum": "sha256:049cbbc20cdeed64574f1b9ff11b1408b1cb431de87426576c1d1e47811989e6",
           "manifest_uri": "/artifacts/runs/demo-high-energy/manifests/segments.parquet",
-          "processing_ms": 17.33148700077436,
+          "processing_ms": 42.61647500015897,
           "provenance": {
             "source": "db"
           },
           "rms": -11.213588477164947,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:06.799326Z"
+          "ts": "2026-06-25T14:17:04.541303Z"
         }
       ],
       "limit": 10,
@@ -282,7 +282,7 @@
     },
     "track": {
       "artist_id": 9101,
-      "avg_processing_ms": 19.63372000045638,
+      "avg_processing_ms": 40.50784699995802,
       "avg_rms": -8.955863509685088,
       "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
       "duration_s": 6.0,
@@ -318,7 +318,7 @@
     "items": [
       {
         "artist_id": 9101,
-        "avg_processing_ms": 19.63372000045638,
+        "avg_processing_ms": 40.50784699995802,
         "avg_rms": -8.955863509685088,
         "checksum": "sha256:c24a69f0ae8d6df98282591c75c0ac557d9636016eed1500ae5b3472f2bfccda",
         "duration_s": 6.0,
@@ -361,12 +361,12 @@
     "has_more": false,
     "items": [
       {
-        "artifact_write_ms": 306.338,
-        "avg_processing_ms": 19.63372000045638,
+        "artifact_write_ms": 597.94,
+        "avg_processing_ms": 40.50784699995802,
         "avg_rms": -8.955863509685088,
         "error_rate": 0.0,
-        "first_seen_at": "2026-06-13T03:50:05.355639Z",
-        "last_seen_at": "2026-06-13T03:50:06.817915Z",
+        "first_seen_at": "2026-06-25T14:17:02.020606Z",
+        "last_seen_at": "2026-06-25T14:17:04.562720Z",
         "links": {
           "detail_url": "/api/runs/demo-high-energy",
           "tracks_url": "/api/runs/demo-high-energy/tracks"
@@ -393,12 +393,12 @@
         "writer_error_count": 0
       },
       {
-        "artifact_write_ms": 312.617,
-        "avg_processing_ms": 24.819070000830834,
+        "artifact_write_ms": 659.267,
+        "avg_processing_ms": 41.951104999952804,
         "avg_rms": -25.60186305140538,
         "error_rate": 0.0,
-        "first_seen_at": "2026-06-13T03:50:11.598178Z",
-        "last_seen_at": "2026-06-13T03:50:13.652395Z",
+        "first_seen_at": "2026-06-25T14:17:09.348973Z",
+        "last_seen_at": "2026-06-25T14:17:11.394656Z",
         "links": {
           "detail_url": "/api/runs/demo-silent-oriented",
           "tracks_url": "/api/runs/demo-silent-oriented/tracks"
@@ -429,8 +429,8 @@
         "avg_processing_ms": null,
         "avg_rms": null,
         "error_rate": 1.0,
-        "first_seen_at": "2026-06-13T03:50:18.800797Z",
-        "last_seen_at": "2026-06-13T03:50:19.825361Z",
+        "first_seen_at": "2026-06-25T14:17:16.921693Z",
+        "last_seen_at": "2026-06-25T14:17:17.952181Z",
         "links": {
           "detail_url": "/api/runs/demo-validation-failure",
           "tracks_url": "/api/runs/demo-validation-failure/tracks"
@@ -529,12 +529,12 @@
       }
     },
     "run": {
-      "artifact_write_ms": 312.617,
-      "avg_processing_ms": 24.819070000830834,
+      "artifact_write_ms": 659.267,
+      "avg_processing_ms": 41.951104999952804,
       "avg_rms": -25.60186305140538,
       "error_rate": 0.0,
-      "first_seen_at": "2026-06-13T03:50:11.598178Z",
-      "last_seen_at": "2026-06-13T03:50:13.652395Z",
+      "first_seen_at": "2026-06-25T14:17:09.348973Z",
+      "last_seen_at": "2026-06-25T14:17:11.394656Z",
       "links": {
         "detail_url": "/api/runs/demo-silent-oriented",
         "tracks_url": "/api/runs/demo-silent-oriented/tracks"
@@ -570,7 +570,7 @@
               "source": "db"
             },
             "topic_name": "audio.features",
-            "updated_at": "2026-06-13T03:50:12.750163Z"
+            "updated_at": "2026-06-25T14:17:10.606948Z"
           },
           {
             "last_committed_offset": 1,
@@ -579,7 +579,7 @@
               "source": "db"
             },
             "topic_name": "audio.metadata",
-            "updated_at": "2026-06-13T03:50:11.598178Z"
+            "updated_at": "2026-06-25T14:17:09.348973Z"
           },
           {
             "last_committed_offset": 23,
@@ -588,7 +588,7 @@
               "source": "db"
             },
             "topic_name": "system.metrics",
-            "updated_at": "2026-06-13T03:50:13.650479Z"
+            "updated_at": "2026-06-25T14:17:11.391476Z"
           }
         ],
         "provenance": {
@@ -660,14 +660,14 @@
           },
           "checksum": "sha256:d4bd3ca1a3e5de733841da6c55adebbafd4f05fcc7fdf2023b1db4f151508a1b",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 22.256465001191827,
+          "processing_ms": 44.766329000140104,
           "provenance": {
             "source": "db"
           },
           "rms": -60.0,
           "segment_idx": 0,
           "silent_flag": true,
-          "ts": "2026-06-13T03:50:12.623412Z"
+          "ts": "2026-06-25T14:17:10.397665Z"
         },
         {
           "artifact": {
@@ -682,14 +682,14 @@
           },
           "checksum": "sha256:ebc75223033ab6c612278f165c0413400ef4544e790258dd3459c1f2f2062df6",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 28.42781300023489,
+          "processing_ms": 43.793932999960816,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 1,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:12.669863Z"
+          "ts": "2026-06-25T14:17:10.466316Z"
         },
         {
           "artifact": {
@@ -704,14 +704,14 @@
           },
           "checksum": "sha256:6a324380d1c4332f0759b6dd88126319f8c790b0e33b06c1597b6c4bcd8392ca",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 23.355998000624822,
+          "processing_ms": 38.09182699978919,
           "provenance": {
             "source": "db"
           },
           "rms": -12.128950764113974,
           "segment_idx": 2,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:12.708301Z"
+          "ts": "2026-06-25T14:17:10.534043Z"
         },
         {
           "artifact": {
@@ -726,14 +726,14 @@
           },
           "checksum": "sha256:95be5110cbee9d1892427f6d0da708439a9055e8ba76746a91920fcfb83675cf",
           "manifest_uri": "/artifacts/runs/demo-silent-oriented/manifests/segments.parquet",
-          "processing_ms": 25.236004001271795,
+          "processing_ms": 41.152330999921105,
           "provenance": {
             "source": "db"
           },
           "rms": -15.139250720753786,
           "segment_idx": 3,
           "silent_flag": false,
-          "ts": "2026-06-13T03:50:12.748052Z"
+          "ts": "2026-06-25T14:17:10.600705Z"
         }
       ],
       "limit": 10,
@@ -742,7 +742,7 @@
     },
     "track": {
       "artist_id": 9102,
-      "avg_processing_ms": 24.819070000830834,
+      "avg_processing_ms": 41.951104999952804,
       "avg_rms": -25.60186305140538,
       "checksum": "sha256:74821199a072e5dc590e976b6f3a9b487909399e54c550c4e3e266cf5068b7a7",
       "duration_s": 6.0,
@@ -834,8 +834,8 @@
       "avg_processing_ms": null,
       "avg_rms": null,
       "error_rate": 1.0,
-      "first_seen_at": "2026-06-13T03:50:18.800797Z",
-      "last_seen_at": "2026-06-13T03:50:19.825361Z",
+      "first_seen_at": "2026-06-25T14:17:16.921693Z",
+      "last_seen_at": "2026-06-25T14:17:17.952181Z",
       "links": {
         "detail_url": "/api/runs/demo-validation-failure",
         "tracks_url": "/api/runs/demo-validation-failure/tracks"
@@ -871,7 +871,7 @@
               "source": "db"
             },
             "topic_name": "audio.metadata",
-            "updated_at": "2026-06-13T03:50:18.802295Z"
+            "updated_at": "2026-06-25T14:17:16.922365Z"
           },
           {
             "last_committed_offset": 27,
@@ -880,7 +880,7 @@
               "source": "db"
             },
             "topic_name": "system.metrics",
-            "updated_at": "2026-06-13T03:50:19.822296Z"
+            "updated_at": "2026-06-25T14:17:17.949340Z"
           }
         ],
         "provenance": {

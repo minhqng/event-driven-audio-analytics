@@ -30,6 +30,11 @@ Use Grafana after the review story is clear:
 http://localhost:3000
 ```
 
+PowerShell demo scripts use these default ports when they are available. If a
+host port is already owned by another process, the scripts select a free
+fallback port and print the actual Review Console, Grafana, TimescaleDB, and
+Kafka host URLs in the terminal output.
+
 The intended reading order is: review console, Grafana corroboration, dataset bundles, restart/replay artifacts, then separate evaluation evidence from `docs/runbooks/validation.md`.
 
 ## Deterministic Review Runs

@@ -263,6 +263,10 @@ Review console: http://localhost:8080/?demo=1
 Grafana:        http://localhost:3000
 ```
 
+PowerShell demo scripts keep these default ports when available. If another
+process already owns a default host port, the scripts choose a free fallback and
+print the actual URLs before completing.
+
 Thứ tự đọc khuyến nghị: review console -> Grafana -> dataset bundle -> restart/replay evidence -> evaluation evidence.
 
 ### 3. Chỉ bootstrap stack

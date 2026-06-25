@@ -20,6 +20,20 @@ function Assert-ExitCode {
     if ($LASTEXITCODE -ne 0) { throw "$Context failed (exit $LASTEXITCODE)." }
 }
 
+function Get-KafkaTopicOffset {
+    param([string]$Topic)
+
+    $offsetRaw = docker compose exec -T kafka `
+        /opt/bitnami/kafka/bin/kafka-get-offsets.sh `
+        --bootstrap-server kafka:29092 `
+        --topic $Topic `
+        --time latest 2>$null
+    Assert-ExitCode "reading Kafka offset for $Topic"
+
+    $offset = ($offsetRaw | Select-Object -Last 1) -replace ".*:([0-9]+)$", '$1'
+    return $offset.Trim()
+}
+
 $META_CSV   = "/app/artifacts/demo-inputs/review-demo/metadata.csv"
 $AUDIO_ROOT = "/app/artifacts/demo-inputs/review-demo/fma_small"
 $pgUser     = if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { "audio_analytics" }
@@ -38,13 +52,7 @@ $rowsBefore = docker compose exec -T timescaledb `
     "SELECT COUNT(*) FROM audio_features WHERE run_id='demo-high-energy';" 2>$null
 $rowsBefore = $rowsBefore.Trim()
 
-$offsetRaw = docker compose exec -T kafka `
-    /opt/bitnami/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell `
-    --bootstrap-server kafka:29092 `
-    --topic audio.features `
-    --time -1 2>$null
-$offsetBefore = ($offsetRaw | Select-Object -Last 1) -replace ".*::", "" -replace ".*:([0-9]+)$", '$1'
-$offsetBefore = $offsetBefore.Trim()
+$offsetBefore = Get-KafkaTopicOffset -Topic "audio.features"
 
 Write-Info "audio_features rows   (BEFORE): $rowsBefore"
 Write-Info "audio.features offset (BEFORE): $offsetBefore"
@@ -73,13 +81,7 @@ $rowsAfter = docker compose exec -T timescaledb `
     "SELECT COUNT(*) FROM audio_features WHERE run_id='demo-high-energy';" 2>$null
 $rowsAfter = $rowsAfter.Trim()
 
-$offsetRaw2 = docker compose exec -T kafka `
-    /opt/bitnami/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell `
-    --bootstrap-server kafka:29092 `
-    --topic audio.features `
-    --time -1 2>$null
-$offsetAfter = ($offsetRaw2 | Select-Object -Last 1) -replace ".*::", "" -replace ".*:([0-9]+)$", '$1'
-$offsetAfter = $offsetAfter.Trim()
+$offsetAfter = Get-KafkaTopicOffset -Topic "audio.features"
 
 Write-Info "audio_features rows   (AFTER): $rowsAfter"
 Write-Info "audio.features offset (AFTER): $offsetAfter"
